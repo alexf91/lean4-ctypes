@@ -38,10 +38,10 @@ def eprintln (msg : String) : IO Unit := do
 def eprint (msg : String) : IO Unit := do
   IO.eprint msg
 
-/-- Handle returned by `dlopen()`. -/
-opaque Handle.Nonempty : NonemptyType
-def Handle : Type := Handle.Nonempty.type
-instance : Nonempty Handle := Handle.Nonempty.property
+/-- Library handle returned by `dlopen()`. -/
+opaque Library.Nonempty : NonemptyType
+def Library : Type := Library.Nonempty.type
+instance : Nonempty Library := Library.Nonempty.property
 
 /- TODO: Don't define this here, it's an implementation detail. -/
 def RTLD_LAZY     : UInt32 := 0x00001
@@ -49,13 +49,13 @@ def RTLD_NOW      : UInt32 := 0x00002
 def RTLD_NOLOAD   : UInt32 := 0x00004
 def RTLD_DEEPBIND : UInt32 := 0x00008
 def RTLD_GLOBAL   : UInt32 := 0x00100
-def RTLD_LOCAL    : UInt32 := 0
+def RTLD_LOCAL    : UInt32 := 0x00000
 def RTLD_NODELETE : UInt32 := 0x01000
 
-namespace Handle
+namespace Library
   /-- Slim wrapper around `dlopen()`. -/
-  @[extern "Handle_mk"]
-  opaque mk (p : String) (flags : UInt32) : IO Handle
-end Handle
+  @[extern "Library_mk"]
+  opaque mk (p : String) (flags : UInt32) : IO Library
+end Library
 
 end CTypes.FFI

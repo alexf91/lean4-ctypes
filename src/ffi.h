@@ -60,8 +60,8 @@ void lean_eprintf(const char *fmt, ...);
 #endif /* NDEBUG */
 
 /**
- * Handle returned by dlopen().
+ * Library handle returned by dlopen().
  */
 typedef struct {
     void *handle;
-} Handle;
+} Library;

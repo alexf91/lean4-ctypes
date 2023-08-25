@@ -22,12 +22,12 @@ open CTypes.FFI
 namespace Tests.FFI
 
   testcase mkSuccess := do
-    discard <| Handle.mk "/usr/lib/libgmp.so" RTLD_NOW
+    discard <| Library.mk "/usr/lib/libgmp.so" RTLD_NOW
 
   testcase mkFailure := do
     try
-      discard <| Handle.mk "/does/not/exist.so" RTLD_NOW
-      assertTrue false "dlopen() did not fail"
+      discard <| Library.mk "/does/not/exist.so" RTLD_NOW
+      assertTrue false "Library.mk did not fail"
     catch e =>
       let msg := "/does/not/exist.so: cannot open shared object file: No such file or directory"
       assertTrue $ e.toString == msg

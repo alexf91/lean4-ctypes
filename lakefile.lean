@@ -21,10 +21,16 @@ package ctypes
 
 require LTest from git "git@github.com:alexf91/LTest.git" @ "main"
 
+/- Control logging output. -/
+meta if get_config? debug |>.isSome then
+  def debugFlags := #["-DDEBUG"]
+else
+  def debugFlags := #["-DNDEBUG"]
+
 def createTarget (pkg : Package) (cfile : FilePath) := do
   let oFile := pkg.buildDir / cfile.withExtension "o"
   let srcJob ← inputFile <| pkg.dir / cfile
-  let flags := #["-I", (← getLeanIncludeDir).toString, "-fPIC"]
+  let flags := #["-I", (← getLeanIncludeDir).toString, "-fPIC"] ++ debugFlags
   buildO cfile.toString oFile srcJob flags "cc"
 
 target ffi.o pkg : FilePath := createTarget pkg $ "src" / "ffi.c"

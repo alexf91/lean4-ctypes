@@ -58,46 +58,46 @@ void lean_eprintf(const char *fmt, ...) {
 /**
  * Classes defined in Lean.
  */
-lean_external_class *Handle_class = NULL;
+lean_external_class *Library_class = NULL;
 
 /**
- * Finalize a Handle.
+ * Finalize a Library.
  */
-static void Handle_finalize(void *p) {
+static void Library_finalize(void *p) {
     ffi_log("finalizing %p", p);
-    Handle *h = (Handle *)p;
-    if (dlclose(h->handle) != 0) {
+    Library *lib = (Library *)p;
+    if (dlclose(lib->handle) != 0) {
         ffi_log("dlclose() failed: %s", dlerror());
     }
 }
 
 /**
- * Foreach for a Handle.
+ * Foreach for a Library handle.
  */
-static void Handle_foreach(void *mod, b_lean_obj_arg fn) {
+static void Library_foreach(void *mod, b_lean_obj_arg fn) {
 }
 
 /**
- * Convert a Handle object from C to Lean.
+ * Convert a Library object from C to Lean.
  */
-static inline lean_object *Handle_box(Handle *h) {
-    if (Handle_class == NULL) {
-        Handle_class = lean_register_external_class(Handle_finalize, Handle_foreach);
+static inline lean_object *Library_box(Library *lib) {
+    if (Library_class == NULL) {
+        Library_class = lean_register_external_class(Library_finalize, Library_foreach);
     }
-    return lean_alloc_external(Handle_class, h);
+    return lean_alloc_external(Library_class, lib);
 }
 
 /**
- * Convert a Handle object from Lean to C.
+ * Convert a Library object from Lean to C.
  */
-static inline Handle const *Handle_unbox(b_lean_obj_arg h) {
-    return (Handle *)(lean_get_external_data(h));
+static inline Library const *Library_unbox(b_lean_obj_arg lib) {
+    return (Library *)(lean_get_external_data(lib));
 }
 
 /**
- * Create a new Handle instance.
+ * Create a new Library instance.
  */
-lean_object *Handle_mk(lean_object *path, uint32_t flags, lean_object *unused) {
+lean_object *Library_mk(lean_object *path, uint32_t flags, lean_object *unused) {
     const char *p = lean_string_cstr(path);
     ffi_log("opening handle for %s with flags %u", p, flags);
 
@@ -106,8 +106,8 @@ lean_object *Handle_mk(lean_object *path, uint32_t flags, lean_object *unused) {
         lean_object *err = lean_mk_io_user_error(lean_mk_string(dlerror()));
         return lean_io_result_mk_error(err);
     }
-    Handle *h = malloc(sizeof(Handle));
-    h->handle = handle;
-    ffi_log("%p", h);
-    return lean_io_result_mk_ok(Handle_box(h));
+    Library *lib = malloc(sizeof(Library));
+    lib->handle = handle;
+    ffi_log("%p", lib);
+    return lean_io_result_mk_ok(Library_box(lib));
 }
