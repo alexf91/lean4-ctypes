@@ -19,7 +19,27 @@ open Lake DSL
 
 package ctypes
 
+require LTest from git "git@github.com:alexf91/LTest.git" @ "main"
+
+def createTarget (pkg : Package) (cfile : FilePath) := do
+  let oFile := pkg.buildDir / cfile.withExtension "o"
+  let srcJob ← inputFile <| pkg.dir / cfile
+  let flags := #["-I", (← getLeanIncludeDir).toString, "-fPIC"]
+  buildO cfile.toString oFile srcJob flags "cc"
+
+target ffi.o pkg : FilePath := createTarget pkg $ "src" / "ffi.c"
+
+extern_lib libctypes pkg := do
+  let name := nameToStaticLib "ctypes"
+  let targets := #[← fetch <| pkg.target ``ffi.o]
+  buildStaticLib (pkg.nativeLibDir / name) targets
+
 @[default_target]
 lean_lib CTypes {
   precompileModules := true
+}
+
+-- Tests
+lean_exe tests {
+  root := `Tests
 }

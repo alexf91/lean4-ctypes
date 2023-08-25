@@ -1,0 +1,7 @@
+ColumnLimit: 88
+IndentWidth: 4
+AllowShortIfStatementsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: false
+AllowShortBlocksOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
