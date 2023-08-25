@@ -19,7 +19,7 @@ open Lake DSL
 
 package ctypes
 
-require LTest from git "git@github.com:alexf91/LTest.git" @ "main"
+require LTest from git "git@github.com:alexf91/LTest.git" @ "fd1f9ab"
 
 /- Control logging output. -/
 meta if get_config? debug |>.isSome then

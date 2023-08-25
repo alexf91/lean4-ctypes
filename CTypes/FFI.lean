@@ -55,7 +55,19 @@ def RTLD_NODELETE : UInt32 := 0x01000
 namespace Library
   /-- Slim wrapper around `dlopen()`. -/
   @[extern "Library_mk"]
-  opaque mk (p : String) (flags : UInt32) : IO Library
+  opaque mk (path : String) (flags : UInt32) : IO Library
 end Library
+
+
+/-- Symbol handle returned by `dlsym()`. -/
+opaque Symbol.Nonempty : NonemptyType
+def Symbol : Type := Symbol.Nonempty.type
+instance : Nonempty Symbol := Symbol.Nonempty.property
+
+namespace Symbol
+  /-- Slim wrapper around `dlsym()`. -/
+  @[extern "Symbol_mk"]
+  opaque mk (library : Library) (symbol : String) : IO Symbol
+end Symbol
 
 end CTypes.FFI

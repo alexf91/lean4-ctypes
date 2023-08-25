@@ -63,5 +63,13 @@ void lean_eprintf(const char *fmt, ...);
  * Library handle returned by dlopen().
  */
 typedef struct {
+    const char *path;
     void *handle;
 } Library;
+
+/**
+ * Symbol handle returned by dlsym().
+ */
+typedef struct {
+    void *handle;
+} Symbol;
