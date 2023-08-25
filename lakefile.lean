@@ -17,9 +17,12 @@
 import Lake
 open Lake DSL
 
-package ctypes
+package ctypes {
+  precompileModules := true
+  moreLinkArgs := #["-lffi"]
+}
 
-require LTest from git "git@github.com:alexf91/LTest.git" @ "fd1f9ab"
+require LTest from git "git@github.com:alexf91/LTest.git" @ "main"
 
 /- Control logging output. -/
 meta if get_config? debug |>.isSome then
@@ -33,17 +36,15 @@ def createTarget (pkg : Package) (cfile : FilePath) := do
   let flags := #["-I", (← getLeanIncludeDir).toString, "-fPIC"] ++ debugFlags
   buildO cfile.toString oFile srcJob flags "cc"
 
-target ffi.o pkg : FilePath := createTarget pkg $ "src" / "ffi.c"
+target native.o pkg : FilePath := createTarget pkg $ "src" / "native.c"
 
 extern_lib libctypes pkg := do
   let name := nameToStaticLib "ctypes"
-  let targets := #[← fetch <| pkg.target ``ffi.o]
+  let targets := #[← fetch <| pkg.target ``native.o]
   buildStaticLib (pkg.nativeLibDir / name) targets
 
 @[default_target]
-lean_lib CTypes {
-  precompileModules := true
-}
+lean_lib CTypes
 
 -- Tests
 lean_exe tests {

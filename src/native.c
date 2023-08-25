@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#include "ffi.h"
+#include "native.h"
 #include <dlfcn.h>
+#include <ffi.h>
 #include <stdarg.h>
 #include <stdio.h>
 
@@ -59,15 +60,15 @@ lean_external_class *Library_class = NULL;
 /** Finalize a Library. */
 static void Library_finalize(void *p) {
     Library *lib = (Library *)p;
-    ffi_log("finalizing handle for %s at %p", lib->path, lib);
+    native_log("finalizing handle for %s at %p", lib->path, lib);
     if (dlclose(lib->handle) != 0) {
-        ffi_log("dlclose() failed: %s", dlerror());
+        native_log("dlclose() failed: %s", dlerror());
     }
 }
 
 /** Foreach for a Library handle. */
 static void Library_foreach(void *mod, b_lean_obj_arg fn) {
-    ffi_log("NOT IMPLEMENTED");
+    native_log("NOT IMPLEMENTED");
 }
 
 /** Convert a Library object from C to Lean. */
@@ -86,7 +87,7 @@ static inline Library const *Library_unbox(b_lean_obj_arg lib) {
 /** Create a new Library instance. */
 lean_object *Library_mk(b_lean_obj_arg path, uint32_t flags, lean_object *unused) {
     const char *p = lean_string_cstr(path);
-    ffi_log("opening handle for %s with flags 0x%08x", p, flags);
+    native_log("opening handle for %s with flags 0x%08x", p, flags);
 
     void *handle = dlopen(p, flags);
     if (handle == NULL) {
@@ -108,12 +109,12 @@ lean_external_class *Symbol_class = NULL;
 
 /** Finalize a Symbol. */
 static void Symbol_finalize(void *p) {
-    ffi_log("finalizing %p", p);
+    native_log("finalizing %p", p);
 }
 
 /** Foreach for a Symbol handle. */
 static void Symbol_foreach(void *mod, b_lean_obj_arg fn) {
-    ffi_log("NOT IMPLEMENTED");
+    native_log("NOT IMPLEMENTED");
 }
 
 /** Convert a Symbol object from C to Lean. */
@@ -134,7 +135,7 @@ lean_object *Symbol_mk(lean_object *lib, b_lean_obj_arg sym, lean_object *unused
     const char *name = lean_string_cstr(sym);
     const Library *l = Library_unbox(lib);
 
-    ffi_log("opening %s in %s", name, l->path);
+    native_log("opening %s in %s", name, l->path);
 
     // Clear dlerror() to distinguish between errors and NULL.
     dlerror();

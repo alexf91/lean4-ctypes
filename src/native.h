@@ -49,14 +49,14 @@ void lean_eprintf(const char *fmt, ...);
  * Print a log message.
  */
 #ifndef NDEBUG
-#define ffi_log(...)                                                                   \
+#define native_log(...)                                                                \
     do {                                                                               \
         lean_eprintf("[FFI] %s:%s - ", __FILE__, __func__);                            \
         lean_eprintf(__VA_ARGS__);                                                     \
         lean_eprintf("\n");                                                            \
     } while (0)
 #else
-#define ffi_log(...)
+#define native_log(...)
 #endif /* NDEBUG */
 
 /**
