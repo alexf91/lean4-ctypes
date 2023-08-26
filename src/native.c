@@ -15,6 +15,7 @@
  */
 
 #include "native.h"
+#include <assert.h>
 #include <dlfcn.h>
 #include <ffi.h>
 #include <stdarg.h>
@@ -54,6 +55,28 @@ void lean_eprintf(const char *fmt, ...) {
  * Library functions
  **************************************************************************************/
 
+/** Unbox the Flag enum. */
+int Flag_unbox(uint8_t flag) {
+    switch (flag) {
+    case 0:
+        return RTLD_LAZY;
+    case 1:
+        return RTLD_NOW;
+    case 2:
+        return RTLD_NOLOAD;
+    case 3:
+        return RTLD_DEEPBIND;
+    case 4:
+        return RTLD_GLOBAL;
+    case 5:
+        return RTLD_LOCAL;
+    case 6:
+        return RTLD_NODELETE;
+    default:
+        assert(0);
+    }
+}
+
 /** Lean class */
 lean_external_class *Library_class = NULL;
 
@@ -85,11 +108,19 @@ static inline Library const *Library_unbox(b_lean_obj_arg lib) {
 }
 
 /** Create a new Library instance. */
-lean_object *Library_mk(b_lean_obj_arg path, uint32_t flags, lean_object *unused) {
+lean_object *Library_mk(b_lean_obj_arg path, b_lean_obj_arg flags,
+                        lean_object *unused) {
     const char *p = lean_string_cstr(path);
-    native_log("opening handle for %s with flags 0x%08x", p, flags);
 
-    void *handle = dlopen(p, flags);
+    uint32_t openflags = 0;
+    for (int i = 0; i < lean_array_size(flags); i++) {
+        lean_object *o = lean_array_get_core(flags, i);
+        assert(lean_is_scalar(o));
+        openflags |= lean_unbox(o);
+    }
+    native_log("opening handle for %s with flags 0x%08x", p, openflags);
+
+    void *handle = dlopen(p, openflags);
     if (handle == NULL) {
         lean_object *err = lean_mk_io_user_error(lean_mk_string(dlerror()));
         return lean_io_result_mk_error(err);

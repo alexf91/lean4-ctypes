@@ -25,12 +25,12 @@ namespace Library
 
   /-- Successfully open a library. -/
   testcase mkSuccess := do
-    discard <| Library.mk "/usr/lib/libgmp.so" RTLD_NOW
+    discard <| Library.mk "/usr/lib/libgmp.so" #[.RTLD_NOW]
 
   /-- Fail to open a library. -/
   testcase mkFailure := do
     try
-      discard <| Library.mk "/does/not/exist.so" RTLD_NOW
+      discard <| Library.mk "/does/not/exist.so" #[.RTLD_NOW]
       assertTrue false "Library.mk did not fail"
     catch e =>
       let msg := "/does/not/exist.so: cannot open shared object file: No such file or directory"
@@ -42,7 +42,7 @@ namespace Symbol
 
   /-- Fixture for `libm`. -/
   fixture LibMath Unit Library where
-    setup := Library.mk "/usr/lib/libm.so.6" RTLD_NOW
+    setup := Library.mk "/usr/lib/libm.so.6" #[.RTLD_NOW]
 
   /-- Successfully get a symbol. -/
   testcase mkSuccess requires (h : LibMath) := do
