@@ -162,7 +162,7 @@ static inline Symbol const *Symbol_unbox(b_lean_obj_arg s) {
 }
 
 /** Create a new Symbol instance. */
-lean_object *Symbol_mk(lean_object *lib, b_lean_obj_arg sym, lean_object *unused) {
+lean_object *Symbol_mk(b_lean_obj_arg lib, b_lean_obj_arg sym, lean_object *unused) {
     const char *name = lean_string_cstr(sym);
     const Library *l = Library_unbox(lib);
 
@@ -183,4 +183,105 @@ lean_object *Symbol_mk(lean_object *lib, b_lean_obj_arg sym, lean_object *unused
     Symbol *s = malloc(sizeof(Symbol));
     s->handle = shandle;
     return lean_io_result_mk_ok(Symbol_box(s));
+}
+
+/***************************************************************************************
+ * FFI interface
+ **************************************************************************************/
+
+/** Unbox the CType enum to a ffi_type structure. */
+ffi_type *CType_unbox(b_lean_obj_arg tp) {
+    switch (lean_obj_tag(tp)) {
+    case 0:
+        native_log("unboxing ffi_type_void");
+        return &ffi_type_void;
+    case 1:
+        native_log("unboxing ffi_type_uint8");
+        return &ffi_type_uint8;
+    case 2:
+        native_log("unboxing ffi_type_sint8");
+        return &ffi_type_sint8;
+    case 3:
+        native_log("unboxing ffi_type_uint16");
+        return &ffi_type_uint16;
+    case 4:
+        native_log("unboxing ffi_type_sint16");
+        return &ffi_type_sint16;
+    case 5:
+        native_log("unboxing ffi_type_uint32");
+        return &ffi_type_uint32;
+    case 6:
+        native_log("unboxing ffi_type_sint32");
+        return &ffi_type_sint32;
+    case 7:
+        native_log("unboxing ffi_type_uint64");
+        return &ffi_type_uint64;
+    case 8:
+        native_log("unboxing ffi_type_sint64");
+        return &ffi_type_sint64;
+    case 9:
+        native_log("unboxing ffi_type_float");
+        return &ffi_type_float;
+    case 10:
+        native_log("unboxing ffi_type_double");
+        return &ffi_type_double;
+    case 11:
+        native_log("unboxing ffi_type_uchar");
+        return &ffi_type_uchar;
+    case 12:
+        native_log("unboxing ffi_type_schar");
+        return &ffi_type_schar;
+    case 13:
+        native_log("unboxing ffi_type_ushort");
+        return &ffi_type_ushort;
+    case 14:
+        native_log("unboxing ffi_type_sshort");
+        return &ffi_type_sshort;
+    case 15:
+        native_log("unboxing ffi_type_uint");
+        return &ffi_type_uint;
+    case 16:
+        native_log("unboxing ffi_type_sint");
+        return &ffi_type_sint;
+    case 17:
+        native_log("unboxing ffi_type_ulong");
+        return &ffi_type_ulong;
+    case 18:
+        native_log("unboxing ffi_type_slong");
+        return &ffi_type_slong;
+    case 19:
+        native_log("unboxing ffi_type_longdouble");
+        return &ffi_type_longdouble;
+    case 20:
+        native_log("unboxing ffi_type_pointer");
+        return &ffi_type_pointer;
+    case 21:
+        native_log("unboxing ffi_type_complex_float");
+        return &ffi_type_complex_float;
+    case 22:
+        native_log("unboxing ffi_type_complex_double");
+        return &ffi_type_complex_double;
+    case 23:
+        native_log("unboxing ffi_type_complex_longdouble");
+        return &ffi_type_complex_longdouble;
+    case 24: // struct
+        native_log("struct: not supported");
+        return NULL;
+    case 25: // array
+        native_log("array: not supported");
+        return NULL;
+    default:
+        native_log("unexpected type");
+        assert(0);
+    }
+}
+
+/** Just test CType unboxing. */
+lean_object *CType_test(b_lean_obj_arg tp, lean_object *unused) {
+    ffi_type *ffitype = CType_unbox(tp);
+    if (ffitype == NULL) {
+        lean_object *err = lean_mk_io_user_error(lean_mk_string("type not supported"));
+        return lean_io_result_mk_error(err);
+    }
+    return lean_io_result_mk_ok(lean_box(0));
 }

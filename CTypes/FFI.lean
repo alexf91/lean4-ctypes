@@ -48,13 +48,14 @@ inductive Flag where
   | RTLD_LOCAL
   | RTLD_NODELETE
 
+
 /-- Library handle returned by `dlopen()`. -/
 opaque Library.Nonempty : NonemptyType
 def Library : Type := Library.Nonempty.type
 instance : Nonempty Library := Library.Nonempty.property
 
 namespace Library
-  /-- Slim wrapper around `dlopen()`. -/
+  /-- Thin wrapper around `dlopen()`. -/
   @[extern "Library_mk"]
   opaque mk (path : String) (flags : Array Flag) : IO Library
 end Library
@@ -66,9 +67,44 @@ def Symbol : Type := Symbol.Nonempty.type
 instance : Nonempty Symbol := Symbol.Nonempty.property
 
 namespace Symbol
-  /-- Slim wrapper around `dlsym()`. -/
+  /-- Thin wrapper around `dlsym()`. -/
   @[extern "Symbol_mk"]
   opaque mk (library : Library) (symbol : String) : IO Symbol
 end Symbol
+
+
+/-- `ffi_type` enum in `libffi`. -/
+inductive CType where
+  | void
+  | uint8
+  | sint8
+  | uint16
+  | sint16
+  | uint32
+  | sint32
+  | uint64
+  | sint64
+  | float
+  | double
+  | uchar
+  | schar
+  | ushort
+  | sshort
+  | uint
+  | sint
+  | ulong
+  | slong
+  | longdouble
+  | pointer
+  | complex_float
+  | complex_double
+  | complex_longdouble
+  | struct (elements : Array CType)
+  | array (type : CType) (length : Nat)
+
+namespace CType
+  @[extern "CType_test"]
+  opaque test (tp : CType) : IO Unit
+end CType
 
 end CTypes.FFI

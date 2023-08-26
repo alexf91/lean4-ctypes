@@ -59,6 +59,12 @@ namespace Symbol
 
 end Symbol
 
+namespace CType
+  testcase testPrimitive := CType.test .uint32
+  testcase testArray     := CType.test (.array .uint32 32)
+  testcase testStruct    := CType.test (.struct #[.uint8, .uint16, .uint32, .uint64])
+end CType
+
 end Tests.FFI
 
 #LTestMain
