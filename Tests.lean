@@ -21,6 +21,20 @@ open CTypes.FFI
 
 namespace Tests.FFI
 
+/-- Get the call trace from logging messages. -/
+def callTrace (streams : Streams) : List String :=
+  let split := fun (s : String) => s.splitOn ":" |>.get! 1 |>.splitOn " " |>.get! 0
+  String.fromUTF8Unchecked streams.stderr |>.splitOn "\n" |>.dropLast |>.map split
+
+/-- Fixture for `libm`. -/
+fixture LibMath Unit Library where
+  setup := Library.mk "/usr/lib/libm.so.6" #[.RTLD_NOW]
+
+/-- Fixture for the symbol `sin()` -/
+fixture SymSin Unit Symbol requires (m : LibMath) where
+  setup := Symbol.mk m "sin"
+
+
 namespace Library
 
   /-- Successfully open a library. -/
@@ -40,10 +54,6 @@ end Library
 
 namespace Symbol
 
-  /-- Fixture for `libm`. -/
-  fixture LibMath Unit Library where
-    setup := Library.mk "/usr/lib/libm.so.6" #[.RTLD_NOW]
-
   /-- Successfully get a symbol. -/
   testcase mkSuccess requires (h : LibMath) := do
     discard <| Symbol.mk h "sin"
@@ -60,35 +70,35 @@ namespace Symbol
   /-
     These tests require compilation with debug output to check if everything
     is finalized as expected.
-
-    TODO: Disable when not compiled with debug output.
   -/
   namespace DebugOutput
     testcase mkSuccess := do
+      /- Only run in debug mode. -/
+      if !debugMode () then
+        return
+
       let (r, streams) ← captureResult do
         let h ← Library.mk "/usr/lib/libm.so.6" #[.RTLD_NOW]
         discard <| Symbol.mk h "sin"
       assertTrue r.isOk
 
-      let split := fun (s : String) => s.splitOn ":" |>.get! 1 |>.splitOn " " |>.get! 0
-      let calls := String.fromUTF8Unchecked streams.stderr |>.splitOn "\n" |>.dropLast |>.map split
-      if !calls.isEmpty then
-        let expected := ["Library_mk", "Symbol_mk", "Symbol_finalize", "Library_finalize"]
-        assertEqual calls expected $ toString calls
-        IO.println calls
+      let expected := ["Library_mk", "Symbol_mk", "Symbol_finalize", "Library_finalize"]
+      let trace := callTrace streams
+      assertEqual trace expected $ toString trace
 
     testcase mkFailure := do
+      /- Only run in debug mode. -/
+      if !debugMode () then
+        return
+
       let (r, streams) ← captureResult do
         let h ← Library.mk "/usr/lib/libm.so.6" #[.RTLD_NOW]
         discard <| Symbol.mk h "doesnotexist"
       assertTrue !r.isOk
 
-      let split := fun (s : String) => s.splitOn ":" |>.get! 1 |>.splitOn " " |>.get! 0
-      let calls := String.fromUTF8Unchecked streams.stderr |>.splitOn "\n" |>.dropLast |>.map split
-      if !calls.isEmpty then
-        let expected := ["Library_mk", "Symbol_mk", "Library_finalize"]
-        assertEqual calls expected $ toString calls
-        IO.println calls
+      let expected := ["Library_mk", "Symbol_mk", "Library_finalize"]
+      let trace := callTrace streams
+      assertEqual trace expected $ toString trace
 
   end DebugOutput
 
@@ -99,6 +109,40 @@ namespace CType
   testcase testArray     := CType.test (.array .uint32 32)
   testcase testStruct    := CType.test (.struct #[.uint8, .uint16, .uint32, .uint64])
 end CType
+
+namespace Function
+
+  /-- Create a new function. -/
+  testcase mkPrimitive requires (s : SymSin) := do
+    discard <| Function.mk s .double #[.double]
+
+  /-
+    These tests require compilation with debug output to check if everything
+    is finalized as expected.
+  -/
+  namespace DebugOutput
+    testcase mkSuccess := do
+      /- Only run in debug mode. -/
+      if !debugMode () then
+        return
+
+      let (r, streams) ← captureResult do
+        let h ← Library.mk "/usr/lib/libm.so.6" #[.RTLD_NOW]
+        let s ← Symbol.mk h "ldexp"
+        discard <| Function.mk s .double #[.double, .sint]
+      assertTrue r.isOk
+
+      let expected := [
+        "Library_mk", "Symbol_mk", "Function_mk",
+        "CType_unbox", "CType_unbox", "CType_unbox",
+        "Function_finalize", "Symbol_finalize", "Library_finalize"
+      ]
+      let trace := callTrace streams
+      assertEqual trace expected $ toString trace
+
+  end DebugOutput
+
+end Function
 
 end Tests.FFI
 

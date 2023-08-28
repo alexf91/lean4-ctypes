@@ -18,6 +18,10 @@ set_option relaxedAutoImplicit false
 
 namespace CTypes.FFI
 
+/-- Check whether the library is compiled in debug mode. -/
+@[extern "debug_mode"]
+opaque debugMode (_ : Unit) : Bool
+
 /-- `println` function exported to C. -/
 @[export lean_println]
 def println (msg : String) : IO Unit := do
@@ -119,11 +123,12 @@ def Function : Type := Function.Nonempty.type
 instance : Nonempty Function := Function.Nonempty.property
 
 namespace Function
+  /-- Create a new function instance from a symbol. -/
   @[extern "Function_mk"]
-  opaque mk (s : @&Symbol) (returnType : @&CType) (arguments : @&Array CType) : IO Function
+  opaque mk (s : @&Symbol) (returnType : @&CType) (argTypes : @&Array CType) : IO Function
 
   --@[extern "Function_call"]
-  --opaque call (s : Symbol)
+  --opaque call (function : @&Function) (args : Array )
 end Function
 
 end CTypes.FFI

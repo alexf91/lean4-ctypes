@@ -82,6 +82,8 @@ typedef struct {
  */
 typedef struct {
     lean_object *symbol;
+    ffi_cif *cif;
     ffi_type *return_type;
+    size_t nargs;         // Number of arguments
     ffi_type **arguments; // NULL terminated array.
 } Function;

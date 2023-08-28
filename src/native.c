@@ -20,6 +20,20 @@
 #include <ffi.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
+
+/***************************************************************************************
+ * Basic tools
+ **************************************************************************************/
+
+/** Check if NDEBUG is defined. */
+uint8_t debug_mode(lean_object *unused) {
+#ifdef NDEBUG
+    return 0;
+#else
+    return 1;
+#endif
+}
 
 /* Print function type. */
 typedef lean_object *(*lean_print_t)(lean_object *, lean_object *);
@@ -105,7 +119,7 @@ static inline lean_object *Library_box(Library *lib) {
 }
 
 /** Convert a Library object from Lean to C. */
-static inline Library const *Library_unbox(b_lean_obj_arg lib) {
+static inline Library *Library_unbox(b_lean_obj_arg lib) {
     return (Library *)(lean_get_external_data(lib));
 }
 
@@ -172,7 +186,7 @@ static inline lean_object *Symbol_box(Symbol *sym) {
 }
 
 /** Convert a Symbol object from Lean to C. */
-static inline Symbol const *Symbol_unbox(b_lean_obj_arg s) {
+static inline Symbol *Symbol_unbox(b_lean_obj_arg s) {
     return (Symbol *)(lean_get_external_data(s));
 }
 
@@ -219,84 +233,43 @@ lean_object *Symbol_mk(b_lean_obj_arg lib, b_lean_obj_arg sym, lean_object *unus
  **************************************************************************************/
 
 /**
+ * Primitive types defined in libffi. They are in the same order as the CType
+ * enum. They are statically allocated.
+ */
+static ffi_type *primitive_types[] = {
+    &ffi_type_void,          &ffi_type_uint8,          &ffi_type_sint8,
+    &ffi_type_uint16,        &ffi_type_sint16,         &ffi_type_uint32,
+    &ffi_type_sint32,        &ffi_type_uint64,         &ffi_type_sint64,
+    &ffi_type_float,         &ffi_type_double,         &ffi_type_uchar,
+    &ffi_type_schar,         &ffi_type_ushort,         &ffi_type_sshort,
+    &ffi_type_uint,          &ffi_type_sint,           &ffi_type_ulong,
+    &ffi_type_slong,         &ffi_type_longdouble,     &ffi_type_pointer,
+    &ffi_type_complex_float, &ffi_type_complex_double, &ffi_type_complex_longdouble,
+};
+
+/** Names of primitive types for debugging. */
+__attribute__((unused)) static const char *primitive_types_names[] = {
+    "ffi_type_void",          "ffi_type_uint8",          "ffi_type_sint8",
+    "ffi_type_uint16",        "ffi_type_sint16",         "ffi_type_uint32",
+    "ffi_type_sint32",        "ffi_type_uint64",         "ffi_type_sint64",
+    "ffi_type_float",         "ffi_type_double",         "ffi_type_uchar",
+    "ffi_type_schar",         "ffi_type_ushort",         "ffi_type_sshort",
+    "ffi_type_uint",          "ffi_type_sint",           "ffi_type_ulong",
+    "ffi_type_slong",         "ffi_type_longdouble",     "ffi_type_pointer",
+    "ffi_type_complex_float", "ffi_type_complex_double", "ffi_type_complex_longdouble",
+};
+
+/**
  * Unbox the CType enum to a ffi_type structure.
  *
  * @param tp Lean object contaning a CType type.
  */
 ffi_type *CType_unbox(b_lean_obj_arg tp) {
-    switch (lean_obj_tag(tp)) {
-    case 0:
-        native_log("unboxing ffi_type_void");
-        return &ffi_type_void;
-    case 1:
-        native_log("unboxing ffi_type_uint8");
-        return &ffi_type_uint8;
-    case 2:
-        native_log("unboxing ffi_type_sint8");
-        return &ffi_type_sint8;
-    case 3:
-        native_log("unboxing ffi_type_uint16");
-        return &ffi_type_uint16;
-    case 4:
-        native_log("unboxing ffi_type_sint16");
-        return &ffi_type_sint16;
-    case 5:
-        native_log("unboxing ffi_type_uint32");
-        return &ffi_type_uint32;
-    case 6:
-        native_log("unboxing ffi_type_sint32");
-        return &ffi_type_sint32;
-    case 7:
-        native_log("unboxing ffi_type_uint64");
-        return &ffi_type_uint64;
-    case 8:
-        native_log("unboxing ffi_type_sint64");
-        return &ffi_type_sint64;
-    case 9:
-        native_log("unboxing ffi_type_float");
-        return &ffi_type_float;
-    case 10:
-        native_log("unboxing ffi_type_double");
-        return &ffi_type_double;
-    case 11:
-        native_log("unboxing ffi_type_uchar");
-        return &ffi_type_uchar;
-    case 12:
-        native_log("unboxing ffi_type_schar");
-        return &ffi_type_schar;
-    case 13:
-        native_log("unboxing ffi_type_ushort");
-        return &ffi_type_ushort;
-    case 14:
-        native_log("unboxing ffi_type_sshort");
-        return &ffi_type_sshort;
-    case 15:
-        native_log("unboxing ffi_type_uint");
-        return &ffi_type_uint;
-    case 16:
-        native_log("unboxing ffi_type_sint");
-        return &ffi_type_sint;
-    case 17:
-        native_log("unboxing ffi_type_ulong");
-        return &ffi_type_ulong;
-    case 18:
-        native_log("unboxing ffi_type_slong");
-        return &ffi_type_slong;
-    case 19:
-        native_log("unboxing ffi_type_longdouble");
-        return &ffi_type_longdouble;
-    case 20:
-        native_log("unboxing ffi_type_pointer");
-        return &ffi_type_pointer;
-    case 21:
-        native_log("unboxing ffi_type_complex_float");
-        return &ffi_type_complex_float;
-    case 22:
-        native_log("unboxing ffi_type_complex_double");
-        return &ffi_type_complex_double;
-    case 23:
-        native_log("unboxing ffi_type_complex_longdouble");
-        return &ffi_type_complex_longdouble;
+    int index = lean_obj_tag(tp);
+    switch (index) {
+    case 0 ... 23:
+        native_log("unboxing %s", primitive_types_names[index]);
+        return primitive_types[index];
     case 24: // struct
         native_log("struct: not supported");
         return NULL;
@@ -311,11 +284,12 @@ ffi_type *CType_unbox(b_lean_obj_arg tp) {
 
 /** Just test CType unboxing. */
 lean_object *CType_test(b_lean_obj_arg tp, lean_object *unused) {
-    ffi_type *ffitype = CType_unbox(tp);
-    if (ffitype == NULL) {
+    ffi_type *ctype = CType_unbox(tp);
+    if (ctype == NULL) {
         lean_object *err = lean_mk_io_user_error(lean_mk_string("type not supported"));
         return lean_io_result_mk_error(err);
     }
+    // ffi_type_free(ctype);
     return lean_io_result_mk_ok(lean_box(0));
 }
 
@@ -331,6 +305,8 @@ static void Function_finalize(void *p) {
     Function *f = (Function *)p;
     native_log("finalizing function for '%s'", Symbol_unbox(f->symbol)->name);
     lean_dec(f->symbol);
+    free(f->arguments);
+    free(f->cif);
     free(f);
 }
 
@@ -349,7 +325,7 @@ static inline lean_object *Function_box(Function *f) {
 }
 
 /** Convert a Function object from Lean to C. */
-static inline Function const *Function_unbox(b_lean_obj_arg f) {
+static inline Function *Function_unbox(b_lean_obj_arg f) {
     return (Function *)(lean_get_external_data(f));
 }
 
@@ -368,6 +344,52 @@ static inline Function const *Function_unbox(b_lean_obj_arg f) {
 lean_object *Function_mk(b_lean_obj_arg symbol, b_lean_obj_arg rtype,
                          b_lean_obj_arg args, lean_object *unused) {
 
-    lean_object *err = lean_mk_io_user_error(lean_mk_string("NOT IMPLEMENTED"));
-    return lean_io_result_mk_error(err);
+    Symbol *s = Symbol_unbox(symbol);
+    native_log("creating function for '%s'", s->name);
+
+    // Unbox the return type.
+    ffi_type *return_type = CType_unbox(rtype);
+    if (return_type == NULL) {
+        lean_object *msg = lean_mk_string("return type not supported");
+        return lean_io_result_mk_error(lean_mk_io_user_error(msg));
+    }
+
+    // Unbox the arguments and copy them into a NULL terminated buffer.
+    size_t nargs = lean_array_size(args);
+    ffi_type **argtypes = malloc(sizeof(ffi_type *));
+    for (int i = 0; i < nargs; i++) {
+        argtypes[i] = CType_unbox(lean_array_get_core(args, i));
+        if (argtypes[i] == NULL) {
+            free(argtypes);
+            lean_object *msg = lean_mk_string("argument type not supported");
+            return lean_io_result_mk_error(lean_mk_io_user_error(msg));
+        } else if (argtypes[i] == &ffi_type_void) {
+            free(argtypes);
+            lean_object *msg = lean_mk_string("argument type 'void' not supported");
+            return lean_io_result_mk_error(lean_mk_io_user_error(msg));
+        }
+    }
+
+    // Create the call interface for the function.
+    ffi_cif *cif = calloc(1, sizeof(ffi_cif));
+
+    ffi_status stat = ffi_prep_cif(cif, FFI_DEFAULT_ABI, nargs, return_type, argtypes);
+    if (stat != FFI_OK) {
+        free(argtypes);
+        free(cif);
+        native_log("creating CIF failed with error code %d", stat);
+        lean_object *msg = lean_mk_string("creating CIF failed");
+        return lean_io_result_mk_error(lean_mk_io_user_error(msg));
+    }
+
+    // Combine everything into a function struct.
+    Function *f = malloc(sizeof(Function));
+    lean_inc(symbol);
+    f->symbol = symbol;
+    f->cif = cif;
+    f->return_type = return_type;
+    f->nargs = nargs;
+    f->arguments = argtypes;
+
+    return lean_io_result_mk_ok(Function_box(f));
 }
