@@ -57,7 +57,7 @@ instance : Nonempty Library := Library.Nonempty.property
 namespace Library
   /-- Thin wrapper around `dlopen()`. -/
   @[extern "Library_mk"]
-  opaque mk (path : String) (flags : Array Flag) : IO Library
+  opaque mk (path : @&String) (flags : @&Array Flag) : IO Library
 end Library
 
 
@@ -69,7 +69,7 @@ instance : Nonempty Symbol := Symbol.Nonempty.property
 namespace Symbol
   /-- Thin wrapper around `dlsym()`. -/
   @[extern "Symbol_mk"]
-  opaque mk (library : Library) (symbol : String) : IO Symbol
+  opaque mk (library : @&Library) (symbol : @&String) : IO Symbol
 end Symbol
 
 
@@ -104,7 +104,26 @@ inductive CType where
 
 namespace CType
   @[extern "CType_test"]
-  opaque test (tp : CType) : IO Unit
+  opaque test (tp : @&CType) : IO Unit
 end CType
+
+
+/--
+  A symbol with a return type and argument types.
+
+  NOTE: Implementing this in C instead of a structure avoids constant unboxing
+        of the argument and return types.
+-/
+opaque Function.Nonempty : NonemptyType
+def Function : Type := Function.Nonempty.type
+instance : Nonempty Function := Function.Nonempty.property
+
+namespace Function
+  @[extern "Function_mk"]
+  opaque mk (s : @&Symbol) (returnType : @&CType) (arguments : @&Array CType) : IO Function
+
+  --@[extern "Function_call"]
+  --opaque call (s : Symbol)
+end Function
 
 end CTypes.FFI

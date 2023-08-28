@@ -26,14 +26,14 @@ require LTest from git "git@github.com:alexf91/LTest.git" @ "main"
 
 /- Control logging output. -/
 meta if get_config? debug |>.isSome then
-  def debugFlags := #["-DDEBUG"]
+  def debugFlags := #["-DDEBUG", "-ggdb"]
 else
   def debugFlags := #["-DNDEBUG"]
 
 def createTarget (pkg : Package) (cfile : FilePath) := do
   let oFile := pkg.buildDir / cfile.withExtension "o"
   let srcJob ← inputFile <| pkg.dir / cfile
-  let flags := #["-I", (← getLeanIncludeDir).toString, "-fPIC"] ++ debugFlags
+  let flags := #["-I", (← getLeanIncludeDir).toString, "-fPIC", "-Wall"] ++ debugFlags
   buildO cfile.toString oFile srcJob flags "cc"
 
 target native.o pkg : FilePath := createTarget pkg $ "src" / "native.c"

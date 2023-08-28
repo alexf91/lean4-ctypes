@@ -72,9 +72,9 @@ int Flag_unbox(uint8_t flag) {
         return RTLD_LOCAL;
     case 6:
         return RTLD_NODELETE;
-    default:
-        assert(0);
     }
+    assert(0);
+    return -1;
 }
 
 /** Lean class */
@@ -83,10 +83,12 @@ lean_external_class *Library_class = NULL;
 /** Finalize a Library. */
 static void Library_finalize(void *p) {
     Library *lib = (Library *)p;
-    native_log("finalizing handle for %s at %p", lib->path, lib);
+    native_log("finalizing %s", lib->name);
     if (dlclose(lib->handle) != 0) {
         native_log("dlclose() failed: %s", dlerror());
     }
+    free(lib->name);
+    free(lib);
 }
 
 /** Foreach for a Library handle. */
@@ -107,7 +109,16 @@ static inline Library const *Library_unbox(b_lean_obj_arg lib) {
     return (Library *)(lean_get_external_data(lib));
 }
 
-/** Create a new Library instance. */
+/**
+ * Create a new Library instance.
+ *
+ * All arguments passed to this function are borrowed.
+ *
+ * @param path Path of the library as a string.
+ * @param flags Array with the flags to open the library.
+ *
+ * @return Library object or an exception.
+ */
 lean_object *Library_mk(b_lean_obj_arg path, b_lean_obj_arg flags,
                         lean_object *unused) {
     const char *p = lean_string_cstr(path);
@@ -118,7 +129,7 @@ lean_object *Library_mk(b_lean_obj_arg path, b_lean_obj_arg flags,
         assert(lean_is_scalar(o));
         openflags |= lean_unbox(o);
     }
-    native_log("opening handle for %s with flags 0x%08x", p, openflags);
+    native_log("opening %s with flags 0x%08x", p, openflags);
 
     void *handle = dlopen(p, openflags);
     if (handle == NULL) {
@@ -126,7 +137,7 @@ lean_object *Library_mk(b_lean_obj_arg path, b_lean_obj_arg flags,
         return lean_io_result_mk_error(err);
     }
     Library *lib = malloc(sizeof(Library));
-    lib->path = p;
+    lib->name = strdup(p);
     lib->handle = handle;
     return lean_io_result_mk_ok(Library_box(lib));
 }
@@ -140,7 +151,11 @@ lean_external_class *Symbol_class = NULL;
 
 /** Finalize a Symbol. */
 static void Symbol_finalize(void *p) {
-    native_log("finalizing %p", p);
+    Symbol *s = (Symbol *)p;
+    native_log("finalizing '%s' in %s", s->name, Library_unbox(s->library)->name);
+    lean_dec(s->library);
+    free(s->name);
+    free(s);
 }
 
 /** Foreach for a Symbol handle. */
@@ -161,12 +176,22 @@ static inline Symbol const *Symbol_unbox(b_lean_obj_arg s) {
     return (Symbol *)(lean_get_external_data(s));
 }
 
-/** Create a new Symbol instance. */
+/**
+ * Create a new Symbol instance.
+ *
+ * On success, the library is owned and remains in memory at least until the
+ * symbol is finalized. All other arguments are borrowed.
+ *
+ * @param lib Library object in which the symbol is opened.
+ * @param sym Name of the symbol as a Lean string.
+ *
+ * @return Symbol object or an exception.
+ */
 lean_object *Symbol_mk(b_lean_obj_arg lib, b_lean_obj_arg sym, lean_object *unused) {
     const char *name = lean_string_cstr(sym);
     const Library *l = Library_unbox(lib);
 
-    native_log("opening %s in %s", name, l->path);
+    native_log("opening '%s' in %s", name, l->name);
 
     // Clear dlerror() to distinguish between errors and NULL.
     dlerror();
@@ -180,16 +205,24 @@ lean_object *Symbol_mk(b_lean_obj_arg lib, b_lean_obj_arg sym, lean_object *unus
         }
     }
 
+    // Make the library an owned object:
+    lean_inc(lib);
     Symbol *s = malloc(sizeof(Symbol));
     s->handle = shandle;
+    s->library = lib;
+    s->name = strdup(name);
     return lean_io_result_mk_ok(Symbol_box(s));
 }
 
 /***************************************************************************************
- * FFI interface
+ * CType enum
  **************************************************************************************/
 
-/** Unbox the CType enum to a ffi_type structure. */
+/**
+ * Unbox the CType enum to a ffi_type structure.
+ *
+ * @param tp Lean object contaning a CType type.
+ */
 ffi_type *CType_unbox(b_lean_obj_arg tp) {
     switch (lean_obj_tag(tp)) {
     case 0:
@@ -270,10 +303,10 @@ ffi_type *CType_unbox(b_lean_obj_arg tp) {
     case 25: // array
         native_log("array: not supported");
         return NULL;
-    default:
-        native_log("unexpected type");
-        assert(0);
     }
+    native_log("unexpected type");
+    assert(0);
+    return NULL;
 }
 
 /** Just test CType unboxing. */
@@ -284,4 +317,57 @@ lean_object *CType_test(b_lean_obj_arg tp, lean_object *unused) {
         return lean_io_result_mk_error(err);
     }
     return lean_io_result_mk_ok(lean_box(0));
+}
+
+/***************************************************************************************
+ * Function functions
+ **************************************************************************************/
+
+/** Lean class */
+lean_external_class *Function_class = NULL;
+
+/** Finalize a Function. */
+static void Function_finalize(void *p) {
+    Function *f = (Function *)p;
+    native_log("finalizing function for '%s'", Symbol_unbox(f->symbol)->name);
+    lean_dec(f->symbol);
+    free(f);
+}
+
+/** Foreach for a Function handle. */
+static void Function_foreach(void *mod, b_lean_obj_arg fn) {
+    native_log("NOT IMPLEMENTED");
+}
+
+/** Convert a Function object from C to Lean. */
+static inline lean_object *Function_box(Function *f) {
+    if (Function_class == NULL) {
+        Function_class =
+            lean_register_external_class(Function_finalize, Function_foreach);
+    }
+    return lean_alloc_external(Function_class, f);
+}
+
+/** Convert a Function object from Lean to C. */
+static inline Function const *Function_unbox(b_lean_obj_arg f) {
+    return (Function *)(lean_get_external_data(f));
+}
+
+/**
+ * Create a new Function instance.
+ *
+ * On success, the symbol is owned and remains in memory at least until the function is
+ * finalized. All other arguments are borrowed.
+ *
+ * @param symbol Lean object for the symbol used to create the function.
+ * @param rtype Return type of the function as a CType.
+ * @param args Array CTypes to specify the arguments.
+ *
+ * @return Function object or an exception.
+ */
+lean_object *Function_mk(b_lean_obj_arg symbol, b_lean_obj_arg rtype,
+                         b_lean_obj_arg args, lean_object *unused) {
+
+    lean_object *err = lean_mk_io_user_error(lean_mk_string("NOT IMPLEMENTED"));
+    return lean_io_result_mk_error(err);
 }

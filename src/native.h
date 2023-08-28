@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <ffi.h>
 #include <lean/lean.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -63,7 +64,7 @@ void lean_eprintf(const char *fmt, ...);
  * Library handle returned by dlopen().
  */
 typedef struct {
-    const char *path;
+    char *name; // Only for debugging
     void *handle;
 } Library;
 
@@ -71,5 +72,16 @@ typedef struct {
  * Symbol handle returned by dlsym().
  */
 typedef struct {
+    char *name; // Only for debugging
     void *handle;
+    lean_object *library;
 } Symbol;
+
+/**
+ * Function handle created by Function_mk().
+ */
+typedef struct {
+    lean_object *symbol;
+    ffi_type *return_type;
+    ffi_type **arguments; // NULL terminated array.
+} Function;

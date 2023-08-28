@@ -57,6 +57,41 @@ namespace Symbol
       let msg := "/usr/lib/libm.so.6: undefined symbol: doesnotexist"
       assertTrue (e.toString == msg) "invalid error message"
 
+  /-
+    These tests require compilation with debug output to check if everything
+    is finalized as expected.
+
+    TODO: Disable when not compiled with debug output.
+  -/
+  namespace DebugOutput
+    testcase mkSuccess := do
+      let (r, streams) ← captureResult do
+        let h ← Library.mk "/usr/lib/libm.so.6" #[.RTLD_NOW]
+        discard <| Symbol.mk h "sin"
+      assertTrue r.isOk
+
+      let split := fun (s : String) => s.splitOn ":" |>.get! 1 |>.splitOn " " |>.get! 0
+      let calls := String.fromUTF8Unchecked streams.stderr |>.splitOn "\n" |>.dropLast |>.map split
+      if !calls.isEmpty then
+        let expected := ["Library_mk", "Symbol_mk", "Symbol_finalize", "Library_finalize"]
+        assertEqual calls expected $ toString calls
+        IO.println calls
+
+    testcase mkFailure := do
+      let (r, streams) ← captureResult do
+        let h ← Library.mk "/usr/lib/libm.so.6" #[.RTLD_NOW]
+        discard <| Symbol.mk h "doesnotexist"
+      assertTrue !r.isOk
+
+      let split := fun (s : String) => s.splitOn ":" |>.get! 1 |>.splitOn " " |>.get! 0
+      let calls := String.fromUTF8Unchecked streams.stderr |>.splitOn "\n" |>.dropLast |>.map split
+      if !calls.isEmpty then
+        let expected := ["Library_mk", "Symbol_mk", "Library_finalize"]
+        assertEqual calls expected $ toString calls
+        IO.println calls
+
+  end DebugOutput
+
 end Symbol
 
 namespace CType
