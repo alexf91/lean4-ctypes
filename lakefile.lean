@@ -36,11 +36,19 @@ def createTarget (pkg : Package) (cfile : FilePath) := do
   let flags := #["-I", (← getLeanIncludeDir).toString, "-fPIC", "-Wall"] ++ debugFlags
   buildO cfile.toString oFile srcJob flags "cc"
 
-target native.o pkg : FilePath := createTarget pkg $ "src" / "native.c"
+target utils.o pkg : FilePath := createTarget pkg $ "src" / "utils.c"
+target library.o pkg : FilePath := createTarget pkg $ "src" / "library.c"
+target symbol.o pkg : FilePath := createTarget pkg $ "src" / "symbol.c"
+target function.o pkg : FilePath := createTarget pkg $ "src" / "function.c"
 
 extern_lib libctypes pkg := do
   let name := nameToStaticLib "ctypes"
-  let targets := #[← fetch <| pkg.target ``native.o]
+  let targets := #[
+    (← fetch <| pkg.target ``utils.o),
+    (← fetch <| pkg.target ``library.o),
+    (← fetch <| pkg.target ``symbol.o),
+    (← fetch <| pkg.target ``function.o)
+  ]
   buildStaticLib (pkg.nativeLibDir / name) targets
 
 @[default_target]
