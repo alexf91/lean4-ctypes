@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "utils.h"
 #include <ffi.h>
 #include <lean/lean.h>
 

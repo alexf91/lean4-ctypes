@@ -80,7 +80,7 @@ static inline lean_object *Library_box(Library *lib) {
  *
  * @return Library object or an exception.
  */
-lean_object *Library_mk(b_lean_obj_arg path, b_lean_obj_arg flags,
+lean_obj_res Library_mk(b_lean_obj_arg path, b_lean_obj_arg flags,
                         lean_object *unused) {
     const char *p = lean_string_cstr(path);
 

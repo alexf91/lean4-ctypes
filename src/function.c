@@ -47,6 +47,61 @@ __attribute__((unused)) static const char *primitive_types_names[] = {
     "ffi_type_complex_float", "ffi_type_complex_double", "ffi_type_complex_longdouble",
 };
 
+static bool is_primitive(ffi_type *tp) {
+    for (size_t i = 0; i < sizeof(primitive_types) / sizeof(primitive_types[0]); i++)
+        if (tp == primitive_types[i])
+            return true;
+    return false;
+}
+
+static void ffi_type_free(ffi_type *tp) {
+    if (is_primitive(tp))
+        return;
+
+    // For arrays and struct types.
+    // TODO: Let's hope there is nothing static in there that we don't have in the
+    //       primitive_types array.
+    for (size_t i = 0; tp->elements && tp->elements[i]; i++)
+        ffi_type_free(tp->elements[i]);
+    free(tp->elements);
+    free(tp);
+}
+
+/** Forward declaration. */
+ffi_type *CType_unbox(b_lean_obj_arg tp);
+
+/** Unbox an array type. */
+ffi_type *CType_unbox_array(b_lean_obj_arg tp) {
+    size_t length = lean_unbox(lean_ctor_get(tp, 1));
+    lean_object *atype_obj = lean_ctor_get(tp, 0);
+
+    utils_log("unboxing array of type %s and length %d",
+              primitive_types_names[lean_unbox(atype_obj)], length);
+
+    // Describe an array by setting the elements field length times.
+    // TODO: We currently unpack it every time to make freeing easier.
+    ffi_type *result = calloc(1, sizeof(ffi_type));
+    result->elements = calloc(length + 1, sizeof(ffi_type *));
+    for (size_t i = 0; i < length; i++)
+        result->elements[i] = CType_unbox(atype_obj);
+
+    return result;
+}
+
+/** Unbox a struct type. */
+ffi_type *CType_unbox_struct(b_lean_obj_arg tp) {
+    lean_object *elements = lean_ctor_get(tp, 0);
+    size_t length = lean_array_size(elements);
+    utils_log("unboxing struct with %d elements", length);
+
+    ffi_type *result = calloc(1, sizeof(ffi_type));
+    result->elements = calloc(length + 1, sizeof(ffi_type *));
+    for (size_t i = 0; i < length; i++)
+        result->elements[i] = CType_unbox(lean_array_get_core(elements, i));
+
+    return result;
+}
+
 /**
  * Unbox the CType enum to a ffi_type structure.
  *
@@ -55,30 +110,18 @@ __attribute__((unused)) static const char *primitive_types_names[] = {
 ffi_type *CType_unbox(b_lean_obj_arg tp) {
     int index = lean_obj_tag(tp);
     switch (index) {
-    case 0 ... 23:
+    case 0 ... 23: // primitive types
         utils_log("unboxing %s", primitive_types_names[index]);
         return primitive_types[index];
     case 24: // struct
         utils_log("struct: not supported");
-        return NULL;
+        return CType_unbox_struct(tp);
     case 25: // array
-        utils_log("array: not supported");
-        return NULL;
+        return CType_unbox_array(tp);
     }
     utils_log("unexpected type");
     assert(0);
     return NULL;
-}
-
-/** Just test CType unboxing. */
-lean_object *CType_test(b_lean_obj_arg tp, lean_object *unused) {
-    ffi_type *ctype = CType_unbox(tp);
-    if (ctype == NULL) {
-        lean_object *err = lean_mk_io_user_error(lean_mk_string("type not supported"));
-        return lean_io_result_mk_error(err);
-    }
-    // ffi_type_free(ctype);
-    return lean_io_result_mk_ok(lean_box(0));
 }
 
 /***************************************************************************************
@@ -93,6 +136,10 @@ static void Function_finalize(void *p) {
     Function *f = (Function *)p;
     utils_log("finalizing function for '%s'", Symbol_unbox(f->symbol)->name);
     lean_dec(f->symbol);
+
+    for (size_t i = 0; i < f->nargs; i++)
+        ffi_type_free(f->arguments[i]);
+
     free(f->arguments);
     free(f->cif);
     free(f);
@@ -129,7 +176,7 @@ static inline Function *Function_unbox(b_lean_obj_arg f) {
  *
  * @return Function object or an exception.
  */
-lean_object *Function_mk(b_lean_obj_arg symbol, b_lean_obj_arg rtype,
+lean_obj_res Function_mk(b_lean_obj_arg symbol, b_lean_obj_arg rtype,
                          b_lean_obj_arg args, lean_object *unused) {
 
     Symbol *s = Symbol_unbox(symbol);
@@ -142,18 +189,14 @@ lean_object *Function_mk(b_lean_obj_arg symbol, b_lean_obj_arg rtype,
         return lean_io_result_mk_error(lean_mk_io_user_error(msg));
     }
 
-    // Unbox the arguments and copy them into a NULL terminated buffer.
+    // Unbox the arguments and copy them into buffer.
     size_t nargs = lean_array_size(args);
-    ffi_type **argtypes = malloc(sizeof(ffi_type *));
+    ffi_type **argtypes = malloc(nargs * sizeof(ffi_type *));
     for (int i = 0; i < nargs; i++) {
         argtypes[i] = CType_unbox(lean_array_get_core(args, i));
         if (argtypes[i] == NULL) {
             free(argtypes);
             lean_object *msg = lean_mk_string("argument type not supported");
-            return lean_io_result_mk_error(lean_mk_io_user_error(msg));
-        } else if (argtypes[i] == &ffi_type_void) {
-            free(argtypes);
-            lean_object *msg = lean_mk_string("argument type 'void' not supported");
             return lean_io_result_mk_error(lean_mk_io_user_error(msg));
         }
     }
@@ -180,4 +223,20 @@ lean_object *Function_mk(b_lean_obj_arg symbol, b_lean_obj_arg rtype,
     f->arguments = argtypes;
 
     return lean_io_result_mk_ok(Function_box(f));
+}
+
+/**
+ * Call a function.
+ *
+ * @param function Function object that should be called.
+ * @param argvals Array of argument values.
+ *
+ * @return Result of the call wrapped in a LeanType object.
+ */
+lean_obj_res Function_call(b_lean_obj_arg function, b_lean_obj_arg argvals,
+                           lean_object *unused) {
+
+    Function *f = Function_unbox(function);
+    lean_object *msg = lean_mk_string("NOT IMPLEMENTED");
+    return lean_io_result_mk_error(lean_mk_io_user_error(msg));
 }

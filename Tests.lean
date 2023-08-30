@@ -30,9 +30,13 @@ def callTrace (streams : Streams) : List String :=
 fixture LibMath Unit Library where
   setup := Library.mk "/usr/lib/libm.so.6" #[.RTLD_NOW]
 
-/-- Fixture for the symbol `sin()` -/
+/-- Fixture for the symbol `sin()`. -/
 fixture SymSin Unit Symbol requires (m : LibMath) where
   setup := Symbol.mk m "sin"
+
+/-- Fixture for the function `sin()`. -/
+fixture FuncSin Unit Function requires (s : SymSin) where
+  setup := Function.mk s .double #[.double]
 
 
 namespace Library
@@ -48,7 +52,7 @@ namespace Library
       assertTrue false "Library.mk did not fail"
     catch e =>
       let msg := "/does/not/exist.so: cannot open shared object file: No such file or directory"
-      assertTrue (e.toString == msg) "invalid error message"
+      assertTrue (e.toString == msg) s!"invalid error message: {e}"
 
 end Library
 
@@ -65,7 +69,7 @@ namespace Symbol
       assertTrue false "Symbol.mk did not fail"
     catch e =>
       let msg := "/usr/lib/libm.so.6: undefined symbol: doesnotexist"
-      assertTrue (e.toString == msg) "invalid error message"
+      assertTrue (e.toString == msg) s!"invalid error message: {e}"
 
   /-
     These tests require compilation with debug output to check if everything
@@ -104,17 +108,17 @@ namespace Symbol
 
 end Symbol
 
-namespace CType
-  testcase testPrimitive := CType.test .uint32
-  testcase testArray     := CType.test (.array .uint32 32)
-  testcase testStruct    := CType.test (.struct #[.uint8, .uint16, .uint32, .uint64])
-end CType
 
 namespace Function
 
   /-- Create a new function. -/
   testcase mkPrimitive requires (s : SymSin) := do
     discard <| Function.mk s .double #[.double]
+
+  /-- Call a function. -/
+  testcase callSuccess requires (sin : FuncSin) := do
+    let result ← sin.call #[.float 0.0]
+    assertEqual result $ .float 0.0
 
   /-
     These tests require compilation with debug output to check if everything

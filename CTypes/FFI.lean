@@ -106,12 +106,6 @@ inductive CType where
   | struct (elements : Array CType)
   | array (type : CType) (length : Nat)
 
-namespace CType
-  @[extern "CType_test"]
-  opaque test (tp : @&CType) : IO Unit
-end CType
-
-
 /--
   A symbol with a return type and argument types.
 
@@ -122,13 +116,23 @@ opaque Function.Nonempty : NonemptyType
 def Function : Type := Function.Nonempty.type
 instance : Nonempty Function := Function.Nonempty.property
 
+/-- Type for function arguments. -/
+inductive LeanType where
+  | unit
+  | int    (a : Int)
+  | float  (a : Float)
+  | struct (a : Array (String × LeanType))
+  | array  (a : Array LeanType)
+deriving Repr, BEq
+
+
 namespace Function
   /-- Create a new function instance from a symbol. -/
   @[extern "Function_mk"]
   opaque mk (s : @&Symbol) (returnType : @&CType) (argTypes : @&Array CType) : IO Function
 
-  --@[extern "Function_call"]
-  --opaque call (function : @&Function) (args : Array )
+  @[extern "Function_call"]
+  opaque call (function : @&Function) (args : Array LeanType) : IO LeanType
 end Function
 
 end CTypes.FFI

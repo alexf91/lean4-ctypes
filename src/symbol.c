@@ -56,7 +56,7 @@ static inline lean_object *Symbol_box(Symbol *sym) {
  *
  * @return Symbol object or an exception.
  */
-lean_object *Symbol_mk(b_lean_obj_arg lib, b_lean_obj_arg sym, lean_object *unused) {
+lean_obj_res Symbol_mk(b_lean_obj_arg lib, b_lean_obj_arg sym, lean_object *unused) {
     const char *name = lean_string_cstr(sym);
     const Library *l = Library_unbox(lib);
 
