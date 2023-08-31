@@ -105,6 +105,7 @@ inductive CType where
   | complex_longdouble
   | struct (elements : Array CType)
   | array (type : CType) (length : Nat)
+deriving Repr, BEq
 
 /--
   A symbol with a return type and argument types.
@@ -121,14 +122,19 @@ inductive LeanType where
   | unit
   | int    (a : Int)
   | float  (a : Float)
-deriving Repr, BEq
+deriving Repr, BEq, Inhabited
 
 namespace LeanType
-  /- Boxing here avoids dealing with constructors in C. -/
-  @[export LeanType_box_int]
-  private def boxInt := LeanType.int
-  @[export LeanType_box_float]
-  private def boxFloat := LeanType.float
+  /--
+    Convert the buffer with the result of a function call to a `LeanType`.
+    Doing most of it here instead of C makes the implementation easier.
+    This works only for types without pointers.
+  -/
+  @[export LeanType_box]
+  private def box (ct : CType) (result : UInt64) : LeanType := match ct with
+  | .void => .unit
+  | _     => panic s!"support for {repr ct} not implemented"
+
 end LeanType
 
 

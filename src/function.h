@@ -37,6 +37,7 @@ typedef struct {
 } Function;
 
 /** Boxing of LeanType objects. */
-#define LeanType_box_unit() lean_box(0)
-LEAN_EXPORT_WEAK lean_obj_res LeanType_box_int(b_lean_obj_arg o);
-LEAN_EXPORT_WEAK lean_obj_res LeanType_box_float(b_lean_obj_arg o);
+LEAN_EXPORT_WEAK lean_obj_res LeanType_box(b_lean_obj_arg o, uint64_t addr);
+// #define LeanType_box_unit() lean_box(0)
+// LEAN_EXPORT_WEAK lean_obj_res LeanType_box_int(b_lean_obj_arg o);
+// LEAN_EXPORT_WEAK lean_obj_res LeanType_box_float(b_lean_obj_arg o);

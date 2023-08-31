@@ -222,53 +222,6 @@ void *LeanType_unbox(ffi_type *ffi_tp, lean_object *lean_tp) {
     return NULL;
 }
 
-/**
- * Box a CType and a value buffer into a LeanType.
- */
-lean_obj_res LeanType_box(b_lean_obj_arg ctype, void *value) {
-    switch (lean_obj_tag(ctype)) {
-    case CTYPE_VOID:
-        return LeanType_box_unit();
-    case CTYPE_UINT8:
-    case CTYPE_UCHAR:
-        return LeanType_box_int(lean_box(*((uint8_t *)value)));
-    case CTYPE_SINT8:
-    case CTYPE_SCHAR:
-        return LeanType_box_int(lean_box(*((int8_t *)value)));
-    case CTYPE_UINT16:
-    case CTYPE_USHORT:
-        return LeanType_box_int(lean_box(*((uint16_t *)value)));
-    case CTYPE_SINT16:
-    case CTYPE_SSHORT:
-        return LeanType_box_int(lean_box(*((int16_t *)value)));
-    case CTYPE_UINT32:
-    case CTYPE_UINT:
-        return LeanType_box_int(lean_box(*((uint32_t *)value)));
-    case CTYPE_SINT32:
-    case CTYPE_SINT:
-        return LeanType_box_int(lean_box(*((int32_t *)value)));
-    case CTYPE_UINT64:
-    case CTYPE_ULONG:
-        return LeanType_box_int(lean_box(*((uint64_t *)value)));
-    case CTYPE_SINT64:
-    case CTYPE_SLONG:
-        return LeanType_box_int(lean_box(*((int64_t *)value)));
-    case CTYPE_FLOAT:
-        return LeanType_box_float(lean_box_float(*((float *)value)));
-    case CTYPE_DOUBLE:
-        return LeanType_box_float(lean_box_float(*((double *)value)));
-    case CTYPE_LONGDOUBLE:
-        assert(0);
-    case CTYPE_POINTER:
-    case CTYPE_COMPLEX_FLOAT:
-    case CTYPE_COMPLEX_DOUBLE:
-    case CTYPE_COMPLEX_LONGDOUBLE:
-    case CTYPE_STRUCT:
-    case CTYPE_ARRAY:
-        assert(0);
-    }
-}
-
 /***************************************************************************************
  * Function functions
  **************************************************************************************/
@@ -401,7 +354,7 @@ lean_obj_res Function_call(b_lean_obj_arg function, b_lean_obj_arg argvals_obj,
     void *rvalue = malloc(min(FFI_SIZEOF_ARG, f->rtype->size));
     ffi_call(f->cif, Symbol_unbox(f->symbol)->handle, rvalue, avalues);
 
-    lean_object *result = LeanType_box(f->rtype_obj, rvalue);
+    lean_object *result = LeanType_box(f->rtype_obj, (uint64_t)rvalue);
     free(rvalue);
 
     for (size_t i = 0; i < nargs; i++)

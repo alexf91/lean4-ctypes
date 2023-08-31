@@ -118,7 +118,7 @@ namespace Function
   /-- Call a function. -/
   testcase callSuccess requires (sin : FuncSin) := do
     let result ← sin.call #[.float (3.14159265359 / 2)]
-    assertEqual result (.float 1.0) s!"{repr result}"
+    assertEqual result (.float 1.0) s!"wrong result: {repr result}"
 
   /-
     These tests require compilation with debug output to check if everything
