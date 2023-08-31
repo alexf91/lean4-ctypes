@@ -25,8 +25,18 @@
  */
 typedef struct {
     lean_object *symbol;
+    // The original objects passed as arguments to Function_mk().
+    lean_object *rtype_obj;
+    lean_object *argtypes_obj;
+    // The prepared call interface.
     ffi_cif *cif;
-    ffi_type *return_type;
-    size_t nargs;         // Number of arguments
-    ffi_type **arguments; // NULL terminated array.
+    // The CIF requires the unboxed types to stay in memory.
+    ffi_type *rtype;
+    size_t nargs;
+    ffi_type **argtypes;
 } Function;
+
+/** Boxing of LeanType objects. */
+#define LeanType_box_unit() lean_box(0)
+LEAN_EXPORT_WEAK lean_obj_res LeanType_box_int(b_lean_obj_arg o);
+LEAN_EXPORT_WEAK lean_obj_res LeanType_box_float(b_lean_obj_arg o);

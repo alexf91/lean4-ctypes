@@ -77,7 +77,7 @@ namespace Symbol
 end Symbol
 
 
-/-- `ffi_type` enum in `libffi`. -/
+/-- Enum for argument specification. -/
 inductive CType where
   | void
   | uint8
@@ -116,14 +116,20 @@ opaque Function.Nonempty : NonemptyType
 def Function : Type := Function.Nonempty.type
 instance : Nonempty Function := Function.Nonempty.property
 
-/-- Type for function arguments. -/
+/-- Type for passing values to and from C functions. -/
 inductive LeanType where
   | unit
   | int    (a : Int)
   | float  (a : Float)
-  | struct (a : Array (String × LeanType))
-  | array  (a : Array LeanType)
 deriving Repr, BEq
+
+namespace LeanType
+  /- Boxing here avoids dealing with constructors in C. -/
+  @[export LeanType_box_int]
+  private def boxInt := LeanType.int
+  @[export LeanType_box_float]
+  private def boxFloat := LeanType.float
+end LeanType
 
 
 namespace Function
@@ -131,8 +137,9 @@ namespace Function
   @[extern "Function_mk"]
   opaque mk (s : @&Symbol) (returnType : @&CType) (argTypes : @&Array CType) : IO Function
 
+  /-- Call a function with the given arguments. -/
   @[extern "Function_call"]
-  opaque call (function : @&Function) (args : Array LeanType) : IO LeanType
+  opaque call (function : @&Function) (args : @&Array LeanType) : IO LeanType
 end Function
 
 end CTypes.FFI

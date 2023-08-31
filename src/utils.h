@@ -29,10 +29,10 @@
  * It is not clear what the second argument is used for, but it probably has
  * something to do with the IO monad.
  */
-LEAN_EXPORT_WEAK lean_object *lean_print(lean_object *str, lean_object *unknown);
-LEAN_EXPORT_WEAK lean_object *lean_println(lean_object *str, lean_object *unknown);
-LEAN_EXPORT_WEAK lean_object *lean_eprintln(lean_object *str, lean_object *unknown);
-LEAN_EXPORT_WEAK lean_object *lean_eprint(lean_object *str, lean_object *unknown);
+LEAN_EXPORT_WEAK lean_obj_res lean_print(lean_object *str, lean_object *unknown);
+LEAN_EXPORT_WEAK lean_obj_res lean_println(lean_object *str, lean_object *unknown);
+LEAN_EXPORT_WEAK lean_obj_res lean_eprintln(lean_object *str, lean_object *unknown);
+LEAN_EXPORT_WEAK lean_obj_res lean_eprint(lean_object *str, lean_object *unknown);
 
 /**
  * Regular printf(), but redirected through Lean's stdout.
@@ -55,5 +55,23 @@ void lean_eprintf(const char *fmt, ...);
         lean_eprintf("\n");                                                            \
     } while (0)
 #else
-#define utils_log(...)
+/* clang-format off */
+static inline void utils_log(...) { }
+/* clang-format on */
 #endif /* NDEBUG */
+
+/** Minimum of two values. */
+#define min(a, b)                                                                      \
+    ({                                                                                 \
+        __typeof__(a) _a = (a);                                                        \
+        __typeof__(b) _b = (b);                                                        \
+        _a < _b ? _a : _b;                                                             \
+    })
+
+/** Maximum of two values. */
+#define max(a, b)                                                                      \
+    ({                                                                                 \
+        __typeof__(a) _a = (a);                                                        \
+        __typeof__(b) _b = (b);                                                        \
+        _a > _b ? _a : _b;                                                             \
+    })
