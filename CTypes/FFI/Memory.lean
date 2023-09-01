@@ -1,0 +1,74 @@
+--
+-- Copyright 2023 Alexander Fasching
+--
+-- Licensed under the Apache License, Version 2.0 (the "License");
+-- you may not use this file except in compliance with the License.
+-- You may obtain a copy of the License at
+--
+-- http://www.apache.org/licenses/LICENSE-2.0
+--
+-- Unless required by applicable law or agreed to in writing, software
+-- distributed under the License is distributed on an "AS IS" BASIS,
+-- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-- See the License for the specific language governing permissions and
+-- limitations under the License.
+--
+
+set_option relaxedAutoImplicit false
+
+namespace CTypes.FFI
+
+/-- Access to raw memory in C. -/
+opaque Memory.Nonempty : NonemptyType
+def Memory : Type := Memory.Nonempty.type
+instance : Nonempty Memory := Memory.Nonempty.property
+
+/-- Basic types in C. -/
+inductive BasicType where
+  | int8
+  | uint8
+  | int16
+  | uint16
+  | int32
+  | uint32
+  | int64
+  | uint64
+  | float
+  | double
+  | long_double
+
+namespace BasicType
+  /-- Get the size of a basic type. -/
+  @[extern "BasicType_sizeof"]
+  opaque sizeof (type : @&BasicType) : Nat
+end BasicType
+
+
+namespace Memory
+  /-- Create a Memory from a byte array. -/
+  @[extern "Memory_fromByteArray"]
+  opaque fromByteArray (buffer : @&ByteArray) : IO Memory
+
+  /-- Convert a Memory back to a byte array. -/
+  @[extern "Memory_toByteArray"]
+  opaque toByteArray (m : @&Memory) : IO ByteArray
+
+  /-- Allocate a new memory and initialize it to 0. -/
+  @[extern "Memory_allocate"]
+  opaque allocate (size : @&USize) : IO Memory
+
+  /-- Get the size of the memory view. -/
+  @[extern "Memory_size"]
+  opaque size (m : @&Memory) : Nat
+
+  /-- Check if the memory is allocated. -/
+  @[extern "Memory_allocated"]
+  opaque allocated (m : @&Memory) : Bool
+
+  /-- Extract a slice from the memory view and return a new slice. -/
+  @[extern "Memory_extract"]
+  opaque extract (m : Memory) (b e : @&Nat) : IO Memory
+
+end Memory
+
+end CTypes.FFI

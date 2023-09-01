@@ -148,6 +148,28 @@ namespace Function
 
 end Function
 
+namespace Memory
+  testcase testConversion := do
+    let a := ByteArray.mk #[0, 1, 2, 3, 4, 5, 6, 7]
+    let m ← Memory.fromByteArray a
+    let b ← m.toByteArray
+    assertEqual a.data b.data s!"{b.data}"
+
+  testcase testAllocate := do
+    let m ← Memory.allocate 32
+    let a ← m.toByteArray
+    assertEqual a.data (#[(0 : UInt8)] * 32)
+
+  testcase testExtract := do
+    let a := ByteArray.mk #[0, 1, 2, 3, 4, 5, 6, 7]
+    let m ← Memory.fromByteArray a
+    let na := a.extract 1 7
+    let nm ← m.extract 1 7
+    assertFalse nm.allocated
+    assertEqual (← nm.toByteArray).data na.data
+
+end Memory
+
 end Tests.FFI
 
 #LTestMain

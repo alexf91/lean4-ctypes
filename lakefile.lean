@@ -44,6 +44,7 @@ target utils.o pkg : FilePath := createTarget pkg $ "src" / "utils.c"
 target library.o pkg : FilePath := createTarget pkg $ "src" / "library.c"
 target symbol.o pkg : FilePath := createTarget pkg $ "src" / "symbol.c"
 target function.o pkg : FilePath := createTarget pkg $ "src" / "function.c"
+target memory.o pkg : FilePath := createTarget pkg $ "src" / "memory.c"
 
 extern_lib libctypes pkg := do
   let name := nameToStaticLib "ctypes"
@@ -51,7 +52,8 @@ extern_lib libctypes pkg := do
     (← fetch <| pkg.target ``utils.o),
     (← fetch <| pkg.target ``library.o),
     (← fetch <| pkg.target ``symbol.o),
-    (← fetch <| pkg.target ``function.o)
+    (← fetch <| pkg.target ``function.o),
+    (← fetch <| pkg.target ``memory.o)
   ]
   buildStaticLib (pkg.nativeLibDir / name) targets
 

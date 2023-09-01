@@ -15,3 +15,4 @@
 --
 
 import CTypes.FFI.Basic
+import CTypes.FFI.Memory
