@@ -19,7 +19,9 @@ open Lake DSL
 
 package ctypes {
   precompileModules := true
-  moreLinkArgs := #["-lffi"]
+  -- Add `/usr/lib` here manually to link against the system `libstdc++.so`.
+  -- This avoids errors with `libunwind.so`.
+  moreLinkArgs := #["-lffi", "-L/usr/lib", "-lstdc++"]
 }
 
 require LTest from git "git@github.com:alexf91/LTest.git" @ "main"
@@ -36,15 +38,17 @@ def createTarget (pkg : Package) (cfile : FilePath) := do
   let flags := #[
     "-I", (← getLeanIncludeDir).toString,
     "-fPIC",
-    "-Wall"
+    "-Wall",
+    "-std=c++20"
   ] ++ debugFlags
-  buildO cfile.toString oFile srcJob flags "cc"
+  buildO cfile.toString oFile srcJob flags "c++"
 
-target utils.o pkg : FilePath := createTarget pkg $ "src" / "utils.c"
-target library.o pkg : FilePath := createTarget pkg $ "src" / "library.c"
-target symbol.o pkg : FilePath := createTarget pkg $ "src" / "symbol.c"
-target function.o pkg : FilePath := createTarget pkg $ "src" / "function.c"
-target memory.o pkg : FilePath := createTarget pkg $ "src" / "memory.c"
+target utils.o pkg : FilePath := createTarget pkg $ "src" / "utils.cpp"
+target library.o pkg : FilePath := createTarget pkg $ "src" / "library.cpp"
+target symbol.o pkg : FilePath := createTarget pkg $ "src" / "symbol.cpp"
+target function.o pkg : FilePath := createTarget pkg $ "src" / "function.cpp"
+target memory.o pkg : FilePath := createTarget pkg $ "src" / "memory.cpp"
+target types.o pkg : FilePath := createTarget pkg $ "src" / "types.cpp"
 
 extern_lib libctypes pkg := do
   let name := nameToStaticLib "ctypes"
@@ -53,7 +57,8 @@ extern_lib libctypes pkg := do
     (← fetch <| pkg.target ``library.o),
     (← fetch <| pkg.target ``symbol.o),
     (← fetch <| pkg.target ``function.o),
-    (← fetch <| pkg.target ``memory.o)
+    (← fetch <| pkg.target ``memory.o),
+    (← fetch <| pkg.target ``types.o)
   ]
   buildStaticLib (pkg.nativeLibDir / name) targets
 
@@ -63,4 +68,5 @@ lean_lib CTypes
 -- Tests
 lean_exe tests {
   root := `Tests
+  moreLinkArgs := #["-lffi", "-lstdc++"]
 }

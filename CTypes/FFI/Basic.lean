@@ -18,30 +18,6 @@ set_option relaxedAutoImplicit false
 
 namespace CTypes.FFI
 
-/-- Check whether the library is compiled in debug mode. -/
-@[extern "debug_mode"]
-opaque debugMode (_ : Unit) : Bool
-
-/-- `println` function exported to C. -/
-@[export lean_println]
-def println (msg : String) : IO Unit := do
-  IO.println msg
-
-/-- `print` function exported to C. -/
-@[export lean_print]
-def print (msg : String) : IO Unit := do
-  IO.print msg
-
-/-- `eprintln` function exported to C. -/
-@[export lean_eprintln]
-def eprintln (msg : String) : IO Unit := do
-  IO.eprintln msg
-
-/-- `eprint` function exported to C. -/
-@[export lean_eprint]
-def eprint (msg : String) : IO Unit := do
-  IO.eprint msg
-
 /-- Flags for opening a shared library. -/
 inductive Flag where
   | RTLD_LAZY

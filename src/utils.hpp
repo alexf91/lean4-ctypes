@@ -16,9 +16,11 @@
 
 #pragma once
 
+#include <cstdarg>
+#include <cstdio>
 #include <lean/lean.h>
-#include <stdarg.h>
-#include <stdio.h>
+
+extern "C" {
 
 /** We need this for functions exported from Lean. */
 #define LEAN_EXPORT_WEAK __attribute__((weak)) LEAN_EXPORT
@@ -59,19 +61,4 @@ void lean_eprintf(const char *fmt, ...);
 static inline void utils_log(...) { }
 /* clang-format on */
 #endif /* NDEBUG */
-
-/** Minimum of two values. */
-#define min(a, b)                                                                      \
-    ({                                                                                 \
-        __typeof__(a) _a = (a);                                                        \
-        __typeof__(b) _b = (b);                                                        \
-        _a < _b ? _a : _b;                                                             \
-    })
-
-/** Maximum of two values. */
-#define max(a, b)                                                                      \
-    ({                                                                                 \
-        __typeof__(a) _a = (a);                                                        \
-        __typeof__(b) _b = (b);                                                        \
-        _a > _b ? _a : _b;                                                             \
-    })
+}

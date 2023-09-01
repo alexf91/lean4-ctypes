@@ -14,7 +14,31 @@
 -- limitations under the License.
 --
 
-import CTypes.FFI.Basic
-import CTypes.FFI.Memory
-import CTypes.FFI.Utils
-import CTypes.FFI.Types
+set_option relaxedAutoImplicit false
+
+namespace CTypes.FFI
+
+/-- Basic types in C. -/
+inductive BasicType where
+  | int8
+  | uint8
+  | int16
+  | uint16
+  | int32
+  | uint32
+  | int64
+  | uint64
+  | float
+  | double
+  | longdouble
+  | complex_float
+  | complex_double
+  | complex_longdouble
+
+namespace BasicType
+  /-- Get the size of a basic type. -/
+  @[extern "BasicType_sizeof_Nat"]
+  opaque sizeof (type : @&BasicType) : Nat
+end BasicType
+
+end CTypes.FFI

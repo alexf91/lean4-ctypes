@@ -71,41 +71,6 @@ namespace Symbol
       let msg := "/usr/lib/libm.so.6: undefined symbol: doesnotexist"
       assertTrue (e.toString == msg) s!"invalid error message: {e}"
 
-  /-
-    These tests require compilation with debug output to check if everything
-    is finalized as expected.
-  -/
-  namespace DebugOutput
-    testcase mkSuccess := do
-      /- Only run in debug mode. -/
-      if !debugMode () then
-        return
-
-      let (r, streams) ← captureResult do
-        let h ← Library.mk "/usr/lib/libm.so.6" #[.RTLD_NOW]
-        discard <| Symbol.mk h "sin"
-      assertTrue r.isOk
-
-      let expected := ["Library_mk", "Symbol_mk", "Symbol_finalize", "Library_finalize"]
-      let trace := callTrace streams
-      assertEqual trace expected $ toString trace
-
-    testcase mkFailure := do
-      /- Only run in debug mode. -/
-      if !debugMode () then
-        return
-
-      let (r, streams) ← captureResult do
-        let h ← Library.mk "/usr/lib/libm.so.6" #[.RTLD_NOW]
-        discard <| Symbol.mk h "doesnotexist"
-      assertTrue !r.isOk
-
-      let expected := ["Library_mk", "Symbol_mk", "Library_finalize"]
-      let trace := callTrace streams
-      assertEqual trace expected $ toString trace
-
-  end DebugOutput
-
 end Symbol
 
 
@@ -119,32 +84,6 @@ namespace Function
   testcase callSuccess requires (sin : FuncSin) := do
     let result ← sin.call #[.float (3.14159265359 / 2)]
     assertEqual result (.float 1.0) s!"wrong result: {repr result}"
-
-  /-
-    These tests require compilation with debug output to check if everything
-    is finalized as expected.
-  -/
-  namespace DebugOutput
-    testcase mkSuccess := do
-      /- Only run in debug mode. -/
-      if !debugMode () then
-        return
-
-      let (r, streams) ← captureResult do
-        let h ← Library.mk "/usr/lib/libm.so.6" #[.RTLD_NOW]
-        let s ← Symbol.mk h "ldexp"
-        discard <| Function.mk s .double #[.double, .sint]
-      assertTrue r.isOk
-
-      let expected := [
-        "Library_mk", "Symbol_mk", "Function_mk",
-        "CType_unbox", "CType_unbox", "CType_unbox",
-        "Function_finalize", "Symbol_finalize", "Library_finalize"
-      ]
-      let trace := callTrace streams
-      assertEqual trace expected $ toString trace
-
-  end DebugOutput
 
 end Function
 

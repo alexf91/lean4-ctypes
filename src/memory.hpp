@@ -18,24 +18,7 @@
 
 #include <lean/lean.h>
 
-/** Basic types enum */
-enum BasicType {
-    BASIC_TYPE_INT8,
-    BASIC_TYPE_UINT8,
-    BASIC_TYPE_INT16,
-    BASIC_TYPE_UINT16,
-    BASIC_TYPE_INT32,
-    BASIC_TYPE_UINT32,
-    BASIC_TYPE_INT64,
-    BASIC_TYPE_UINT64,
-    BASIC_TYPE_FLOAT,
-    BASIC_TYPE_DOUBLE,
-    BASIC_TYPE_LONGDOUBLE,
-    BASIC_TYPE_COMPLEX_FLOAT,
-    BASIC_TYPE_COMPLEX_DOUBLE,
-    BASIC_TYPE_COMPLEX_LONGDOUBLE,
-    BASIC_TYPE_POINTER,
-};
+extern "C" {
 
 /**
  * Internal representation of a memory region.
@@ -52,4 +35,5 @@ typedef struct {
 /** Convert a Memory object from Lean to C. */
 static inline Memory *Memory_unbox(b_lean_obj_arg m) {
     return (Memory *)(lean_get_external_data(m));
+}
 }

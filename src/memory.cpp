@@ -14,51 +14,14 @@
  * limitations under the License.
  */
 
-#include "memory.h"
-#include "utils.h"
+#include "memory.hpp"
+#include "types.hpp"
+#include "utils.hpp"
+#include <algorithm>
 #include <complex.h>
-#include <stdlib.h>
+#include <cstdlib>
 
-/** Size of basic types. */
-size_t BasicType_sizeof(uint8_t type) {
-    switch (type) {
-    case BASIC_TYPE_INT8:
-        return sizeof(int8_t);
-    case BASIC_TYPE_UINT8:
-        return sizeof(uint8_t);
-    case BASIC_TYPE_INT16:
-        return sizeof(int16_t);
-    case BASIC_TYPE_UINT16:
-        return sizeof(uint16_t);
-    case BASIC_TYPE_INT32:
-        return sizeof(int32_t);
-    case BASIC_TYPE_UINT32:
-        return sizeof(uint32_t);
-    case BASIC_TYPE_INT64:
-        return sizeof(int64_t);
-    case BASIC_TYPE_UINT64:
-        return sizeof(uint64_t);
-    case BASIC_TYPE_FLOAT:
-        return sizeof(float);
-    case BASIC_TYPE_DOUBLE:
-        return sizeof(double);
-    case BASIC_TYPE_LONGDOUBLE:
-        return sizeof(long double);
-    case BASIC_TYPE_COMPLEX_FLOAT:
-        return sizeof(float complex);
-    case BASIC_TYPE_COMPLEX_DOUBLE:
-        return sizeof(double complex);
-    case BASIC_TYPE_COMPLEX_LONGDOUBLE:
-        return sizeof(long double complex);
-    case BASIC_TYPE_POINTER:
-        return sizeof(void *);
-    }
-    lean_internal_panic_unreachable();
-}
-
-lean_obj_res BasicType_sizeof_Nat(uint8_t type) {
-    return lean_box(BasicType_sizeof(type));
-}
+extern "C" {
 
 /** Lean class */
 lean_external_class *Memory_class = NULL;
@@ -96,14 +59,14 @@ static inline lean_object *Memory_box(Memory *m) {
  */
 lean_obj_res Memory_fromByteArray(b_lean_obj_arg array, lean_object *unused) {
     size_t size = lean_unbox(lean_byte_array_size(array));
-    uint8_t *buffer = malloc(size);
+    uint8_t *buffer = (uint8_t *)malloc(size);
     if (buffer == NULL)
         lean_internal_panic_out_of_memory();
 
     for (size_t i = 0; i < size; i++)
         buffer[i] = lean_byte_array_uget(array, i);
 
-    Memory *m = calloc(1, sizeof(Memory));
+    Memory *m = (Memory *)calloc(1, sizeof(Memory));
     if (m == NULL) {
         free(buffer);
         lean_internal_panic_out_of_memory();
@@ -131,7 +94,7 @@ lean_obj_res Memory_toByteArray(b_lean_obj_arg memory, lean_object *unused) {
  * Allocate a new memory in C.
  */
 lean_obj_res Memory_allocate(size_t size, lean_object *unused) {
-    Memory *m = calloc(1, sizeof(Memory));
+    Memory *m = (Memory *)calloc(1, sizeof(Memory));
     if (m == NULL)
         lean_internal_panic_out_of_memory();
 
@@ -168,8 +131,8 @@ uint8_t Memory_allocated(b_lean_obj_arg memory) {
 lean_obj_res Memory_extract(lean_obj_arg memory, b_lean_obj_arg begin,
                             b_lean_obj_arg end, lean_object *unused) {
     Memory *m = Memory_unbox(memory);
-    size_t b = lean_unbox(begin);
-    size_t e = lean_unbox(end);
+    ssize_t b = lean_unbox(begin);
+    ssize_t e = lean_unbox(end);
 
     // Check if we are out of bounds.
     if (b >= m->size || e >= m->size) {
@@ -178,10 +141,10 @@ lean_obj_res Memory_extract(lean_obj_arg memory, b_lean_obj_arg begin,
         return lean_io_result_mk_error(lean_mk_io_user_error(msg));
     }
 
-    Memory *nm = calloc(1, sizeof(Memory));
+    Memory *nm = (Memory *)calloc(1, sizeof(Memory));
     nm->parent = memory;
     nm->buffer = ((uint8_t *)m->buffer) + b;
-    nm->size = max(0, e - b);
+    nm->size = std::max(0L, e - b);
 
     return lean_io_result_mk_ok(Memory_box(nm));
 }
@@ -264,17 +227,17 @@ lean_obj_res Memory_readComplex(b_lean_obj_arg memory, b_lean_obj_arg offset,
         return lean_io_result_mk_error(lean_mk_io_user_error(msg));
     }
     void *address = ((uint8_t *)m->buffer) + o;
-    double complex result;
+    std::complex<double> result;
 
     switch (type) {
     case BASIC_TYPE_COMPLEX_FLOAT:
-        result = *((float complex *)address);
+        result = *((std::complex<float> *)address);
         break;
     case BASIC_TYPE_COMPLEX_DOUBLE:
-        result = *((double complex *)address);
+        result = *((std::complex<double> *)address);
         break;
     case BASIC_TYPE_COMPLEX_LONGDOUBLE:
-        result = *((long double complex *)address);
+        result = *((std::complex<long double> *)address);
         break;
     default:
         lean_object *msg = lean_mk_string("not a complex type");
@@ -282,8 +245,8 @@ lean_obj_res Memory_readComplex(b_lean_obj_arg memory, b_lean_obj_arg offset,
     }
 
     lean_object *array = lean_mk_empty_float_array(lean_box(2));
-    array = lean_float_array_push(array, creal(result));
-    array = lean_float_array_push(array, cimag(result));
+    array = lean_float_array_push(array, result.real());
+    array = lean_float_array_push(array, result.imag());
 
     return lean_io_result_mk_ok(array);
 }
@@ -295,17 +258,17 @@ lean_obj_res Memory_dereference(b_lean_obj_arg memory, b_lean_obj_arg offset,
                                 b_lean_obj_arg nsize, lean_object *unused) {
     Memory *m = Memory_unbox(memory);
     size_t o = lean_unbox(offset);
-    size_t size = BasicType_sizeof(BASIC_TYPE_POINTER);
 
-    if (o + size > m->size) {
+    if (o + sizeof(void *) > m->size) {
         lean_object *msg = lean_mk_string("reading out of bounds");
         return lean_io_result_mk_error(lean_mk_io_user_error(msg));
     }
     void *address = ((uint8_t *)m->buffer) + o;
 
-    Memory *nm = calloc(1, sizeof(Memory));
+    Memory *nm = (Memory *)calloc(1, sizeof(Memory));
     nm->buffer = *((void **)address);
     nm->size = lean_unbox(nsize);
 
     return lean_io_result_mk_ok(Memory_box(nm));
+}
 }

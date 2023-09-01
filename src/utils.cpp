@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-#include "utils.h"
+#include "utils.hpp"
+
+extern "C" {
 
 /** Check if NDEBUG is defined. */
 uint8_t debug_mode(lean_object *unused) {
@@ -35,7 +37,7 @@ static inline void lean_vfprintf(lean_print_t fn, const char *fmt, va_list ap) {
 
     // Determine the required buffer size.
     size_t needed = vsnprintf(NULL, 0, fmt, ap) + 1;
-    char *buffer = malloc(needed);
+    char *buffer = (char *)malloc(needed);
     vsprintf(buffer, fmt, apcopy);
     fn(lean_mk_string(buffer), NULL);
     free(buffer);
@@ -53,4 +55,5 @@ void lean_eprintf(const char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     lean_vfprintf(lean_eprint, fmt, ap);
+}
 }
