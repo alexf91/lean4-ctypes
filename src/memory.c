@@ -16,35 +16,48 @@
 
 #include "memory.h"
 #include "utils.h"
+#include <complex.h>
 #include <stdlib.h>
 
 /** Size of basic types. */
-lean_obj_res BasicType_sizeof(uint8_t type) {
+size_t BasicType_sizeof(uint8_t type) {
     switch (type) {
     case BASIC_TYPE_INT8:
-        return lean_box(sizeof(int8_t));
+        return sizeof(int8_t);
     case BASIC_TYPE_UINT8:
-        return lean_box(sizeof(uint8_t));
+        return sizeof(uint8_t);
     case BASIC_TYPE_INT16:
-        return lean_box(sizeof(int16_t));
+        return sizeof(int16_t);
     case BASIC_TYPE_UINT16:
-        return lean_box(sizeof(uint16_t));
+        return sizeof(uint16_t);
     case BASIC_TYPE_INT32:
-        return lean_box(sizeof(int32_t));
+        return sizeof(int32_t);
     case BASIC_TYPE_UINT32:
-        return lean_box(sizeof(uint32_t));
+        return sizeof(uint32_t);
     case BASIC_TYPE_INT64:
-        return lean_box(sizeof(int64_t));
+        return sizeof(int64_t);
     case BASIC_TYPE_UINT64:
-        return lean_box(sizeof(uint64_t));
+        return sizeof(uint64_t);
     case BASIC_TYPE_FLOAT:
-        return lean_box(sizeof(float));
+        return sizeof(float);
     case BASIC_TYPE_DOUBLE:
-        return lean_box(sizeof(double));
-    case BASIC_TYPE_LONG_DOUBLE:
-        return lean_box(sizeof(long double));
+        return sizeof(double);
+    case BASIC_TYPE_LONGDOUBLE:
+        return sizeof(long double);
+    case BASIC_TYPE_COMPLEX_FLOAT:
+        return sizeof(float complex);
+    case BASIC_TYPE_COMPLEX_DOUBLE:
+        return sizeof(double complex);
+    case BASIC_TYPE_COMPLEX_LONGDOUBLE:
+        return sizeof(long double complex);
+    case BASIC_TYPE_POINTER:
+        return sizeof(void *);
     }
     lean_internal_panic_unreachable();
+}
+
+lean_obj_res BasicType_sizeof_Nat(uint8_t type) {
+    return lean_box(BasicType_sizeof(type));
 }
 
 /** Lean class */
@@ -169,6 +182,130 @@ lean_obj_res Memory_extract(lean_obj_arg memory, b_lean_obj_arg begin,
     nm->parent = memory;
     nm->buffer = ((uint8_t *)m->buffer) + b;
     nm->size = max(0, e - b);
+
+    return lean_io_result_mk_ok(Memory_box(nm));
+}
+
+/**
+ * Read an integer from the memory view.
+ */
+lean_obj_res Memory_readInt(b_lean_obj_arg memory, b_lean_obj_arg offset, uint8_t type,
+                            lean_object *unused) {
+    Memory *m = Memory_unbox(memory);
+    size_t o = lean_unbox(offset);
+    size_t size = BasicType_sizeof(type);
+
+    if (o + size > m->size) {
+        lean_object *msg = lean_mk_string("reading out of bounds");
+        return lean_io_result_mk_error(lean_mk_io_user_error(msg));
+    }
+    void *address = ((uint8_t *)m->buffer) + o;
+
+    switch (type) {
+    case BASIC_TYPE_INT8:
+        return lean_io_result_mk_ok(lean_int64_to_int(*((int8_t *)address)));
+    case BASIC_TYPE_UINT8:
+        return lean_io_result_mk_ok(lean_int64_to_int(*((uint8_t *)address)));
+    case BASIC_TYPE_INT16:
+        return lean_io_result_mk_ok(lean_int64_to_int(*((int16_t *)address)));
+    case BASIC_TYPE_UINT16:
+        return lean_io_result_mk_ok(lean_int64_to_int(*((uint16_t *)address)));
+    case BASIC_TYPE_INT32:
+        return lean_io_result_mk_ok(lean_int64_to_int(*((int32_t *)address)));
+    case BASIC_TYPE_UINT32:
+        return lean_io_result_mk_ok(lean_int64_to_int(*((uint32_t *)address)));
+    case BASIC_TYPE_INT64:
+        return lean_io_result_mk_ok(lean_int64_to_int(*((int64_t *)address)));
+    case BASIC_TYPE_UINT64:
+        return lean_io_result_mk_ok(lean_big_uint64_to_nat(*((uint64_t *)address)));
+    }
+    lean_object *msg = lean_mk_string("not an integer type");
+    return lean_io_result_mk_error(lean_mk_io_user_error(msg));
+}
+
+/**
+ * Read a floating point value from the memory view.
+ */
+lean_obj_res Memory_readFloat(b_lean_obj_arg memory, b_lean_obj_arg offset,
+                              uint8_t type, lean_object *unused) {
+    Memory *m = Memory_unbox(memory);
+    size_t o = lean_unbox(offset);
+    size_t size = BasicType_sizeof(type);
+
+    if (o + size > m->size) {
+        lean_object *msg = lean_mk_string("reading out of bounds");
+        return lean_io_result_mk_error(lean_mk_io_user_error(msg));
+    }
+    void *address = ((uint8_t *)m->buffer) + o;
+
+    switch (type) {
+    case BASIC_TYPE_FLOAT:
+        return lean_io_result_mk_ok(lean_box_float(*((float *)address)));
+    case BASIC_TYPE_DOUBLE:
+        return lean_io_result_mk_ok(lean_box_float(*((double *)address)));
+    case BASIC_TYPE_LONGDOUBLE:
+        return lean_io_result_mk_ok(lean_box_float(*((long double *)address)));
+    }
+    lean_object *msg = lean_mk_string("not a floating point type");
+    return lean_io_result_mk_error(lean_mk_io_user_error(msg));
+}
+
+/**
+ * Read a complex floating point value from the memory view.
+ */
+lean_obj_res Memory_readComplex(b_lean_obj_arg memory, b_lean_obj_arg offset,
+                                uint8_t type, lean_object *unused) {
+    Memory *m = Memory_unbox(memory);
+    size_t o = lean_unbox(offset);
+    size_t size = BasicType_sizeof(type);
+
+    if (o + size > m->size) {
+        lean_object *msg = lean_mk_string("reading out of bounds");
+        return lean_io_result_mk_error(lean_mk_io_user_error(msg));
+    }
+    void *address = ((uint8_t *)m->buffer) + o;
+    double complex result;
+
+    switch (type) {
+    case BASIC_TYPE_COMPLEX_FLOAT:
+        result = *((float complex *)address);
+        break;
+    case BASIC_TYPE_COMPLEX_DOUBLE:
+        result = *((double complex *)address);
+        break;
+    case BASIC_TYPE_COMPLEX_LONGDOUBLE:
+        result = *((long double complex *)address);
+        break;
+    default:
+        lean_object *msg = lean_mk_string("not a complex type");
+        return lean_io_result_mk_error(lean_mk_io_user_error(msg));
+    }
+
+    lean_object *array = lean_mk_empty_float_array(lean_box(2));
+    array = lean_float_array_push(array, creal(result));
+    array = lean_float_array_push(array, cimag(result));
+
+    return lean_io_result_mk_ok(array);
+}
+
+/**
+ * Dereference a pointer and create a new memory view.
+ */
+lean_obj_res Memory_dereference(b_lean_obj_arg memory, b_lean_obj_arg offset,
+                                b_lean_obj_arg nsize, lean_object *unused) {
+    Memory *m = Memory_unbox(memory);
+    size_t o = lean_unbox(offset);
+    size_t size = BasicType_sizeof(BASIC_TYPE_POINTER);
+
+    if (o + size > m->size) {
+        lean_object *msg = lean_mk_string("reading out of bounds");
+        return lean_io_result_mk_error(lean_mk_io_user_error(msg));
+    }
+    void *address = ((uint8_t *)m->buffer) + o;
+
+    Memory *nm = calloc(1, sizeof(Memory));
+    nm->buffer = *((void **)address);
+    nm->size = lean_unbox(nsize);
 
     return lean_io_result_mk_ok(Memory_box(nm));
 }

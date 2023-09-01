@@ -168,6 +168,86 @@ namespace Memory
     assertFalse nm.allocated
     assertEqual (← nm.toByteArray).data na.data
 
+  /-- Read all integer types. -/
+  testcase testReadInt_int8 := do
+    let m ← Memory.fromByteArray $ .mk (#[(0xFF : UInt8)] * 8)
+    assertEqual (-1) (← m.readInt 0 .int8)
+
+  testcase testReadInt_uint8 := do
+    let m ← Memory.fromByteArray $ .mk (#[(0xFF : UInt8)] * 8)
+    assertEqual 255 (← m.readInt 0 .uint8)
+
+  testcase testReadInt_int16 := do
+    let m ← Memory.fromByteArray $ .mk (#[(0xFF : UInt8)] * 8)
+    assertEqual (-1) (← m.readInt 0 .int16)
+
+  testcase testReadInt_uint16 := do
+    let m ← Memory.fromByteArray $ .mk (#[(0xFF : UInt8)] * 8)
+    assertEqual 65535 (← m.readInt 0 .uint16)
+
+  testcase testReadInt_int32 := do
+    let m ← Memory.fromByteArray $ .mk (#[(0xFF : UInt8)] * 8)
+    assertEqual (-1) (← m.readInt 0 .int32)
+
+  testcase testReadInt_uint32 := do
+    let m ← Memory.fromByteArray $ .mk (#[(0xFF : UInt8)] * 8)
+    assertEqual 4294967295 (← m.readInt 0 .uint32)
+
+  testcase testReadInt_int64 := do
+    let m ← Memory.fromByteArray $ .mk (#[(0xFF : UInt8)] * 8)
+    assertEqual (-1) (← m.readInt 0 .int64)
+
+  testcase testReadInt_uint64 := do
+    let m ← Memory.fromByteArray $ .mk (#[(0xFF : UInt8)] * 8)
+    assertEqual 18446744073709551615 (← m.readInt 0 .uint64)
+
+  /-- Read all floating point types. -/
+  testcase testReadFloat_float := do
+    let m ← Memory.fromByteArray $ .mk #[0xdb, 0x0f, 0x49, 0x40]
+    let v ← m.readFloat 0 .float
+    assertEqual v.toString "3.141593"
+
+  testcase testReadFloat_double := do
+    let m ← Memory.fromByteArray $ .mk #[0x18, 0x2d, 0x44, 0x54, 0xfb, 0x21, 0x09, 0x40]
+    let v ← m.readFloat 0 .double
+    assertEqual v.toString "3.141593"
+
+  testcase testReadFloat_longdouble := do
+    let m ← Memory.fromByteArray $ .mk #[0x00, 0xc0, 0x68, 0x21, 0xa2, 0xda, 0x0f, 0xc9,
+                                         0x00, 0x40, 0x65, 0xb5, 0xee, 0x7f, 0x00, 0x00]
+    let v ← m.readFloat 0 .longdouble
+    assertEqual v.toString "3.141593"
+
+  /-- Read all complex types. -/
+  testcase testReadComplex_float := do
+    let m ← Memory.fromByteArray $ .mk #[0xdb, 0x0f, 0x49, 0x40, 0xdb, 0x0f, 0x49, 0xc0]
+    let v ← m.readComplex 0 .complex_float
+    assertEqual v.1.toString "3.141593"
+    assertEqual v.2.toString "-3.141593"
+
+  testcase testReadComplex_double := do
+    let m ← Memory.fromByteArray $ .mk #[0x18, 0x2d, 0x44, 0x54, 0xfb, 0x21, 0x09, 0x40,
+                                         0x18, 0x2d, 0x44, 0x54, 0xfb, 0x21, 0x09, 0xc0]
+    let v ← m.readComplex 0 .complex_double
+    assertEqual v.1.toString "3.141593"
+    assertEqual v.2.toString "-3.141593"
+
+  testcase testReadComplex_longdouble := do
+    let m ← Memory.fromByteArray $ .mk #[0x00, 0xc0, 0x68, 0x21, 0xa2, 0xda, 0x0f, 0xc9,
+                                         0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                         0x00, 0xc0, 0x68, 0x21, 0xa2, 0xda, 0x0f, 0xc9,
+                                         0x00, 0xc0, 0x80, 0xf9, 0x9b, 0x7f, 0x00, 0x00]
+    let v ← m.readComplex 0 .complex_longdouble
+    assertEqual v.1.toString "3.141593"
+    assertEqual v.2.toString "-3.141593"
+
+  /-- Dereference a pointer. -/
+  testcase testDereferenceEmpty := do
+    let m ← Memory.fromByteArray $ .mk (#[(0x00 : UInt8)] * 8)
+    let nm ← m.dereference 0 0
+    let na ← nm.toByteArray
+    assertEqual na.data #[]
+
 end Memory
 
 end Tests.FFI

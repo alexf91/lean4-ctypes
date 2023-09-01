@@ -35,11 +35,15 @@ inductive BasicType where
   | uint64
   | float
   | double
-  | long_double
+  | longdouble
+  | complex_float
+  | complex_double
+  | complex_longdouble
+  | pointer
 
 namespace BasicType
   /-- Get the size of a basic type. -/
-  @[extern "BasicType_sizeof"]
+  @[extern "BasicType_sizeof_Nat"]
   opaque sizeof (type : @&BasicType) : Nat
 end BasicType
 
@@ -68,6 +72,26 @@ namespace Memory
   /-- Extract a slice from the memory view and return a new slice. -/
   @[extern "Memory_extract"]
   opaque extract (m : Memory) (b e : @&Nat) : IO Memory
+
+  /-- Read an integer type from the memory view. -/
+  @[extern "Memory_readInt"]
+  opaque readInt (m : @&Memory) (offset : @&Nat) (type : @&BasicType) : IO Int
+
+  /-- Read a floating point type from the memory view. -/
+  @[extern "Memory_readFloat"]
+  opaque readFloat (m : @&Memory) (offset : @&Nat) (type : @&BasicType) : IO Float
+
+  /-- Internal implementation for reading complex numbers. -/
+  @[extern "Memory_readComplex"]
+  private opaque _readComplex (m : @&Memory) (offset : @&Nat) (type : @&BasicType) : IO FloatArray
+  /-- Read a complex floating point type from the memory view. -/
+  def readComplex (m : @&Memory) (offset : @&Nat) (type : @&BasicType) : IO (Float × Float) := do
+    let a ← _readComplex m offset type
+    return (a.get! 0, a.get! 1)
+
+  /-- Dereference a pointer and create a new memory view with the given size. -/
+  @[extern "Memory_dereference"]
+  opaque dereference (m : @&Memory) (offset : @&Nat) (size : @&Nat) : IO Memory
 
 end Memory
 
