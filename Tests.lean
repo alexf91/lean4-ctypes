@@ -18,6 +18,7 @@ import LTest
 import CTypes
 open LTest
 open CTypes.FFI
+open BasicType
 
 namespace Tests.FFI
 
@@ -36,7 +37,7 @@ fixture SymSin Unit Symbol requires (m : LibMath) where
 
 /-- Fixture for the function `sin()`. -/
 fixture FuncSin Unit Function requires (s : SymSin) where
-  setup := Function.mk s .double #[.double]
+  setup := Function.mk s double #[double]
 
 
 namespace Library
@@ -78,7 +79,7 @@ namespace Function
 
   /-- Create a new function. -/
   testcase mkPrimitive requires (s : SymSin) := do
-    discard <| Function.mk s .double #[.double]
+    discard <| Function.mk s double #[double]
 
   /-- Call a function. -/
   testcase callSuccess requires (sin : FuncSin) := do

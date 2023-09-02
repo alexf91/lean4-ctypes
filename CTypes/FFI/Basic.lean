@@ -14,6 +14,8 @@
 -- limitations under the License.
 --
 
+import CTypes.FFI.Types
+
 set_option relaxedAutoImplicit false
 
 namespace CTypes.FFI
@@ -52,36 +54,6 @@ namespace Symbol
   opaque mk (library : @&Library) (symbol : @&String) : IO Symbol
 end Symbol
 
-
-/-- Enum for argument specification. -/
-inductive CType where
-  | void
-  | uint8
-  | sint8
-  | uint16
-  | sint16
-  | uint32
-  | sint32
-  | uint64
-  | sint64
-  | float
-  | double
-  | uchar
-  | schar
-  | ushort
-  | sshort
-  | uint
-  | sint
-  | ulong
-  | slong
-  | longdouble
-  | pointer
-  | complex_float
-  | complex_double
-  | complex_longdouble
-  | struct (elements : Array CType)
-  | array (type : CType) (length : Nat)
-deriving Repr, BEq
 
 /--
   A symbol with a return type and argument types.

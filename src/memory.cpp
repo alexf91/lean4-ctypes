@@ -15,7 +15,7 @@
  */
 
 #include "memory.hpp"
-#include "types.hpp"
+#include "ctype.hpp"
 #include "utils.hpp"
 #include <algorithm>
 #include <complex.h>
@@ -156,34 +156,35 @@ lean_obj_res Memory_readInt(b_lean_obj_arg memory, b_lean_obj_arg offset, uint8_
                             lean_object *unused) {
     Memory *m = Memory_unbox(memory);
     size_t o = lean_unbox(offset);
-    size_t size = BasicType_sizeof(type);
+    BasicType tp = BasicType::unbox(type);
 
-    if (o + size > m->size) {
+    if (o + tp.size() > m->size) {
         lean_object *msg = lean_mk_string("reading out of bounds");
         return lean_io_result_mk_error(lean_mk_io_user_error(msg));
     }
     void *address = ((uint8_t *)m->buffer) + o;
 
-    switch (type) {
-    case BASIC_TYPE_INT8:
+    switch (tp.get_tag()) {
+    case BasicType::ObjectTag::INT8:
         return lean_io_result_mk_ok(lean_int64_to_int(*((int8_t *)address)));
-    case BASIC_TYPE_UINT8:
+    case BasicType::ObjectTag::UINT8:
         return lean_io_result_mk_ok(lean_int64_to_int(*((uint8_t *)address)));
-    case BASIC_TYPE_INT16:
+    case BasicType::ObjectTag::INT16:
         return lean_io_result_mk_ok(lean_int64_to_int(*((int16_t *)address)));
-    case BASIC_TYPE_UINT16:
+    case BasicType::ObjectTag::UINT16:
         return lean_io_result_mk_ok(lean_int64_to_int(*((uint16_t *)address)));
-    case BASIC_TYPE_INT32:
+    case BasicType::ObjectTag::INT32:
         return lean_io_result_mk_ok(lean_int64_to_int(*((int32_t *)address)));
-    case BASIC_TYPE_UINT32:
+    case BasicType::ObjectTag::UINT32:
         return lean_io_result_mk_ok(lean_int64_to_int(*((uint32_t *)address)));
-    case BASIC_TYPE_INT64:
+    case BasicType::ObjectTag::INT64:
         return lean_io_result_mk_ok(lean_int64_to_int(*((int64_t *)address)));
-    case BASIC_TYPE_UINT64:
+    case BasicType::ObjectTag::UINT64:
         return lean_io_result_mk_ok(lean_big_uint64_to_nat(*((uint64_t *)address)));
+    default:
+        lean_object *msg = lean_mk_string("not an integer type");
+        return lean_io_result_mk_error(lean_mk_io_user_error(msg));
     }
-    lean_object *msg = lean_mk_string("not an integer type");
-    return lean_io_result_mk_error(lean_mk_io_user_error(msg));
 }
 
 /**
@@ -193,24 +194,25 @@ lean_obj_res Memory_readFloat(b_lean_obj_arg memory, b_lean_obj_arg offset,
                               uint8_t type, lean_object *unused) {
     Memory *m = Memory_unbox(memory);
     size_t o = lean_unbox(offset);
-    size_t size = BasicType_sizeof(type);
+    BasicType tp = BasicType::unbox(type);
 
-    if (o + size > m->size) {
+    if (o + tp.size() > m->size) {
         lean_object *msg = lean_mk_string("reading out of bounds");
         return lean_io_result_mk_error(lean_mk_io_user_error(msg));
     }
     void *address = ((uint8_t *)m->buffer) + o;
 
-    switch (type) {
-    case BASIC_TYPE_FLOAT:
+    switch (tp.get_tag()) {
+    case BasicType::ObjectTag::FLOAT:
         return lean_io_result_mk_ok(lean_box_float(*((float *)address)));
-    case BASIC_TYPE_DOUBLE:
+    case BasicType::ObjectTag::DOUBLE:
         return lean_io_result_mk_ok(lean_box_float(*((double *)address)));
-    case BASIC_TYPE_LONGDOUBLE:
+    case BasicType::ObjectTag::LONGDOUBLE:
         return lean_io_result_mk_ok(lean_box_float(*((long double *)address)));
+    default:
+        lean_object *msg = lean_mk_string("not a floating point type");
+        return lean_io_result_mk_error(lean_mk_io_user_error(msg));
     }
-    lean_object *msg = lean_mk_string("not a floating point type");
-    return lean_io_result_mk_error(lean_mk_io_user_error(msg));
 }
 
 /**
@@ -220,23 +222,23 @@ lean_obj_res Memory_readComplex(b_lean_obj_arg memory, b_lean_obj_arg offset,
                                 uint8_t type, lean_object *unused) {
     Memory *m = Memory_unbox(memory);
     size_t o = lean_unbox(offset);
-    size_t size = BasicType_sizeof(type);
+    BasicType tp = BasicType::unbox(type);
 
-    if (o + size > m->size) {
+    if (o + tp.size() > m->size) {
         lean_object *msg = lean_mk_string("reading out of bounds");
         return lean_io_result_mk_error(lean_mk_io_user_error(msg));
     }
     void *address = ((uint8_t *)m->buffer) + o;
     std::complex<double> result;
 
-    switch (type) {
-    case BASIC_TYPE_COMPLEX_FLOAT:
+    switch (tp.get_tag()) {
+    case BasicType::ObjectTag::COMPLEX_FLOAT:
         result = *((std::complex<float> *)address);
         break;
-    case BASIC_TYPE_COMPLEX_DOUBLE:
+    case BasicType::ObjectTag::COMPLEX_DOUBLE:
         result = *((std::complex<double> *)address);
         break;
-    case BASIC_TYPE_COMPLEX_LONGDOUBLE:
+    case BasicType::ObjectTag::COMPLEX_LONGDOUBLE:
         result = *((std::complex<long double> *)address);
         break;
     default:

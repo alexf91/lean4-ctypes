@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-#include "types.hpp"
+#include "ctype.hpp"
 #include <ccomplex>
 #include <stdlib.h>
-
-extern "C" {
 
 /**
  * Primitive types defined in libffi. They are in the same order as the CType
@@ -45,45 +43,6 @@ __attribute__((unused)) static const char *BasicType_ffi_types_name[] = {
     "ffi_type_complex_double", "ffi_type_complex_longdouble",
 };
 
-/** Size of basic types. */
-size_t BasicType_sizeof(uint8_t type) {
-    switch (type) {
-    case BASIC_TYPE_INT8:
-        return sizeof(int8_t);
-    case BASIC_TYPE_UINT8:
-        return sizeof(uint8_t);
-    case BASIC_TYPE_INT16:
-        return sizeof(int16_t);
-    case BASIC_TYPE_UINT16:
-        return sizeof(uint16_t);
-    case BASIC_TYPE_INT32:
-        return sizeof(int32_t);
-    case BASIC_TYPE_UINT32:
-        return sizeof(uint32_t);
-    case BASIC_TYPE_INT64:
-        return sizeof(int64_t);
-    case BASIC_TYPE_UINT64:
-        return sizeof(uint64_t);
-    case BASIC_TYPE_FLOAT:
-        return sizeof(float);
-    case BASIC_TYPE_DOUBLE:
-        return sizeof(double);
-    case BASIC_TYPE_LONGDOUBLE:
-        return sizeof(long double);
-    case BASIC_TYPE_COMPLEX_FLOAT:
-        return sizeof(std::complex<float>);
-    case BASIC_TYPE_COMPLEX_DOUBLE:
-        return sizeof(std::complex<double>);
-    case BASIC_TYPE_COMPLEX_LONGDOUBLE:
-        return sizeof(std::complex<long double>);
-    }
-    lean_internal_panic_unreachable();
-}
-
-lean_obj_res BasicType_sizeof_Nat(uint8_t type) {
-    return lean_box(BasicType_sizeof(type));
-}
-
 /** Check if a type is statically allocated. */
 static bool is_static(ffi_type *tp) {
     for (size_t i = 0; i < sizeof(BasicType_ffi_types) / sizeof(BasicType_ffi_types[0]);
@@ -107,5 +66,4 @@ void ffi_type_free(ffi_type *tp) {
         ffi_type_free(tp->elements[i]);
     free(tp->elements);
     free(tp);
-}
 }

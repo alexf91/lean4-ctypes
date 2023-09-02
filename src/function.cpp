@@ -15,9 +15,9 @@
  */
 
 #include "function.hpp"
+#include "ctype.hpp"
 #include "library.hpp"
 #include "symbol.hpp"
-#include "types.hpp"
 #include "utils.hpp"
 #include <algorithm>
 #include <cstdlib>

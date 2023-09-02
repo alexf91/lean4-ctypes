@@ -19,9 +19,15 @@ open Lake DSL
 
 package ctypes {
   precompileModules := true
-  -- Add `/usr/lib` here manually to link against the system `libstdc++.so`.
-  -- This avoids errors with `libunwind.so`.
-  moreLinkArgs := #["-lffi", "-L/usr/lib", "-lstdc++"]
+  -- TODO: Don't hardcode libraries and library paths. This currently fixes some
+  --       link errors with conflicting libraries provided by the Lean environment.
+  moreLinkArgs := #[
+    "-lffi",
+    "-L/usr/lib",
+    "/usr/lib/libc.so.6",
+    "/usr/lib/libstdc++.so.6",
+    "/usr/lib/libunwind.so.8"
+  ]
 }
 
 require LTest from git "git@github.com:alexf91/LTest.git" @ "main"
@@ -41,14 +47,15 @@ def createTarget (pkg : Package) (cfile : FilePath) := do
     "-Wall",
     "-std=c++20"
   ] ++ debugFlags
-  buildO cfile.toString oFile srcJob flags "c++"
+  buildO cfile.toString oFile srcJob flags "g++"
 
 target utils.o pkg : FilePath := createTarget pkg $ "src" / "utils.cpp"
 target library.o pkg : FilePath := createTarget pkg $ "src" / "library.cpp"
 target symbol.o pkg : FilePath := createTarget pkg $ "src" / "symbol.cpp"
 target function.o pkg : FilePath := createTarget pkg $ "src" / "function.cpp"
 target memory.o pkg : FilePath := createTarget pkg $ "src" / "memory.cpp"
-target types.o pkg : FilePath := createTarget pkg $ "src" / "types.cpp"
+target ctype.o pkg : FilePath := createTarget pkg $ "src" / "ctype.cpp"
+target basic_type.o pkg : FilePath := createTarget pkg $ "src" / "basic_type.cpp"
 
 extern_lib libctypes pkg := do
   let name := nameToStaticLib "ctypes"
@@ -58,7 +65,8 @@ extern_lib libctypes pkg := do
     (← fetch <| pkg.target ``symbol.o),
     (← fetch <| pkg.target ``function.o),
     (← fetch <| pkg.target ``memory.o),
-    (← fetch <| pkg.target ``types.o)
+    (← fetch <| pkg.target ``ctype.o),
+    (← fetch <| pkg.target ``basic_type.o)
   ]
   buildStaticLib (pkg.nativeLibDir / name) targets
 

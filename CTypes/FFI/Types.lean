@@ -34,11 +34,23 @@ inductive BasicType where
   | complex_float
   | complex_double
   | complex_longdouble
+deriving Repr, BEq
 
 namespace BasicType
   /-- Get the size of a basic type. -/
-  @[extern "BasicType_sizeof_Nat"]
+  @[extern "BasicType_sizeof"]
   opaque sizeof (type : @&BasicType) : Nat
 end BasicType
+
+inductive CType where
+  | void
+  | basic (type : BasicType)
+  | pointer (type : CType)
+  | array (type : CType) (size : Nat)
+  | struct (elements : Array CType)
+deriving Repr, BEq
+
+instance : Coe BasicType CType where
+  coe := fun t => .basic t
 
 end CTypes.FFI

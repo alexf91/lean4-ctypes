@@ -16,41 +16,30 @@
 
 #pragma once
 
+#include "basic_type.hpp"
+#include <complex>
 #include <ffi.h>
 #include <lean/lean.h>
 
-extern "C" {
+/**
+ * Basic and composite types in C.
+ */
+class CType : public ffi_type {
+  public:
+    CType() {}
+    ~CType() {}
+    CType *unbox(b_lean_obj_arg obj);
 
-/** Basic types enum */
-enum BasicType {
-    BASIC_TYPE_INT8,
-    BASIC_TYPE_UINT8,
-    BASIC_TYPE_INT16,
-    BASIC_TYPE_UINT16,
-    BASIC_TYPE_INT32,
-    BASIC_TYPE_UINT32,
-    BASIC_TYPE_INT64,
-    BASIC_TYPE_UINT64,
-    BASIC_TYPE_FLOAT,
-    BASIC_TYPE_DOUBLE,
-    BASIC_TYPE_LONGDOUBLE,
-    BASIC_TYPE_COMPLEX_FLOAT,
-    BASIC_TYPE_COMPLEX_DOUBLE,
-    BASIC_TYPE_COMPLEX_LONGDOUBLE,
+  private:
+    /** The object tags of the inductive type defined in Lean.  */
+    enum ObjectTag {
+        CTYPE_VOID,
+        CTYPE_BASIC,
+        CTYPE_POINTER,
+        CTYPE_ARRAY,
+        CTYPE_STRUCT,
+    };
 };
-
-/** CType enum (object tags). */
-enum CType {
-    CTYPE_VOID,
-    CTYPE_BASIC,
-    CTYPE_POINTER,
-    CTYPE_ARRAY,
-    CTYPE_STRUCT,
-};
-
-/** Size of basic types. */
-size_t BasicType_sizeof(uint8_t type);
 
 /** Free an ffi_type. */
 void ffi_type_free(ffi_type *tp);
-}
