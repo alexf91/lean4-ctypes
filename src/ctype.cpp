@@ -17,53 +17,70 @@
 #include "ctype.hpp"
 #include <ccomplex>
 #include <stdlib.h>
-
 /**
  * Primitive types defined in libffi. They are in the same order as the CType
  * enum. They are statically allocated.
  */
-static const ffi_type *BasicType_ffi_types[] = {
-    &ffi_type_sint8,          &ffi_type_uint8,
-    &ffi_type_sint16,         &ffi_type_uint16,
-    &ffi_type_sint32,         &ffi_type_uint32,
-    &ffi_type_sint64,         &ffi_type_uint64,
-    &ffi_type_float,          &ffi_type_double,
-    &ffi_type_longdouble,     &ffi_type_complex_float,
-    &ffi_type_complex_double, &ffi_type_complex_longdouble,
+const ffi_type *CType::type_map[] = {
+    &ffi_type_void,          &ffi_type_sint8,          &ffi_type_uint8,
+    &ffi_type_sint16,        &ffi_type_uint16,         &ffi_type_sint32,
+    &ffi_type_uint32,        &ffi_type_sint64,         &ffi_type_uint64,
+    &ffi_type_float,         &ffi_type_double,         &ffi_type_longdouble,
+    &ffi_type_complex_float, &ffi_type_complex_double, &ffi_type_complex_longdouble,
+    &ffi_type_pointer,
 };
 
 /** Names of primitive types for debugging. */
-__attribute__((unused)) static const char *BasicType_ffi_types_name[] = {
-    "ffi_type_sint8",          "ffi_type_uint8",
-    "ffi_type_sint16",         "ffi_type_uint16",
-    "ffi_type_sint32",         "ffi_type_uint32",
-    "ffi_type_sint64",         "ffi_type_uint64",
-    "ffi_type_float",          "ffi_type_double",
-    "ffi_type_longdouble",     "ffi_type_complex_float",
-    "ffi_type_complex_double", "ffi_type_complex_longdouble",
+const char *CType::name_map[] = {
+    "void",    "int8",       "uint8",         "int16",          "uint16",
+    "int32",   "uint32",     "int64",         "uint64",         "float",
+    "double",  "longdouble", "complex_float", "complex_double", "complex_longdouble",
+    "pointer", "array",      "struct"};
+
+/** Size of basic types. */
+const size_t CType::size_map[] = {
+    0,
+    sizeof(int8_t),
+    sizeof(uint8_t),
+    sizeof(int16_t),
+    sizeof(uint16_t),
+    sizeof(int32_t),
+    sizeof(uint32_t),
+    sizeof(int64_t),
+    sizeof(uint64_t),
+    sizeof(float),
+    sizeof(double),
+    sizeof(long double),
+    sizeof(std::complex<float>),
+    sizeof(std::complex<double>),
+    sizeof(std::complex<long double>),
+    sizeof(void *),
 };
 
-/** Check if a type is statically allocated. */
-static bool is_static(ffi_type *tp) {
-    for (size_t i = 0; i < sizeof(BasicType_ffi_types) / sizeof(BasicType_ffi_types[0]);
-         i++)
-        if (tp == BasicType_ffi_types[i])
-            return true;
-    return tp == &ffi_type_void || tp == &ffi_type_pointer;
+CType::CType(ObjectTag tag) : m_tag(tag) {
+    if (tag > LAST_STATIC)
+        throw std::invalid_argument("tag is not for a static type");
+    const ffi_type *tp = type_map[tag];
+
+    // TODO: Bad practice to do it this way. This should be done in a copy constructor
+    // or something similar. CType should probably not make ffi_type a public superclass
+    // at all.
+    size = tp->size;
+    alignment = tp->alignment;
+    type = tp->type;
+    elements = tp->elements;
 }
 
-/**
- * Free an ffi_type.
- */
-void ffi_type_free(ffi_type *tp) {
-    if (is_static(tp))
-        return;
+/** Unbox the type into a CType class. */
+CType *CType::unbox(b_lean_obj_arg obj) {
+    ObjectTag tag = (ObjectTag)lean_obj_tag(obj);
+    if (tag < LAST_STATIC)
+        return new CType(tag);
+    lean_internal_panic_unreachable();
+}
 
-    // For arrays and struct types.
-    // TODO: Let's hope there is nothing static in there that we don't have in the
-    //       primitive_types array.
-    for (size_t i = 0; tp->elements && tp->elements[i]; i++)
-        ffi_type_free(tp->elements[i]);
-    free(tp->elements);
-    free(tp);
+/** Get the size of a type. */
+extern "C" lean_obj_res CType_size(b_lean_obj_arg type) {
+    CType *tp = CType::unbox(type);
+    return lean_box(tp->get_size());
 }

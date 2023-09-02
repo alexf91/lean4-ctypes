@@ -18,8 +18,9 @@ set_option relaxedAutoImplicit false
 
 namespace CTypes.FFI
 
-/-- Basic types in C. -/
-inductive BasicType where
+/-- Types in C. -/
+inductive CType where
+  | void
   | int8
   | uint8
   | int16
@@ -34,23 +35,15 @@ inductive BasicType where
   | complex_float
   | complex_double
   | complex_longdouble
-deriving Repr, BEq
-
-namespace BasicType
-  /-- Get the size of a basic type. -/
-  @[extern "BasicType_sizeof"]
-  opaque sizeof (type : @&BasicType) : Nat
-end BasicType
-
-inductive CType where
-  | void
-  | basic (type : BasicType)
   | pointer (type : CType)
   | array (type : CType) (size : Nat)
   | struct (elements : Array CType)
 deriving Repr, BEq
 
-instance : Coe BasicType CType where
-  coe := fun t => .basic t
+namespace CType
+  /-- Get the size of a basic type. -/
+  @[extern "CType_size"]
+  opaque size (type : @&CType) : Nat
+end CType
 
 end CTypes.FFI

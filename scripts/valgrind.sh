@@ -24,5 +24,6 @@ if [ $# != 0 ]; then
 fi
 
 cd "$SCRIPTDIR"/..
+lake clean
 lake build -Kdebug tests
 valgrind --leak-check=yes build/bin/tests

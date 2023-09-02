@@ -22,67 +22,6 @@
 #include <algorithm>
 #include <cstdlib>
 
-/** Forward declaration. */
-ffi_type *CType_unbox(b_lean_obj_arg tp);
-
-/** Unbox an array type. */
-ffi_type *CType_unbox_array(b_lean_obj_arg tp) {
-    size_t length = lean_unbox(lean_ctor_get(tp, 1));
-    lean_object *atype_obj = lean_ctor_get(tp, 0);
-
-    // utils_log("unboxing array of type %s and length %d",
-    //           primitive_types_names[lean_unbox(atype_obj)], length);
-
-    // Describe an array by setting the elements field length times.
-    // TODO: We currently unpack it every time to make freeing easier.
-    ffi_type *result = (ffi_type *)calloc(1, sizeof(ffi_type));
-    result->type = FFI_TYPE_STRUCT;
-    result->elements = (ffi_type **)calloc(length + 1, sizeof(ffi_type *));
-    for (size_t i = 0; i < length; i++)
-        result->elements[i] = CType_unbox(atype_obj);
-
-    return result;
-}
-
-/** Unbox a struct type. */
-ffi_type *CType_unbox_struct(b_lean_obj_arg tp) {
-    lean_object *elements = lean_ctor_get(tp, 0);
-    size_t length = lean_array_size(elements);
-    utils_log("unboxing struct with %d elements", length);
-
-    ffi_type *result = (ffi_type *)calloc(1, sizeof(ffi_type));
-    result->type = FFI_TYPE_STRUCT;
-    result->elements = (ffi_type **)calloc(length + 1, sizeof(ffi_type *));
-    for (size_t i = 0; i < length; i++)
-        result->elements[i] = CType_unbox(lean_array_get_core(elements, i));
-
-    return result;
-}
-
-/**
- * Unbox the CType enum to a ffi_type structure.
- *
- * @param tp Lean object contaning a CType type.
- */
-ffi_type *CType_unbox(b_lean_obj_arg tp) {
-    // int index = lean_obj_tag(tp);
-    // switch (index) {
-    // case CTYPE_PRIMITIVE_FIRST ... CTYPE_PRIMITIVE_LAST:
-    //     utils_log("unboxing %s", primitive_types_names[index]);
-    //     return primitive_types[index];
-    // case CTYPE_STRUCT: // struct
-    //     return CType_unbox_struct(tp);
-    // case CTYPE_ARRAY: // array
-    //     return CType_unbox_array(tp);
-    // }
-    // utils_log("unexpected type");
-    // assert(0);
-    return NULL;
-}
-
-/******************************************************************************
- * Conversion matrix from LeanType and ffi_type pair to a void pointer.
- *****************************************************************************/
 void *LeanType_unbox_int(ffi_type *ffi_tp, lean_object *lean_tp) {
     size_t value = lean_unbox(lean_ctor_get(lean_tp, 0));
     utils_log("value: %d", value);
@@ -140,7 +79,7 @@ Function::Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
     utils_log("creating function for '%s'", s->get_name());
 
     // Unbox the return type.
-    m_rtype = CType_unbox(rtype_object);
+    m_rtype = CType::unbox(rtype_object);
     if (m_rtype == NULL)
         throw "return type not supported";
 
@@ -148,7 +87,7 @@ Function::Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
     size_t nargs = lean_array_size(argtypes_object);
     m_argtypes = (ffi_type **)malloc(nargs * sizeof(ffi_type *));
     for (size_t i = 0; i < nargs; i++) {
-        m_argtypes[i] = CType_unbox(lean_array_get_core(argtypes_object, i));
+        m_argtypes[i] = CType::unbox(lean_array_get_core(argtypes_object, i));
         if (m_argtypes[i] == NULL) {
             free(m_argtypes);
             throw "argument type not supported";
@@ -171,7 +110,7 @@ Function::Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
     m_rtype_object = rtype_object;
 
     lean_inc(argtypes_object);
-    argtypes_object = argtypes_object;
+    m_argtypes_object = argtypes_object;
 }
 
 /**
@@ -180,8 +119,8 @@ Function::Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
 Function::~Function() {
     utils_log("finalizing function for '%s'", Symbol::unbox(m_symbol)->get_name());
 
-    for (size_t i = 0; i < get_nargs(); i++)
-        ffi_type_free(m_argtypes[i]);
+    // for (size_t i = 0; i < get_nargs(); i++)
+    //     ffi_type_free(m_argtypes[i]);
 
     lean_dec(m_symbol);
     lean_dec(m_rtype_object);
@@ -211,6 +150,7 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
     // TODO: Cleanup
     void *rvalue = malloc(std::min((size_t)FFI_SIZEOF_ARG, m_rtype->size));
     auto handle = (void (*)())Symbol::unbox(m_symbol)->get_handle();
+
     ffi_call(&m_cif, handle, rvalue, argvals);
 
     lean_object *result = LeanType_box(m_rtype_object, (uint64_t)rvalue);
@@ -224,7 +164,7 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
 
 /** Convert a Function object from C to Lean. */
 lean_object *Function::box() {
-    if (Function::m_class == NULL)
+    if (Function::m_class == nullptr)
         Function::m_class = lean_register_external_class(finalize, foreach);
     return lean_alloc_external(m_class, this);
 }

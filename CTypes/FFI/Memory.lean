@@ -52,17 +52,17 @@ namespace Memory
 
   /-- Read an integer type from the memory view. -/
   @[extern "Memory_readInt"]
-  opaque readInt (m : @&Memory) (offset : @&Nat) (type : @&BasicType) : IO Int
+  opaque readInt (m : @&Memory) (offset : @&Nat) (type : @&CType) : IO Int
 
   /-- Read a floating point type from the memory view. -/
   @[extern "Memory_readFloat"]
-  opaque readFloat (m : @&Memory) (offset : @&Nat) (type : @&BasicType) : IO Float
+  opaque readFloat (m : @&Memory) (offset : @&Nat) (type : @&CType) : IO Float
 
   /-- Internal implementation for reading complex numbers. -/
   @[extern "Memory_readComplex"]
-  private opaque _readComplex (m : @&Memory) (offset : @&Nat) (type : @&BasicType) : IO FloatArray
+  private opaque _readComplex (m : @&Memory) (offset : @&Nat) (type : @&CType) : IO FloatArray
   /-- Read a complex floating point type from the memory view. -/
-  def readComplex (m : @&Memory) (offset : @&Nat) (type : @&BasicType) : IO (Float × Float) := do
+  def readComplex (m : @&Memory) (offset : @&Nat) (type : @&CType) : IO (Float × Float) := do
     let a ← _readComplex m offset type
     return (a.get! 0, a.get! 1)
 

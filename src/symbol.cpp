@@ -33,9 +33,9 @@ Symbol::Symbol(b_lean_obj_arg lib, b_lean_obj_arg sym) {
     // Clear dlerror() to distinguish between errors and NULL.
     dlerror();
     m_handle = dlsym(l->get_handle(), name);
-    if (m_handle == NULL) {
+    if (m_handle == nullptr) {
         char *msg = dlerror();
-        if (msg != NULL)
+        if (msg != nullptr)
             throw msg;
     }
     // Make the library an owned object.
@@ -54,7 +54,7 @@ Symbol::~Symbol() {
 
 /** Convert a Symbol object from C to Lean. */
 lean_object *Symbol::box() {
-    if (Symbol::m_class == NULL)
+    if (Symbol::m_class == nullptr)
         Symbol::m_class = lean_register_external_class(finalize, foreach);
     return lean_alloc_external(m_class, this);
 }

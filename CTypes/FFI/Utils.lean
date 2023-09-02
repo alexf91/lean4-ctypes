@@ -26,20 +26,24 @@ opaque debugMode (_ : Unit) : Bool
 @[export lean_println]
 def println (msg : String) : IO Unit := do
   IO.println msg
+  (← IO.getStdout).flush
 
 /-- `print` function exported to C. -/
 @[export lean_print]
 def print (msg : String) : IO Unit := do
   IO.print msg
+  (← IO.getStdout).flush
 
 /-- `eprintln` function exported to C. -/
 @[export lean_eprintln]
 def eprintln (msg : String) : IO Unit := do
   IO.eprintln msg
+  (← IO.getStdout).flush
 
 /-- `eprint` function exported to C. -/
 @[export lean_eprint]
 def eprint (msg : String) : IO Unit := do
   IO.eprint msg
+  (← IO.getStdout).flush
 
 end CTypes.FFI

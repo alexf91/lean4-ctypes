@@ -36,10 +36,10 @@ static inline void lean_vfprintf(lean_print_t fn, const char *fmt, va_list ap) {
     va_copy(apcopy, ap);
 
     // Determine the required buffer size.
-    size_t needed = vsnprintf(NULL, 0, fmt, ap) + 1;
+    size_t needed = vsnprintf(nullptr, 0, fmt, ap) + 1;
     char *buffer = (char *)malloc(needed);
     vsprintf(buffer, fmt, apcopy);
-    fn(lean_mk_string(buffer), NULL);
+    fn(lean_mk_string(buffer), nullptr);
     free(buffer);
 }
 
