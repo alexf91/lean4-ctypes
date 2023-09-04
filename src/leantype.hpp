@@ -29,26 +29,88 @@
 class LeanType {
   public:
     /** The object tags of the inductive type defined in Lean.  */
-    enum ObjectTag { UNIT, INT, FLOAT, LENGTH };
+    enum ObjectTag {
+        UNIT,
+        INT,
+        FLOAT,
+        LENGTH,
+    };
 
-    LeanType(ObjectTag tag);
-    ~LeanType();
+    LeanType(ObjectTag tag) { m_tag = tag; }
+    virtual ~LeanType() {}
 
     /** Get a string representation of the type. */
-    const char *to_string() { return "not implemented"; }
+    const char *to_string() { lean_internal_panic("not implemented"); }
 
-    /** Box the type to a Lean object. */
-    lean_obj_res unbox();
+    /**
+     * Box the type to a Lean object.
+     * To treat values correctly, we require the corresponding C type.
+     */
+    virtual lean_obj_res box(CType *ct) = 0;
 
     /** Convert from Lean to this class. */
     static LeanType *unbox(b_lean_obj_arg obj);
 
-    /** Convert the type to a buffer for calling the function. */
-    void *to_buffer();
+    /**
+     * Convert the type to a buffer for calling the function.
+     * The value is converted to the given CType first.
+     */
+    virtual void *to_buffer(CType *ct) = 0;
 
     /** Get the object tag. */
     ObjectTag get_tag() { return m_tag; }
 
   private:
     ObjectTag m_tag;
+};
+
+// TODO: Use Template here?
+
+/** LeanType specialization for Unit types. */
+class LeanTypeUnit : public LeanType {
+  public:
+    LeanTypeUnit();
+    ~LeanTypeUnit() {}
+    lean_obj_res box(CType *ct) { lean_internal_panic("not implemented"); }
+    void *to_buffer(CType *ct);
+};
+
+/** LeanType specialization for Integer types. */
+class LeanTypeInt : public LeanType {
+  public:
+    /** Constructor for integer values. */
+    LeanTypeInt(size_t value);
+    LeanTypeInt(ssize_t value);
+
+    /** Constructor for integer objects. */
+    LeanTypeInt(b_lean_obj_arg obj);
+
+    ~LeanTypeInt() {}
+    lean_obj_res box(CType *ct) { lean_internal_panic("not implemented"); }
+    void *to_buffer(CType *ct);
+
+  private:
+    // The representation of the value as a 64 bit value.
+    uint64_t m_value;
+};
+
+/**
+ * LeanType specialization for Float types.
+ * We use double as the internal representation, since this is what Lean uses.
+ * TODO: This might cause a loss of precision.
+ */
+class LeanTypeFloat : public LeanType {
+  public:
+    /** Constructor for floating point values. */
+    LeanTypeFloat(double value);
+
+    /** Constructor for floating point objects. */
+    LeanTypeFloat(b_lean_obj_arg obj);
+
+    ~LeanTypeFloat() {}
+    lean_obj_res box(CType *ct) { lean_internal_panic("not implemented"); }
+    void *to_buffer(CType *ct);
+
+  private:
+    double m_value;
 };

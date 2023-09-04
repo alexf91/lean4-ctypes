@@ -63,4 +63,10 @@ inductive LeanType where
   | float (a : Float)
 deriving Repr, BEq
 
+namespace LeanType
+  @[extern "LeanType_test"]
+  opaque test (type : @&LeanType) : IO Unit
+end LeanType
+
+
 end CTypes.FFI

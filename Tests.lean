@@ -245,6 +245,32 @@ namespace CType
 
 end CType
 
+namespace LeanType
+  testcase testIntUMax := do
+    discard <| LeanType.int (UInt64.size - 1) |>.test
+
+  testcase testIntSMin := do
+    discard <| LeanType.int (-UInt64.size / 2) |>.test
+
+  testcase testIntSMax := do
+    discard <| LeanType.int (UInt64.size / 2 - 1) |>.test
+
+  testcase testLimits := do
+    let UInt64.min : Int :=  0
+    let UInt64.max : Int :=  UInt64.size - 1
+    let Int64.min  : Int := -UInt64.size / 2
+    let Int64.max  : Int :=  UInt64.size / 2 - 1
+
+    discard <| LeanType.int UInt64.min |>.test
+    discard <| LeanType.int UInt64.max |>.test
+    discard <| LeanType.int  Int64.min |>.test
+    discard <| LeanType.int  Int64.max |>.test
+
+  testcase testFloat := do
+    discard <| LeanType.float 3.1415 |>.test
+
+end LeanType
+
 end Tests.FFI
 
 #LTestMain

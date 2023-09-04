@@ -56,7 +56,7 @@ Function::Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
     // Create the call interface for the function.
     ffi_status stat = ffi_prep_cif(&m_cif, FFI_DEFAULT_ABI, nargs, m_rtype, m_argtypes);
     if (stat != FFI_OK) {
-        free(m_argtypes);
+        delete[] m_argtypes;
         utils_log("creating CIF failed with error code %d", stat);
         throw "creating CIF failed";
     }
@@ -78,13 +78,10 @@ Function::Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
 Function::~Function() {
     utils_log("finalizing function for '%s'", Symbol::unbox(m_symbol)->get_name());
 
-    // for (size_t i = 0; i < get_nargs(); i++)
-    //     ffi_type_free(m_argtypes[i]);
-
     lean_dec(m_symbol);
     lean_dec(m_rtype_object);
     lean_dec(m_argtypes_object);
-    delete m_argtypes;
+    delete[] m_argtypes;
 }
 
 /**
