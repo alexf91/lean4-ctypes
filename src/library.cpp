@@ -15,10 +15,14 @@
  */
 
 #include "library.hpp"
-#include "utils.hpp"
+
 #include <cstring>
 #include <dlfcn.h>
 #include <lean/lean.h>
+#include <stdint.h>
+#include <stdlib.h>
+
+#include "utils.hpp"
 
 /** Unbox the Flag enum. */
 static inline int Flag_unbox(b_lean_obj_arg flag) {

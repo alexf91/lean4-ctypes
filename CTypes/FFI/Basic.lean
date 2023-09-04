@@ -65,26 +65,6 @@ opaque Function.Nonempty : NonemptyType
 def Function : Type := Function.Nonempty.type
 instance : Nonempty Function := Function.Nonempty.property
 
-/-- Type for passing values to and from C functions. -/
-inductive LeanType where
-  | unit
-  | int    (a : Int)
-  | float  (a : Float)
-deriving Repr, BEq, Inhabited
-
-namespace LeanType
-  /--
-    Convert the buffer with the result of a function call to a `LeanType`.
-    Doing most of it here instead of C makes the implementation easier.
-    This works only for types without pointers.
-  -/
-  @[export LeanType_box]
-  private def box (ct : CType) (result : UInt64) : LeanType := match ct with
-  | .void => .unit
-  | _     => panic s!"support for {repr ct} not implemented"
-
-end LeanType
-
 
 namespace Function
   /-- Create a new function instance from a symbol. -/

@@ -16,13 +16,15 @@
 
 #pragma once
 
-#include "utils.hpp"
 #include <complex>
 #include <cstdint>
 #include <ffi.h>
 #include <lean/lean.h>
 #include <memory>
+#include <stddef.h>
 #include <vector>
+
+#include "utils.hpp"
 
 /**
  * A type in C.
@@ -70,6 +72,7 @@ class CType : public ffi_type {
         LENGTH
     };
 
+  private:
     // Constructor for static types.
     CType(ObjectTag tag);
     // Constructor for array types.
@@ -77,6 +80,7 @@ class CType : public ffi_type {
     // Constructor for struct types.
     CType(std::vector<CType *> elements);
 
+  public:
     ~CType();
 
     /** Get the size of the basic type. */

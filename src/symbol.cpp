@@ -15,10 +15,14 @@
  */
 
 #include "symbol.hpp"
-#include "library.hpp"
-#include "utils.hpp"
+
 #include <cstring>
 #include <dlfcn.h>
+#include <stdlib.h>
+
+#include "lean/lean.h"
+#include "library.hpp"
+#include "utils.hpp"
 
 /**
  * Initialize the Symbol object by opening the symbol with dlsym().

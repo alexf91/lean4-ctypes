@@ -15,11 +15,16 @@
  */
 
 #include "memory.hpp"
-#include "ctype.hpp"
-#include "utils.hpp"
+
 #include <algorithm>
-#include <complex.h>
+#include <complex>
 #include <cstdlib>
+#include <stdint.h>
+#include <sys/types.h>
+
+#include "ctype.hpp"
+#include "lean/lean.h"
+#include "utils.hpp"
 
 extern "C" {
 

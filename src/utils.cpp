@@ -16,6 +16,13 @@
 
 #include "utils.hpp"
 
+#include <cstdarg>
+#include <cstdio>
+#include <stdint.h>
+#include <stdlib.h>
+
+#include "lean/lean.h"
+
 extern "C" {
 
 /** Check if NDEBUG is defined. */

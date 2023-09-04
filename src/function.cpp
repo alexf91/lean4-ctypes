@@ -15,12 +15,14 @@
  */
 
 #include "function.hpp"
-#include "ctype.hpp"
-#include "library.hpp"
-#include "symbol.hpp"
-#include "utils.hpp"
+
 #include <algorithm>
 #include <cstdlib>
+
+#include "ctype.hpp"
+#include "lean/lean.h"
+#include "symbol.hpp"
+#include "utils.hpp"
 
 /***************************************************************************************
  * Function functions

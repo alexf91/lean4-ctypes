@@ -55,4 +55,12 @@ namespace CType
   opaque alignment (type : @&CType) : Nat
 end CType
 
+
+/-- Types in Lean. -/
+inductive LeanType where
+  | unit
+  | int   (a : Int)
+  | float (a : Float)
+deriving Repr, BEq
+
 end CTypes.FFI

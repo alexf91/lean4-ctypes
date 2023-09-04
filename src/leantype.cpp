@@ -13,28 +13,3 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#pragma once
-
-#include <lean/lean.h>
-#include <stddef.h>
-
-extern "C" {
-
-/**
- * Internal representation of a memory region.
- * If the memory is allocated in the constructor, then it has to be freed when
- * it is finalized.
- */
-typedef struct {
-    lean_object *parent;
-    void *buffer;
-    size_t size;
-    bool allocated;
-} Memory;
-
-/** Convert a Memory object from Lean to C. */
-static inline Memory *Memory_unbox(b_lean_obj_arg m) {
-    return (Memory *)(lean_get_external_data(m));
-}
-}

@@ -15,9 +15,12 @@
  */
 
 #include "ctype.hpp"
-#include <algorithm>
-#include <ccomplex>
+
 #include <cstdlib>
+#include <stdexcept>
+
+#include "lean/lean.h"
+
 /**
  * Primitive types defined in libffi. They are in the same order as the CType
  * enum. They are statically allocated.

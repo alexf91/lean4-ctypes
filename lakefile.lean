@@ -49,22 +49,24 @@ def createTarget (pkg : Package) (cfile : FilePath) := do
   ] ++ debugFlags
   buildO cfile.toString oFile srcJob flags "g++"
 
-target utils.o pkg : FilePath := createTarget pkg $ "src" / "utils.cpp"
-target library.o pkg : FilePath := createTarget pkg $ "src" / "library.cpp"
-target symbol.o pkg : FilePath := createTarget pkg $ "src" / "symbol.cpp"
-target function.o pkg : FilePath := createTarget pkg $ "src" / "function.cpp"
-target memory.o pkg : FilePath := createTarget pkg $ "src" / "memory.cpp"
 target ctype.o pkg : FilePath := createTarget pkg $ "src" / "ctype.cpp"
+target function.o pkg : FilePath := createTarget pkg $ "src" / "function.cpp"
+target leantype.o pkg : FilePath := createTarget pkg $ "src" / "leantype.cpp"
+target library.o pkg : FilePath := createTarget pkg $ "src" / "library.cpp"
+target memory.o pkg : FilePath := createTarget pkg $ "src" / "memory.cpp"
+target symbol.o pkg : FilePath := createTarget pkg $ "src" / "symbol.cpp"
+target utils.o pkg : FilePath := createTarget pkg $ "src" / "utils.cpp"
 
 extern_lib libctypes pkg := do
   let name := nameToStaticLib "ctypes"
   let targets := #[
-    (← fetch <| pkg.target ``utils.o),
-    (← fetch <| pkg.target ``library.o),
-    (← fetch <| pkg.target ``symbol.o),
+    (← fetch <| pkg.target ``ctype.o),
     (← fetch <| pkg.target ``function.o),
+    (← fetch <| pkg.target ``leantype.o),
+    (← fetch <| pkg.target ``library.o),
     (← fetch <| pkg.target ``memory.o),
-    (← fetch <| pkg.target ``ctype.o)
+    (← fetch <| pkg.target ``symbol.o),
+    (← fetch <| pkg.target ``utils.o)
   ]
   buildStaticLib (pkg.nativeLibDir / name) targets
 

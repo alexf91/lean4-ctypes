@@ -16,10 +16,13 @@
 
 #pragma once
 
-#include "ctype.h"
-#include "utils.hpp"
 #include <ffi.h>
 #include <lean/lean.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#include "ctype.h"
+#include "utils.hpp"
 
 class Function {
   public:
