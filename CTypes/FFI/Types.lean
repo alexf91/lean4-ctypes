@@ -38,12 +38,21 @@ inductive CType where
   | pointer (type : CType)
   | array (type : CType) (size : Nat)
   | struct (elements : Array CType)
+  | union (elements : Array CType)
 deriving Repr, BEq
 
 namespace CType
   /-- Get the size of a basic type. -/
   @[extern "CType_size"]
   opaque size (type : @&CType) : Nat
+
+  /-- Get struct offsets. -/
+  @[extern "CType_offsets"]
+  opaque offsets (type : @&CType) : Array Nat
+
+  /-- Get alignment. -/
+  @[extern "CType_alignment"]
+  opaque alignment (type : @&CType) : Nat
 end CType
 
 end CTypes.FFI

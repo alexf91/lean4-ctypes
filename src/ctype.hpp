@@ -22,6 +22,7 @@
 #include <ffi.h>
 #include <lean/lean.h>
 #include <memory>
+#include <vector>
 
 /**
  * A type in C.
@@ -59,20 +60,30 @@ class CType : public ffi_type {
 
         // Pointer types
         POINTER,
-        LAST_STATIC = POINTER,
+        LAST_PRIMITIVE = POINTER,
 
         // Composite types
         ARRAY,
         STRUCT,
+        UNION,
 
         LENGTH
     };
 
     // Constructor for static types.
     CType(ObjectTag tag);
+    // Constructor for array types.
+    CType(CType *type, size_t length);
+    // Constructor for struct types.
+    CType(std::vector<CType *> elements);
+
+    ~CType();
 
     /** Get the size of the basic type. */
-    size_t get_size() { return size_map[m_tag]; }
+    size_t get_size() { return size; }
+
+    /** Get alignment. */
+    size_t get_alignment() { return alignment; }
 
     /** Get a string representation of the type. */
     const char *to_string() { return name_map[m_tag]; }
@@ -86,24 +97,19 @@ class CType : public ffi_type {
     bool is_float() { return FIRST_FLOAT <= m_tag && m_tag <= LAST_FLOAT; }
     /** Check if the type is a complex floating point type. */
     bool is_complex() { return FIRST_COMPLEX <= m_tag && m_tag <= LAST_COMPLEX; }
-    /**
-     * Check if the ffi_type is one of our basic statically allocated types.
-     * Note that the type might still be statically allocated even if this function
-     * returns false.
-     */
-    bool is_static(ffi_type *tp) {
-        for (size_t i = 0; i < LAST_STATIC; i++)
-            if (tp == type_map[i])
-                return true;
-        return false;
-    }
 
+    /** Get the object tag. */
     ObjectTag get_tag() { return m_tag; }
+
+    /** Get the number of elements. */
+    size_t get_nelements();
+
+    /** Get the array of struct offsets. */
+    std::vector<size_t> get_offsets();
 
   private:
     ObjectTag m_tag;
 
     static const ffi_type *type_map[];
     static const char *name_map[];
-    static const size_t size_map[];
 };

@@ -18,12 +18,7 @@
 # Taken from https://stackoverflow.com/a/246128
 SCRIPTDIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-if [ $# != 0 ]; then
-    echo "Usage: $0"
-    exit 1
-fi
-
 cd "$SCRIPTDIR"/..
 lake clean
 lake build -Kdebug tests
-valgrind --leak-check=yes build/bin/tests
+valgrind --leak-check=yes build/bin/tests $@

@@ -22,49 +22,6 @@
 #include <algorithm>
 #include <cstdlib>
 
-void *LeanType_unbox_int(ffi_type *ffi_tp, lean_object *lean_tp) {
-    size_t value = lean_unbox(lean_ctor_get(lean_tp, 0));
-    utils_log("value: %d", value);
-    return NULL;
-}
-
-void *LeanType_unbox_float(ffi_type *ffi_tp, b_lean_obj_arg lean_tp) {
-    double value = lean_unbox_float(lean_tp);
-    utils_log("value: %f", value);
-
-    if (ffi_tp == &ffi_type_float) {
-        float *v = (float *)malloc(sizeof(float));
-        *v = value;
-        return v;
-    } else if (ffi_tp == &ffi_type_double) {
-        double *v = (double *)malloc(sizeof(double));
-        *v = value;
-        return v;
-    } else if (ffi_tp == &ffi_type_longdouble) {
-        long double *v = (long double *)malloc(sizeof(long double));
-        *v = value;
-        return v;
-    }
-
-    return NULL;
-}
-
-void *LeanType_unbox(ffi_type *ffi_tp, lean_object *lean_tp) {
-    switch (lean_obj_tag(lean_tp)) {
-    case 0: // unit
-        utils_log("unit: not allowed as argument");
-        assert(0);
-        break;
-    case 1: // int
-        return LeanType_unbox_int(ffi_tp, lean_tp);
-    case 2: // float
-        return LeanType_unbox_float(ffi_tp, lean_tp);
-    }
-
-    utils_log("argument type not recognized");
-    return NULL;
-}
-
 /***************************************************************************************
  * Function functions
  **************************************************************************************/
@@ -85,7 +42,7 @@ Function::Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
 
     // Unbox the arguments and copy them into buffer.
     size_t nargs = lean_array_size(argtypes_object);
-    m_argtypes = (ffi_type **)malloc(nargs * sizeof(ffi_type *));
+    m_argtypes = new ffi_type *[nargs];
     for (size_t i = 0; i < nargs; i++) {
         m_argtypes[i] = CType::unbox(lean_array_get_core(argtypes_object, i));
         if (m_argtypes[i] == NULL) {
@@ -125,7 +82,7 @@ Function::~Function() {
     lean_dec(m_symbol);
     lean_dec(m_rtype_object);
     lean_dec(m_argtypes_object);
-    free(m_argtypes);
+    delete m_argtypes;
 }
 
 /**
@@ -142,10 +99,10 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
     }
 
     void *argvals[nargs];
-    for (size_t i = 0; i < nargs; i++) {
-        lean_object *arg = lean_array_get_core(argvals_object, i);
-        argvals[i] = LeanType_unbox(m_argtypes[i], arg);
-    }
+    // for (size_t i = 0; i < nargs; i++) {
+    //     lean_object *arg = lean_array_get_core(argvals_object, i);
+    //     argvals[i] = LeanType_unbox(m_argtypes[i], arg);
+    // }
 
     // TODO: Cleanup
     void *rvalue = malloc(std::min((size_t)FFI_SIZEOF_ARG, m_rtype->size));
