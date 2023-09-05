@@ -49,9 +49,9 @@ class Function final : public ExternalType<Function> {
     // CIF to call the function.
     ffi_cif m_cif;
     // Return type used in the CIF.
-    ffi_type *m_rtype;
+    CType *m_rtype;
     // Argument types used in the CIF.
-    ffi_type **m_argtypes;
+    CType **m_argtypes;
 };
 
 /** Boxing of LeanType objects. */

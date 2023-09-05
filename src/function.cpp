@@ -38,13 +38,13 @@ Function::Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
 
     // Unbox the return type and the arguments.
     m_rtype = CType::unbox(rtype_object);
-    m_argtypes = new ffi_type *[get_nargs()];
+    m_argtypes = new CType *[get_nargs()];
     for (size_t i = 0; i < get_nargs(); i++)
         m_argtypes[i] = CType::unbox(lean_array_get_core(argtypes_object, i));
 
     // Create the call interface for the function.
-    ffi_status stat =
-        ffi_prep_cif(&m_cif, FFI_DEFAULT_ABI, get_nargs(), m_rtype, m_argtypes);
+    ffi_status stat = ffi_prep_cif(&m_cif, FFI_DEFAULT_ABI, get_nargs(), m_rtype,
+                                   (ffi_type **)m_argtypes);
     if (stat != FFI_OK)
         throw "creating CIF failed";
 
@@ -64,7 +64,7 @@ Function::~Function() {
 
     delete m_rtype;
     for (size_t i = 0; i < get_nargs(); i++)
-        delete (CType *)m_argtypes[i];
+        delete m_argtypes[i];
     delete[] m_argtypes;
 }
 
@@ -83,8 +83,7 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
     for (size_t i = 0; i < nargs; i++) {
         lean_object *arg = lean_array_get_core(argvals_object, i);
         LeanType *v = LeanType::unbox(arg);
-        ffi_type *tp = m_argtypes[i];
-        argvals[i] = v->to_buffer((CType *)tp);
+        argvals[i] = v->to_buffer(m_argtypes[i]);
         delete v;
     }
 

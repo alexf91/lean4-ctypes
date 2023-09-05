@@ -77,7 +77,8 @@ class CType : public ffi_type {
     };
 
   private:
-    // Constructor for static types.
+    // Constructor for static types. Values other than the tag are taken from the
+    // corresponding ffi_type.
     CType(ObjectTag tag);
     // Constructor for array types.
     CType(CType *type, size_t length);

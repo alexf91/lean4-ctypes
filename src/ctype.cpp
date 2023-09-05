@@ -102,7 +102,7 @@ CType::~CType() {
     case UNION:
         lean_internal_panic("union not implemented");
     default:
-        break;
+        assert(elements == nullptr || is_complex());
     }
 }
 
