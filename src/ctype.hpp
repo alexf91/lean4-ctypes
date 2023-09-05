@@ -36,14 +36,19 @@ class CType : public ffi_type {
         VOID,
         // Integer types
         FIRST_INT,
+        FIRST_SIGNED = FIRST_INT,
         INT8 = FIRST_INT,
-        UINT8,
         INT16,
-        UINT16,
         INT32,
-        UINT32,
         INT64,
+        LAST_SIGNED = INT64,
+
+        FIRST_UNSIGNED,
+        UINT8 = FIRST_UNSIGNED,
+        UINT16,
+        UINT32,
         UINT64,
+        LAST_UNSIGNED = UINT64,
         LAST_INT = UINT64,
 
         // Floating point types
@@ -97,6 +102,8 @@ class CType : public ffi_type {
 
     /** Check if the type is an integer type. */
     bool is_integer() { return FIRST_INT <= m_tag && m_tag <= LAST_INT; }
+    /** Check if the type is a signed integer. */
+    bool is_signed() { return FIRST_SIGNED <= m_tag && m_tag <= LAST_SIGNED; }
     /** Check if the type is a floating point type. */
     bool is_float() { return FIRST_FLOAT <= m_tag && m_tag <= LAST_FLOAT; }
     /** Check if the type is a complex floating point type. */

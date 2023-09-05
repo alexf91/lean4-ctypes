@@ -30,7 +30,11 @@ class Function {
              b_lean_obj_arg argtypes_object);
     ~Function();
 
-    /** Call the function with the given arguments. */
+    /**
+     * Call the function with the given arguments.
+     * The result is a boxed LeanType object. Note that the result is not yet
+     * in the IO monad.
+     */
     lean_obj_res call(b_lean_obj_arg argvals_object);
 
     /** Convert a Function object from C to Lean. */

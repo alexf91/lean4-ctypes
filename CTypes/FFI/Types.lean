@@ -22,12 +22,12 @@ namespace CTypes.FFI
 inductive CType where
   | void
   | int8
-  | uint8
   | int16
-  | uint16
   | int32
-  | uint32
   | int64
+  | uint8
+  | uint16
+  | uint32
   | uint64
   | float
   | double
@@ -66,6 +66,19 @@ deriving Repr, BEq
 namespace LeanType
   @[extern "LeanType_test"]
   opaque test (type : @&LeanType) : IO Unit
+
+  /-- Create a LeanType.unit object. -/
+  @[export LeanType_mkUnit]
+  private def mkUnit (_ : @&Unit) : LeanType := .unit
+
+  /-- Create a LeanType.int object. -/
+  @[export LeanType_mkInt]
+  private def mkInt (a : @&Int) : LeanType := .int a
+
+  /-- Create a LeanType.float object. -/
+  @[export LeanType_mkFloat]
+  private def mkFloat (a : @&Float) : LeanType := .float a
+
 end LeanType
 
 

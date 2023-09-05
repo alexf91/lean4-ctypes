@@ -170,21 +170,21 @@ lean_obj_res Memory_readInt(b_lean_obj_arg memory, b_lean_obj_arg offset,
     void *address = ((uint8_t *)m->buffer) + o;
 
     switch (tp->get_tag()) {
-    case CType::ObjectTag::INT8:
+    case CType::INT8:
         return lean_io_result_mk_ok(lean_int64_to_int(*((int8_t *)address)));
-    case CType::ObjectTag::UINT8:
+    case CType::UINT8:
         return lean_io_result_mk_ok(lean_int64_to_int(*((uint8_t *)address)));
-    case CType::ObjectTag::INT16:
+    case CType::INT16:
         return lean_io_result_mk_ok(lean_int64_to_int(*((int16_t *)address)));
-    case CType::ObjectTag::UINT16:
+    case CType::UINT16:
         return lean_io_result_mk_ok(lean_int64_to_int(*((uint16_t *)address)));
-    case CType::ObjectTag::INT32:
+    case CType::INT32:
         return lean_io_result_mk_ok(lean_int64_to_int(*((int32_t *)address)));
-    case CType::ObjectTag::UINT32:
+    case CType::UINT32:
         return lean_io_result_mk_ok(lean_int64_to_int(*((uint32_t *)address)));
-    case CType::ObjectTag::INT64:
+    case CType::INT64:
         return lean_io_result_mk_ok(lean_int64_to_int(*((int64_t *)address)));
-    case CType::ObjectTag::UINT64:
+    case CType::UINT64:
         return lean_io_result_mk_ok(lean_big_uint64_to_nat(*((uint64_t *)address)));
     default:
         lean_object *msg = lean_mk_string("not an integer type");
@@ -208,11 +208,11 @@ lean_obj_res Memory_readFloat(b_lean_obj_arg memory, b_lean_obj_arg offset,
     void *address = ((uint8_t *)m->buffer) + o;
 
     switch (tp->get_tag()) {
-    case CType::ObjectTag::FLOAT:
+    case CType::FLOAT:
         return lean_io_result_mk_ok(lean_box_float(*((float *)address)));
-    case CType::ObjectTag::DOUBLE:
+    case CType::DOUBLE:
         return lean_io_result_mk_ok(lean_box_float(*((double *)address)));
-    case CType::ObjectTag::LONGDOUBLE:
+    case CType::LONGDOUBLE:
         return lean_io_result_mk_ok(lean_box_float(*((long double *)address)));
     default:
         lean_object *msg = lean_mk_string("not a floating point type");
@@ -239,13 +239,13 @@ lean_obj_res Memory_readComplex(b_lean_obj_arg memory, b_lean_obj_arg offset,
     auto tag = tp->get_tag();
     utils_log("tag = %d", tag);
     switch (tp->get_tag()) {
-    case CType::ObjectTag::COMPLEX_FLOAT:
+    case CType::COMPLEX_FLOAT:
         result = *((std::complex<float> *)address);
         break;
-    case CType::ObjectTag::COMPLEX_DOUBLE:
+    case CType::COMPLEX_DOUBLE:
         result = *((std::complex<double> *)address);
         break;
-    case CType::ObjectTag::COMPLEX_LONGDOUBLE:
+    case CType::COMPLEX_LONGDOUBLE:
         result = *((std::complex<long double> *)address);
         break;
     default:

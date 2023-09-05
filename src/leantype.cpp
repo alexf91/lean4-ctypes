@@ -49,6 +49,14 @@ void *LeanTypeUnit::to_buffer(CType *ct) {
     lean_internal_panic("can't create buffer from unit type");
 }
 
+/** Convert the type to a Lean object. */
+lean_obj_res LeanTypeUnit::box(CType *ct) {
+    assert(ct != nullptr);
+    if (ct->get_tag() != CType::VOID)
+        lean_internal_panic("can't convert unit to other than void");
+    return LeanType_mkUnit(lean_box(0));
+}
+
 /******************************************************************************
  * INTEGER TYPE
  ******************************************************************************/
@@ -83,6 +91,25 @@ void *LeanTypeInt::to_buffer(CType *ct) {
     }
 }
 
+/** Convert the type to a Lean object. */
+lean_obj_res LeanTypeInt::box(CType *ct) {
+    assert(ct != nullptr);
+    if (!ct->is_integer())
+        lean_internal_panic("can't convert integer to non-integer type");
+
+    int shift = (sizeof(uint64_t) - ct->get_size()) * 8;
+    assert(shift >= 0);
+    if (ct->is_signed()) {
+        // Shift left and then back to sign extend the value.
+        int64_t value = ((int64_t)m_value << shift) >> shift;
+        return LeanType_mkInt(lean_int64_to_int(value));
+    } else {
+        // Shift left and then back to crop the value.
+        uint64_t value = (m_value << shift) >> shift;
+        return LeanType_mkInt(lean_uint64_to_nat(value));
+    }
+}
+
 /******************************************************************************
  * FLOATING POINT TYPE
  ******************************************************************************/
@@ -106,6 +133,9 @@ void *LeanTypeFloat::to_buffer(CType *ct) {
         lean_internal_panic("invalid type");
     }
 }
+
+/** Convert the type to a Lean object. */
+lean_obj_res LeanTypeFloat::box(CType *ct) { return LeanType_mkFloat(m_value); }
 
 /******************************************************************************
  * EXPOSED C FUNCTIONS

@@ -26,9 +26,9 @@
  * enum. They are statically allocated.
  */
 const ffi_type *CType::type_map[] = {
-    &ffi_type_void,          &ffi_type_sint8,          &ffi_type_uint8,
-    &ffi_type_sint16,        &ffi_type_uint16,         &ffi_type_sint32,
-    &ffi_type_uint32,        &ffi_type_sint64,         &ffi_type_uint64,
+    &ffi_type_void,          &ffi_type_sint8,          &ffi_type_sint16,
+    &ffi_type_sint32,        &ffi_type_sint64,         &ffi_type_uint8,
+    &ffi_type_uint16,        &ffi_type_uint32,         &ffi_type_uint64,
     &ffi_type_float,         &ffi_type_double,         &ffi_type_longdouble,
     &ffi_type_complex_float, &ffi_type_complex_double, &ffi_type_complex_longdouble,
     &ffi_type_pointer,
@@ -36,8 +36,8 @@ const ffi_type *CType::type_map[] = {
 
 /** Names of primitive types for debugging. */
 const char *CType::name_map[] = {
-    "void",    "int8",       "uint8",         "int16",          "uint16",
-    "int32",   "uint32",     "int64",         "uint64",         "float",
+    "void",    "int8",       "int16",         "int32",          "int64",
+    "uint8",   "uint16",     "uint32",        "uint64",         "float",
     "double",  "longdouble", "complex_float", "complex_double", "complex_longdouble",
     "pointer", "array",      "struct",        "union"};
 
@@ -68,7 +68,7 @@ CType::CType(CType *tp, size_t length) {
         elements[i] = tp;
 
     // Initialize size and alignment fields.
-    ffi_get_struct_offsets(FFI_DEFAULT_ABI, this, NULL);
+    ffi_get_struct_offsets(FFI_DEFAULT_ABI, this, nullptr);
 }
 
 // Constructor for struct types.
@@ -83,7 +83,7 @@ CType::CType(std::vector<CType *> e) {
         elements[i] = e[i];
 
     // Initialize size and alignment fields.
-    ffi_get_struct_offsets(FFI_DEFAULT_ABI, this, NULL);
+    ffi_get_struct_offsets(FFI_DEFAULT_ABI, this, nullptr);
 }
 
 CType::~CType() {

@@ -21,6 +21,7 @@
 
 #include "ctype.hpp"
 #include "lean/lean.h"
+#include "leantype.hpp"
 #include "symbol.hpp"
 #include "utils.hpp"
 
@@ -33,54 +34,39 @@
  * preparing the CIF.
  */
 Function::Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
-                   b_lean_obj_arg argtypes_object) {
-    Symbol *s = Symbol::unbox(symbol);
-    utils_log("creating function for '%s'", s->get_name());
+                   b_lean_obj_arg argtypes_object)
+    : m_symbol(symbol), m_rtype_object(rtype_object),
+      m_argtypes_object(argtypes_object) {
 
-    // Unbox the return type.
+    // Unbox the return type and the arguments.
     m_rtype = CType::unbox(rtype_object);
-    if (m_rtype == NULL)
-        throw "return type not supported";
-
-    // Unbox the arguments and copy them into buffer.
-    size_t nargs = lean_array_size(argtypes_object);
-    m_argtypes = new ffi_type *[nargs];
-    for (size_t i = 0; i < nargs; i++) {
+    m_argtypes = new ffi_type *[get_nargs()];
+    for (size_t i = 0; i < get_nargs(); i++)
         m_argtypes[i] = CType::unbox(lean_array_get_core(argtypes_object, i));
-        if (m_argtypes[i] == NULL) {
-            free(m_argtypes);
-            throw "argument type not supported";
-        }
-    }
 
     // Create the call interface for the function.
-    ffi_status stat = ffi_prep_cif(&m_cif, FFI_DEFAULT_ABI, nargs, m_rtype, m_argtypes);
-    if (stat != FFI_OK) {
-        delete[] m_argtypes;
-        utils_log("creating CIF failed with error code %d", stat);
+    ffi_status stat =
+        ffi_prep_cif(&m_cif, FFI_DEFAULT_ABI, get_nargs(), m_rtype, m_argtypes);
+    if (stat != FFI_OK)
         throw "creating CIF failed";
-    }
 
     // Convert arguments into owned objects.
     lean_inc(symbol);
-    m_symbol = symbol;
-
     lean_inc(rtype_object);
-    m_rtype_object = rtype_object;
-
     lean_inc(argtypes_object);
-    m_argtypes_object = argtypes_object;
 }
 
 /**
  * Free prepared structures and release referenced objects.
  */
 Function::~Function() {
-    utils_log("finalizing function for '%s'", Symbol::unbox(m_symbol)->get_name());
-
     lean_dec(m_symbol);
     lean_dec(m_rtype_object);
     lean_dec(m_argtypes_object);
+
+    delete m_rtype;
+    for (size_t i = 0; i < get_nargs(); i++)
+        delete (CType *)m_argtypes[i];
     delete[] m_argtypes;
 }
 
@@ -89,33 +75,32 @@ Function::~Function() {
  */
 lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
     size_t nargs = lean_array_size(argvals_object);
-    if (nargs < get_nargs()) {
-        lean_object *msg = lean_mk_string("not enough arguments");
-        return lean_io_result_mk_error(lean_mk_io_user_error(msg));
-    } else if (nargs > get_nargs()) {
-        lean_object *msg = lean_mk_string("variadic arguments not supported");
-        return lean_io_result_mk_error(lean_mk_io_user_error(msg));
+    if (nargs < get_nargs())
+        throw "not enough arguments";
+    else if (nargs > get_nargs())
+        throw "variadic arguments not supported";
+
+    // Construct the argument buffer.
+    void *argvals[nargs];
+    for (size_t i = 0; i < nargs; i++) {
+        lean_object *arg = lean_array_get_core(argvals_object, i);
+        LeanType *v = LeanType::unbox(arg);
+        ffi_type *tp = m_argtypes[i];
+        argvals[i] = v->to_buffer((CType *)tp);
+        delete v;
     }
 
-    void *argvals[nargs];
-    // for (size_t i = 0; i < nargs; i++) {
-    //     lean_object *arg = lean_array_get_core(argvals_object, i);
-    //     argvals[i] = LeanType_unbox(m_argtypes[i], arg);
-    // }
+    // At least a buffer with the size of a register is required for the return buffer.
+    size_t rsize = std::max((size_t)FFI_SIZEOF_ARG, m_rtype->size);
+    void *rvalue = ::operator new(rsize);
 
-    // TODO: Cleanup
-    void *rvalue = malloc(std::min((size_t)FFI_SIZEOF_ARG, m_rtype->size));
+    // Call the symbol handle.
     auto handle = (void (*)())Symbol::unbox(m_symbol)->get_handle();
-
     ffi_call(&m_cif, handle, rvalue, argvals);
 
-    lean_object *result = LeanType_box(m_rtype_object, (uint64_t)rvalue);
-    free(rvalue);
-
-    for (size_t i = 0; i < nargs; i++)
-        free(argvals[i]);
-
-    return lean_io_result_mk_ok(result);
+    CType *ctype = CType::unbox(lean_box(CType::INT16));
+    auto result = new LeanTypeInt((ssize_t)-1);
+    return result->box(ctype);
 }
 
 /** Convert a Function object from C to Lean. */
@@ -141,18 +126,7 @@ void Function::finalize(void *p) {
 /** Foreach for a Function type. */
 void Function::foreach (void *mod, b_lean_obj_arg fn) { utils_log("NOT IMPLEMENTED"); }
 
-/**
- * Create a new Function instance.
- *
- * On success, the symbol is owned and remains in memory at least until the function is
- * finalized. All other arguments are borrowed.
- *
- * @param symbol Lean object for the symbol used to create the function.
- * @param rtype_obj Return type of the function as a CType.
- * @param args Array CTypes to specify the arguments.
- *
- * @return Function object or an exception.
- */
+/** Create a new Function instance.  */
 extern "C" lean_obj_res Function_mk(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
                                     b_lean_obj_arg argtypes_object,
                                     lean_object *unused) {
@@ -166,18 +140,16 @@ extern "C" lean_obj_res Function_mk(b_lean_obj_arg symbol, b_lean_obj_arg rtype_
     }
 }
 
-/**
- * Call a function.
- *
- * @param function Function object that should be called.
- * @param argvals Array of argument values.
- *
- * @return Result of the call wrapped in a LeanType object.
- */
+/** Call a function.  */
 extern "C" lean_obj_res Function_call(b_lean_obj_arg function,
                                       b_lean_obj_arg argvals_obj, lean_object *unused) {
 
-    Function *f = Function::unbox(function);
-    lean_object *result = f->call(argvals_obj);
-    return lean_io_result_mk_ok(result);
+    try {
+        Function *f = Function::unbox(function);
+        lean_object *result = f->call(argvals_obj);
+        return lean_io_result_mk_ok(result);
+    } catch (const char *msg) {
+        lean_object *err = lean_mk_io_user_error(lean_mk_string(msg));
+        return lean_io_result_mk_error(err);
+    }
 }

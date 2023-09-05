@@ -23,6 +23,15 @@
 #include "ctype.hpp"
 #include "utils.hpp"
 
+extern "C" {
+/** Create a LeanType.unit object. */
+LEAN_EXPORT_WEAK lean_obj_res LeanType_mkUnit(b_lean_obj_arg obj);
+/** Create a LeanType.int object. */
+LEAN_EXPORT_WEAK lean_obj_res LeanType_mkInt(b_lean_obj_arg obj);
+/** Create a LeanType.float object. */
+LEAN_EXPORT_WEAK lean_obj_res LeanType_mkFloat(double obj);
+}
+
 /**
  * A type in Lean.
  */
@@ -47,6 +56,7 @@ class LeanType {
      * To treat values correctly, we require the corresponding C type.
      */
     virtual lean_obj_res box(CType *ct) = 0;
+    lean_obj_res box(std::shared_ptr<CType> ct) { return box(ct.get()); }
 
     /** Convert from Lean to this class. */
     static LeanType *unbox(b_lean_obj_arg obj);
@@ -56,6 +66,7 @@ class LeanType {
      * The value is converted to the given CType first.
      */
     virtual void *to_buffer(CType *ct) = 0;
+    void *to_buffer(std::shared_ptr<CType> ct) { return to_buffer(ct.get()); }
 
     /** Get the object tag. */
     ObjectTag get_tag() { return m_tag; }
@@ -71,7 +82,9 @@ class LeanTypeUnit : public LeanType {
   public:
     LeanTypeUnit();
     ~LeanTypeUnit() {}
-    lean_obj_res box(CType *ct) { lean_internal_panic("not implemented"); }
+
+    lean_obj_res box(CType *ct);
+
     void *to_buffer(CType *ct);
 };
 
@@ -86,7 +99,9 @@ class LeanTypeInt : public LeanType {
     LeanTypeInt(b_lean_obj_arg obj);
 
     ~LeanTypeInt() {}
-    lean_obj_res box(CType *ct) { lean_internal_panic("not implemented"); }
+
+    lean_obj_res box(CType *ct);
+
     void *to_buffer(CType *ct);
 
   private:
@@ -108,7 +123,9 @@ class LeanTypeFloat : public LeanType {
     LeanTypeFloat(b_lean_obj_arg obj);
 
     ~LeanTypeFloat() {}
-    lean_obj_res box(CType *ct) { lean_internal_panic("not implemented"); }
+
+    lean_obj_res box(CType *ct);
+
     void *to_buffer(CType *ct);
 
   private:
