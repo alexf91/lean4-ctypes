@@ -54,22 +54,25 @@ CType::CType(ObjectTag tag) : m_tag(tag) {
 }
 
 // Constructor for array types.
-CType::CType(CType *tp, size_t length) {
+CType::CType(std::unique_ptr<CType> tp, size_t length) {
     m_tag = ARRAY;
     size = 0;
     alignment = 0;
     type = FFI_TYPE_STRUCT;
 
+    // We assign the same unique pointer to every element and release it. This is fine
+    // because we only delete the first element in the destructor.
     elements = new ffi_type *[length + 1]();
     for (size_t i = 0; i < length; i++)
-        elements[i] = tp;
+        elements[i] = tp.get();
+    tp.release();
 
     // Initialize size and alignment fields.
     ffi_get_struct_offsets(FFI_DEFAULT_ABI, this, nullptr);
 }
 
 // Constructor for struct types.
-CType::CType(std::vector<CType *> e) {
+CType::CType(std::vector<std::unique_ptr<CType>> e) {
     m_tag = STRUCT;
     size = 0;
     alignment = 0;
@@ -77,7 +80,7 @@ CType::CType(std::vector<CType *> e) {
 
     elements = new ffi_type *[e.size() + 1]();
     for (size_t i = 0; i < e.size(); i++)
-        elements[i] = e[i];
+        elements[i] = e[i].release();
 
     // Initialize size and alignment fields.
     ffi_get_struct_offsets(FFI_DEFAULT_ABI, this, nullptr);
@@ -107,31 +110,32 @@ CType::~CType() {
 }
 
 /** Unbox the type into a CType class. */
-CType *CType::unbox(b_lean_obj_arg obj) {
+std::unique_ptr<CType> CType::unbox(b_lean_obj_arg obj) {
     ObjectTag tag = (ObjectTag)lean_obj_tag(obj);
     if (tag <= LAST_PRIMITIVE) {
-        return new CType(tag);
+        return std::make_unique<CType>(tag);
     } else if (tag == ARRAY) {
         size_t length = lean_unbox(lean_ctor_get(obj, 1));
 
         // If the length is 0 we would lose the reference to tp, so we don't even unbox
         // it. Technically this is illegal anyway, but we support it for consistency.
         if (length == 0) {
-            return new CType(nullptr, length);
+            return std::make_unique<CType>(nullptr, length);
         } else {
-            CType *type = CType::unbox(lean_ctor_get(obj, 0));
-            return new CType(type, length);
+            auto type = CType::unbox(lean_ctor_get(obj, 0));
+            return std::make_unique<CType>(std::move(type), length);
         }
     } else if (tag == STRUCT) {
-        std::vector<CType *> elements;
+        // std::vector<CType *> elements;
+        std::vector<std::unique_ptr<CType>> elements;
         lean_object *array = lean_ctor_get(obj, 0);
         assert(lean_is_array(array));
 
         for (size_t i = 0; i < lean_array_size(array); i++) {
-            CType *tp = CType::unbox(lean_array_get_core(array, i));
-            elements.push_back(tp);
+            auto tp = CType::unbox(lean_array_get_core(array, i));
+            elements.push_back(std::move(tp));
         }
-        return new CType(elements);
+        return std::make_unique<CType>(std::move(elements));
     } else if (tag == UNION) {
         lean_internal_panic("union not implemented");
     }
@@ -170,25 +174,22 @@ std::vector<size_t> CType::get_offsets() {
 
 /** Get the size of a type. */
 extern "C" lean_obj_res CType_size(b_lean_obj_arg type) {
-    CType *tp = CType::unbox(type);
+    auto tp = CType::unbox(type);
     size_t size = tp->get_size();
-    delete tp;
     return lean_box(size);
 }
 
 /** Get the alignment of a type. */
 extern "C" lean_obj_res CType_alignment(b_lean_obj_arg type) {
-    CType *tp = CType::unbox(type);
+    auto tp = CType::unbox(type);
     size_t alignment = tp->get_alignment();
-    delete tp;
     return lean_box(alignment);
 }
 
 /** Get the offsets of a type. */
 extern "C" lean_obj_res CType_offsets(b_lean_obj_arg type) {
-    CType *tp = CType::unbox(type);
+    auto tp = CType::unbox(type);
     std::vector<size_t> offsets = tp->get_offsets();
-    delete tp;
 
     lean_object *array = lean_alloc_array(offsets.size(), offsets.size());
     for (size_t i = 0; i < offsets.size(); i++)

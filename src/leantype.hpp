@@ -51,14 +51,13 @@ class LeanType {
     virtual ~LeanType() {}
 
     /** Get a string representation of the type. */
-    const char *to_string() { lean_internal_panic("not implemented"); }
+    const char *to_string() const { lean_internal_panic("not implemented"); }
 
     /**
      * Box the type to a Lean object.
      * To treat values correctly, we require the corresponding C type.
      */
-    virtual lean_obj_res box(CType *ct) = 0;
-    lean_obj_res box(std::shared_ptr<CType> ct) { return box(ct.get()); }
+    virtual lean_obj_res box(const CType &ct) = 0;
 
     /** Convert from Lean to this class. */
     static LeanType *unbox(b_lean_obj_arg obj);
@@ -67,11 +66,10 @@ class LeanType {
      * Convert the type to a buffer for calling the function.
      * The value is converted to the given CType first.
      */
-    virtual void *to_buffer(CType *ct) = 0;
-    void *to_buffer(std::shared_ptr<CType> ct) { return to_buffer(ct.get()); }
+    virtual void *to_buffer(const CType &ct) = 0;
 
     /** Get the object tag. */
-    ObjectTag get_tag() { return m_tag; }
+    ObjectTag get_tag() const { return m_tag; }
 
   private:
     ObjectTag m_tag;
@@ -85,9 +83,9 @@ class LeanTypeUnit : public LeanType {
     LeanTypeUnit();
     ~LeanTypeUnit() {}
 
-    lean_obj_res box(CType *ct);
+    lean_obj_res box(const CType &ct);
 
-    void *to_buffer(CType *ct);
+    void *to_buffer(const CType &ct);
 };
 
 /** LeanType specialization for Integer types. */
@@ -102,9 +100,9 @@ class LeanTypeInt : public LeanType {
 
     ~LeanTypeInt() {}
 
-    lean_obj_res box(CType *ct);
+    lean_obj_res box(const CType &ct);
 
-    void *to_buffer(CType *ct);
+    void *to_buffer(const CType &ct);
 
   private:
     // The representation of the value as a 64 bit value.
@@ -126,9 +124,9 @@ class LeanTypeFloat : public LeanType {
 
     ~LeanTypeFloat() {}
 
-    lean_obj_res box(CType *ct);
+    lean_obj_res box(const CType &ct);
 
-    void *to_buffer(CType *ct);
+    void *to_buffer(const CType &ct);
 
   private:
     double m_value;

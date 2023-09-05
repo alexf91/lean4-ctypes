@@ -37,10 +37,10 @@ Function::Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
       m_argtypes_object(argtypes_object) {
 
     // Unbox the return type and the arguments.
-    m_rtype = CType::unbox(rtype_object);
+    m_rtype = CType::unbox(rtype_object).release();
     m_argtypes = new CType *[get_nargs()];
     for (size_t i = 0; i < get_nargs(); i++)
-        m_argtypes[i] = CType::unbox(lean_array_get_core(argtypes_object, i));
+        m_argtypes[i] = CType::unbox(lean_array_get_core(argtypes_object, i)).release();
 
     // Create the call interface for the function.
     ffi_status stat = ffi_prep_cif(&m_cif, FFI_DEFAULT_ABI, get_nargs(), m_rtype,
@@ -83,12 +83,17 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
     for (size_t i = 0; i < nargs; i++) {
         lean_object *arg = lean_array_get_core(argvals_object, i);
         LeanType *v = LeanType::unbox(arg);
-        argvals[i] = v->to_buffer(m_argtypes[i]);
+        argvals[i] = v->to_buffer(*m_argtypes[i]);
         delete v;
     }
 
+    // TODO: This is bad design. We allocate a buffer with the size of the return type
+    //       and later require the return type again to create the value, just to use
+    //       the return type another time during boxing. This should be encapsulated
+    //       into a custom buffer type with an associated CType.
+
     // At least a buffer with the size of a register is required for the return buffer.
-    size_t rsize = std::max((size_t)FFI_SIZEOF_ARG, m_rtype->size);
+    size_t rsize = std::max((size_t)FFI_SIZEOF_ARG, m_rtype->get_size());
     void *rvalue = ::operator new(rsize);
 
     // Call the symbol handle.
@@ -103,10 +108,9 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
     delete rvalue;
 
     // TODO: Return the correct result.
-    CType *ctype = CType::unbox(lean_box(CType::INT16));
+    auto ctype = CType::unbox(lean_box(CType::INT16));
     LeanTypeInt result((ssize_t)-1);
-    lean_object *r = result.box(ctype);
-    delete ctype;
+    lean_object *r = result.box(*ctype);
     return r;
 }
 

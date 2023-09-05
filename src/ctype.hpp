@@ -76,41 +76,40 @@ class CType : public ffi_type {
         LENGTH
     };
 
-  private:
+  public:
     // Constructor for static types. Values other than the tag are taken from the
     // corresponding ffi_type.
     CType(ObjectTag tag);
     // Constructor for array types.
-    CType(CType *type, size_t length);
+    CType(std::unique_ptr<CType> type, size_t length);
     // Constructor for struct types.
-    CType(std::vector<CType *> elements);
+    CType(std::vector<std::unique_ptr<CType>> elements);
 
-  public:
     ~CType();
 
     /** Get the size of the basic type. */
-    size_t get_size() { return size; }
+    size_t get_size() const { return size; }
 
     /** Get alignment. */
-    size_t get_alignment() { return alignment; }
+    size_t get_alignment() const { return alignment; }
 
     /** Get a string representation of the type. */
-    const char *to_string() { return name_map[m_tag]; }
+    const char *to_string() const { return name_map[m_tag]; }
 
     /** Convert from Lean to this class. */
-    static CType *unbox(b_lean_obj_arg obj);
+    static std::unique_ptr<CType> unbox(b_lean_obj_arg obj);
 
     /** Check if the type is an integer type. */
-    bool is_integer() { return FIRST_INT <= m_tag && m_tag <= LAST_INT; }
+    bool is_integer() const { return FIRST_INT <= m_tag && m_tag <= LAST_INT; }
     /** Check if the type is a signed integer. */
-    bool is_signed() { return FIRST_SIGNED <= m_tag && m_tag <= LAST_SIGNED; }
+    bool is_signed() const { return FIRST_SIGNED <= m_tag && m_tag <= LAST_SIGNED; }
     /** Check if the type is a floating point type. */
-    bool is_float() { return FIRST_FLOAT <= m_tag && m_tag <= LAST_FLOAT; }
+    bool is_float() const { return FIRST_FLOAT <= m_tag && m_tag <= LAST_FLOAT; }
     /** Check if the type is a complex floating point type. */
-    bool is_complex() { return FIRST_COMPLEX <= m_tag && m_tag <= LAST_COMPLEX; }
+    bool is_complex() const { return FIRST_COMPLEX <= m_tag && m_tag <= LAST_COMPLEX; }
 
     /** Get the object tag. */
-    ObjectTag get_tag() { return m_tag; }
+    ObjectTag get_tag() const { return m_tag; }
 
     /** Get the number of elements. */
     size_t get_nelements();

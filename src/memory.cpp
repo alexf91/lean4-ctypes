@@ -141,7 +141,7 @@ lean_obj_res Memory_readInt(b_lean_obj_arg memory, b_lean_obj_arg offset,
                             b_lean_obj_arg type, lean_object *unused) {
     Memory *m = Memory_unbox(memory);
     size_t o = lean_unbox(offset);
-    CType *tp = CType::unbox(type);
+    auto tp = CType::unbox(type);
 
     if (o + tp->get_size() > m->size) {
         lean_object *msg = lean_mk_string("reading out of bounds");
@@ -149,10 +149,7 @@ lean_obj_res Memory_readInt(b_lean_obj_arg memory, b_lean_obj_arg offset,
     }
     void *address = ((uint8_t *)m->buffer) + o;
 
-    CType::ObjectTag tag = tp->get_tag();
-    delete tp;
-
-    switch (tag) {
+    switch (tp->get_tag()) {
     case CType::INT8:
         return lean_io_result_mk_ok(lean_int64_to_int(*((int8_t *)address)));
     case CType::UINT8:
@@ -182,7 +179,7 @@ lean_obj_res Memory_readFloat(b_lean_obj_arg memory, b_lean_obj_arg offset,
                               b_lean_obj_arg type, lean_object *unused) {
     Memory *m = Memory_unbox(memory);
     size_t o = lean_unbox(offset);
-    CType *tp = CType::unbox(type);
+    auto tp = CType::unbox(type);
 
     if (o + tp->get_size() > m->size) {
         lean_object *msg = lean_mk_string("reading out of bounds");
@@ -190,10 +187,7 @@ lean_obj_res Memory_readFloat(b_lean_obj_arg memory, b_lean_obj_arg offset,
     }
     void *address = ((uint8_t *)m->buffer) + o;
 
-    CType::ObjectTag tag = tp->get_tag();
-    delete tp;
-
-    switch (tag) {
+    switch (tp->get_tag()) {
     case CType::FLOAT:
         return lean_io_result_mk_ok(lean_box_float(*((float *)address)));
     case CType::DOUBLE:
@@ -213,7 +207,7 @@ lean_obj_res Memory_readComplex(b_lean_obj_arg memory, b_lean_obj_arg offset,
                                 b_lean_obj_arg type, lean_object *unused) {
     Memory *m = Memory_unbox(memory);
     size_t o = lean_unbox(offset);
-    CType *tp = CType::unbox(type);
+    auto tp = CType::unbox(type);
 
     if (o + tp->get_size() > m->size) {
         lean_object *msg = lean_mk_string("reading out of bounds");
@@ -222,10 +216,7 @@ lean_obj_res Memory_readComplex(b_lean_obj_arg memory, b_lean_obj_arg offset,
     void *address = ((uint8_t *)m->buffer) + o;
     std::complex<double> result;
 
-    CType::ObjectTag tag = tp->get_tag();
-    delete tp;
-
-    switch (tag) {
+    switch (tp->get_tag()) {
     case CType::COMPLEX_FLOAT:
         result = *((std::complex<float> *)address);
         break;

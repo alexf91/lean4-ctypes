@@ -44,14 +44,13 @@ LeanTypeUnit::LeanTypeUnit() : LeanType(UNIT) {}
  * We can't create a buffer from the unit data type, as it can't be used as an
  * argument.
  */
-void *LeanTypeUnit::to_buffer(CType *ct) {
+void *LeanTypeUnit::to_buffer(const CType &ct) {
     lean_internal_panic("can't create buffer from unit type");
 }
 
 /** Convert the type to a Lean object. */
-lean_obj_res LeanTypeUnit::box(CType *ct) {
-    assert(ct != nullptr);
-    if (ct->get_tag() != CType::VOID)
+lean_obj_res LeanTypeUnit::box(const CType &ct) {
+    if (ct.get_tag() != CType::VOID)
         lean_internal_panic("can't convert unit to other than void");
     return LeanType_mkUnit(lean_box(0));
 }
@@ -67,8 +66,8 @@ LeanTypeInt::LeanTypeInt(ssize_t value) : LeanType(INT) { m_value = (uint64_t)va
 /** Constructor for integer types from an object. */
 LeanTypeInt::LeanTypeInt(b_lean_obj_arg obj) : LeanTypeInt(lean_uint64_of_nat(obj)) {}
 
-void *LeanTypeInt::to_buffer(CType *ct) {
-    switch (ct->get_tag()) {
+void *LeanTypeInt::to_buffer(const CType &ct) {
+    switch (ct.get_tag()) {
     case CType::INT8:
         return new int8_t(m_value);
     case CType::UINT8:
@@ -91,14 +90,13 @@ void *LeanTypeInt::to_buffer(CType *ct) {
 }
 
 /** Convert the type to a Lean object. */
-lean_obj_res LeanTypeInt::box(CType *ct) {
-    assert(ct != nullptr);
-    if (!ct->is_integer())
+lean_obj_res LeanTypeInt::box(const CType &ct) {
+    if (!ct.is_integer())
         lean_internal_panic("can't convert integer to non-integer type");
 
-    int shift = (sizeof(uint64_t) - ct->get_size()) * 8;
+    int shift = (sizeof(uint64_t) - ct.get_size()) * 8;
     assert(shift >= 0);
-    if (ct->is_signed()) {
+    if (ct.is_signed()) {
         // Shift left and then back to sign extend the value.
         int64_t value = ((int64_t)m_value << shift) >> shift;
         return LeanType_mkInt(lean_int64_to_int(value));
@@ -120,8 +118,8 @@ LeanTypeFloat::LeanTypeFloat(double value) : LeanType(FLOAT) { m_value = value; 
 LeanTypeFloat::LeanTypeFloat(b_lean_obj_arg obj)
     : LeanTypeFloat(lean_unbox_float(obj)) {}
 
-void *LeanTypeFloat::to_buffer(CType *ct) {
-    switch (ct->get_tag()) {
+void *LeanTypeFloat::to_buffer(const CType &ct) {
+    switch (ct.get_tag()) {
     case CType::FLOAT:
         return new float(m_value);
     case CType::DOUBLE:
@@ -134,7 +132,7 @@ void *LeanTypeFloat::to_buffer(CType *ct) {
 }
 
 /** Convert the type to a Lean object. */
-lean_obj_res LeanTypeFloat::box(CType *ct) { return LeanType_mkFloat(m_value); }
+lean_obj_res LeanTypeFloat::box(const CType &ct) { return LeanType_mkFloat(m_value); }
 
 /******************************************************************************
  * EXPOSED C FUNCTIONS
