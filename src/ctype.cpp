@@ -16,7 +16,6 @@
 
 #include "ctype.hpp"
 
-#include <cstdlib>
 #include <stdexcept>
 
 #include "lean/lean.h"

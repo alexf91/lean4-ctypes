@@ -15,9 +15,10 @@
  */
 
 #include "leantype.hpp"
-#include "ctype.hpp"
+
 #include <lean/lean.h>
-#include <limits>
+
+#include "ctype.hpp"
 
 LeanType *LeanType::unbox(b_lean_obj_arg obj) {
     ObjectTag tag = (ObjectTag)lean_obj_tag(obj);

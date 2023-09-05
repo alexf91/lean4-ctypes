@@ -18,9 +18,7 @@
 
 #include <algorithm>
 #include <complex>
-#include <cstdlib>
-#include <stdint.h>
-#include <sys/types.h>
+#include <cstdint>
 
 #include "ctype.hpp"
 #include "lean/lean.h"
@@ -36,15 +34,7 @@ static void Memory_finalize(void *p) {
     Memory *m = (Memory *)p;
     utils_log("finalizing memory %p with buffer %p", m, m->buffer);
 
-    // Views with parents can never be allocated.
-    assert(!(m->allocated && m->parent));
-
-    if (m->parent)
-        lean_dec(m->parent);
-
-    if (m->allocated)
-        free(m->buffer);
-    free(m);
+    delete m;
 }
 
 /** Foreach for a Memory. */
@@ -71,12 +61,7 @@ lean_obj_res Memory_fromByteArray(b_lean_obj_arg array, lean_object *unused) {
     for (size_t i = 0; i < size; i++)
         buffer[i] = lean_byte_array_uget(array, i);
 
-    Memory *m = (Memory *)calloc(1, sizeof(Memory));
-    if (m == nullptr) {
-        free(buffer);
-        lean_internal_panic_out_of_memory();
-    }
-
+    Memory *m = new Memory();
     m->buffer = buffer;
     m->size = size;
     m->allocated = true;
@@ -99,16 +84,13 @@ lean_obj_res Memory_toByteArray(b_lean_obj_arg memory, lean_object *unused) {
  * Allocate a new memory in C.
  */
 lean_obj_res Memory_allocate(size_t size, lean_object *unused) {
-    Memory *m = (Memory *)calloc(1, sizeof(Memory));
-    if (m == nullptr)
-        lean_internal_panic_out_of_memory();
-
+    Memory *m = new Memory();
     m->allocated = true;
     m->buffer = calloc(size, sizeof(uint8_t));
     m->size = size;
 
     if (m->buffer == nullptr) {
-        free(m);
+        delete m;
         lean_internal_panic_out_of_memory();
     }
     return lean_io_result_mk_ok(Memory_box(m));
@@ -146,7 +128,7 @@ lean_obj_res Memory_extract(lean_obj_arg memory, b_lean_obj_arg begin,
         return lean_io_result_mk_error(lean_mk_io_user_error(msg));
     }
 
-    Memory *nm = (Memory *)calloc(1, sizeof(Memory));
+    Memory *nm = new Memory();
     nm->parent = memory;
     nm->buffer = ((uint8_t *)m->buffer) + b;
     nm->size = std::max(0L, e - b);
@@ -169,7 +151,10 @@ lean_obj_res Memory_readInt(b_lean_obj_arg memory, b_lean_obj_arg offset,
     }
     void *address = ((uint8_t *)m->buffer) + o;
 
-    switch (tp->get_tag()) {
+    CType::ObjectTag tag = tp->get_tag();
+    delete tp;
+
+    switch (tag) {
     case CType::INT8:
         return lean_io_result_mk_ok(lean_int64_to_int(*((int8_t *)address)));
     case CType::UINT8:
@@ -207,7 +192,10 @@ lean_obj_res Memory_readFloat(b_lean_obj_arg memory, b_lean_obj_arg offset,
     }
     void *address = ((uint8_t *)m->buffer) + o;
 
-    switch (tp->get_tag()) {
+    CType::ObjectTag tag = tp->get_tag();
+    delete tp;
+
+    switch (tag) {
     case CType::FLOAT:
         return lean_io_result_mk_ok(lean_box_float(*((float *)address)));
     case CType::DOUBLE:
@@ -236,9 +224,10 @@ lean_obj_res Memory_readComplex(b_lean_obj_arg memory, b_lean_obj_arg offset,
     void *address = ((uint8_t *)m->buffer) + o;
     std::complex<double> result;
 
-    auto tag = tp->get_tag();
-    utils_log("tag = %d", tag);
-    switch (tp->get_tag()) {
+    CType::ObjectTag tag = tp->get_tag();
+    delete tp;
+
+    switch (tag) {
     case CType::COMPLEX_FLOAT:
         result = *((std::complex<float> *)address);
         break;
@@ -274,7 +263,7 @@ lean_obj_res Memory_dereference(b_lean_obj_arg memory, b_lean_obj_arg offset,
     }
     void *address = ((uint8_t *)m->buffer) + o;
 
-    Memory *nm = (Memory *)calloc(1, sizeof(Memory));
+    Memory *nm = new Memory();
     nm->buffer = *((void **)address);
     nm->size = lean_unbox(nsize);
 

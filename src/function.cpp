@@ -17,7 +17,7 @@
 #include "function.hpp"
 
 #include <algorithm>
-#include <cstdlib>
+#include <cstdint>
 
 #include "ctype.hpp"
 #include "lean/lean.h"
@@ -98,9 +98,19 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
     auto handle = (void (*)())Symbol::unbox(m_symbol)->get_handle();
     ffi_call(&m_cif, handle, rvalue, argvals);
 
+    // TODO: Box the rvalue!!!
+
+    // Cleanup the argument values and the return value.
+    for (size_t i = 0; i < nargs; i++)
+        delete argvals[i];
+    delete rvalue;
+
+    // TODO: Return the correct result.
     CType *ctype = CType::unbox(lean_box(CType::INT16));
-    auto result = new LeanTypeInt((ssize_t)-1);
-    return result->box(ctype);
+    LeanTypeInt result((ssize_t)-1);
+    lean_object *r = result.box(ctype);
+    delete ctype;
+    return r;
 }
 
 /** Convert a Function object from C to Lean. */

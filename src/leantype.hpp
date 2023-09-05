@@ -19,9 +19,12 @@
 #include <complex>
 #include <cstdint>
 #include <lean/lean.h>
+#include <memory>
 
 #include "ctype.hpp"
 #include "utils.hpp"
+
+class CType;
 
 extern "C" {
 /** Create a LeanType.unit object. */

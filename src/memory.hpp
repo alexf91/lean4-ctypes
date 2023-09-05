@@ -16,8 +16,9 @@
 
 #pragma once
 
+#include <cassert>
 #include <lean/lean.h>
-#include <stddef.h>
+#include <stdlib.h>
 
 extern "C" {
 
@@ -26,12 +27,22 @@ extern "C" {
  * If the memory is allocated in the constructor, then it has to be freed when
  * it is finalized.
  */
-typedef struct {
+struct Memory {
     lean_object *parent;
     void *buffer;
     size_t size;
     bool allocated;
-} Memory;
+
+    Memory() : parent(nullptr), buffer(nullptr), size(0), allocated(false) {}
+    ~Memory() {
+        // Views with parents can never be allocated.
+        assert(!(allocated && parent));
+        if (parent)
+            lean_dec(parent);
+        if (allocated)
+            free(buffer);
+    };
+};
 
 /** Convert a Memory object from Lean to C. */
 static inline Memory *Memory_unbox(b_lean_obj_arg m) {
