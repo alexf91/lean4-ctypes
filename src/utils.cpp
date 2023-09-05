@@ -15,13 +15,11 @@
  */
 
 #include "utils.hpp"
-
+#include "lean/lean.h"
 #include <cstdarg>
 #include <cstdio>
 #include <stdint.h>
 #include <stdlib.h>
-
-#include "lean/lean.h"
 
 extern "C" {
 

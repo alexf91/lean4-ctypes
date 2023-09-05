@@ -15,14 +15,12 @@
  */
 
 #include "symbol.hpp"
-
-#include <cstring>
-#include <dlfcn.h>
-#include <stdlib.h>
-
-#include "lean/lean.h"
 #include "library.hpp"
 #include "utils.hpp"
+#include <cstring>
+#include <dlfcn.h>
+#include <lean/lean.h>
+#include <stdlib.h>
 
 /**
  * Initialize the Symbol object by opening the symbol with dlsym().
@@ -55,31 +53,6 @@ Symbol::~Symbol() {
     lean_dec(m_library);
     free(m_name);
 }
-
-/** Convert a Symbol object from C to Lean. */
-lean_object *Symbol::box() {
-    if (Symbol::m_class == nullptr)
-        Symbol::m_class = lean_register_external_class(finalize, foreach);
-    return lean_alloc_external(m_class, this);
-}
-
-/**
- * Unwrap a Symbol object from a Lean object.
- */
-Symbol *Symbol::unbox(b_lean_obj_arg obj) {
-    return (Symbol *)(lean_get_external_data(obj));
-}
-
-/** Finalize a Symbol. */
-void Symbol::finalize(void *p) {
-    Symbol *s = (Symbol *)p;
-    Library *lib = Library::unbox(s->get_library());
-    utils_log("finalizing '%s' in %s", s->get_name(), lib->get_name());
-    delete s;
-}
-
-/** Foreach for a Symbol handle. */
-void Symbol::foreach (void *mod, b_lean_obj_arg fn) { utils_log("NOT IMPLEMENTED"); }
 
 /**
  * Create a new Symbol instance.

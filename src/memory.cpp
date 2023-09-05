@@ -15,14 +15,12 @@
  */
 
 #include "memory.hpp"
-
-#include <algorithm>
-#include <complex>
-#include <cstdint>
-
 #include "ctype.hpp"
 #include "lean/lean.h"
 #include "utils.hpp"
+#include <algorithm>
+#include <complex>
+#include <cstdint>
 
 extern "C" {
 
@@ -118,8 +116,8 @@ uint8_t Memory_allocated(b_lean_obj_arg memory) {
 lean_obj_res Memory_extract(lean_obj_arg memory, b_lean_obj_arg begin,
                             b_lean_obj_arg end, lean_object *unused) {
     Memory *m = Memory_unbox(memory);
-    ssize_t b = lean_unbox(begin);
-    ssize_t e = lean_unbox(end);
+    size_t b = lean_unbox(begin);
+    size_t e = lean_unbox(end);
 
     // Check if we are out of bounds.
     if (b >= m->size || e >= m->size) {
@@ -131,7 +129,7 @@ lean_obj_res Memory_extract(lean_obj_arg memory, b_lean_obj_arg begin,
     Memory *nm = new Memory();
     nm->parent = memory;
     nm->buffer = ((uint8_t *)m->buffer) + b;
-    nm->size = std::max(0L, e - b);
+    nm->size = std::max(0L, (ssize_t)e - (ssize_t)b);
 
     return lean_io_result_mk_ok(Memory_box(nm));
 }

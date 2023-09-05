@@ -15,10 +15,8 @@
  */
 
 #include "ctype.hpp"
-
+#include <lean/lean.h>
 #include <stdexcept>
-
-#include "lean/lean.h"
 
 /**
  * Primitive types defined in libffi. They are in the same order as the CType

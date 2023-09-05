@@ -16,15 +16,14 @@
 
 #pragma once
 
+#include "ctype.hpp"
+#include "external_type.hpp"
+#include "utils.hpp"
+#include <cstdint>
 #include <ffi.h>
 #include <lean/lean.h>
-#include <stddef.h>
-#include <stdint.h>
 
-#include "ctype.h"
-#include "utils.hpp"
-
-class Function {
+class Function final : public ExternalType<Function> {
   public:
     Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
              b_lean_obj_arg argtypes_object);
@@ -37,18 +36,8 @@ class Function {
      */
     lean_obj_res call(b_lean_obj_arg argvals_object);
 
-    /** Convert a Function object from C to Lean. */
-    lean_object *box(void);
-
-    /** Unbox a Function from a Lean object. */
-    static Function *unbox(b_lean_obj_arg obj);
-
     /** Get the number of arguments. */
     size_t get_nargs() { return lean_array_size(m_argtypes_object); }
-
-  private:
-    static void finalize(void *p);
-    static void foreach (void *mod, b_lean_obj_arg fn);
 
   private:
     // Symbol assocated with the function.
@@ -63,8 +52,6 @@ class Function {
     ffi_type *m_rtype;
     // Argument types used in the CIF.
     ffi_type **m_argtypes;
-    // Registered class in Lean.
-    inline static lean_external_class *m_class = nullptr;
 };
 
 /** Boxing of LeanType objects. */

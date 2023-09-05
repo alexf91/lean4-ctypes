@@ -15,15 +15,13 @@
  */
 
 #include "function.hpp"
-
-#include <algorithm>
-#include <cstdint>
-
 #include "ctype.hpp"
-#include "lean/lean.h"
 #include "leantype.hpp"
 #include "symbol.hpp"
 #include "utils.hpp"
+#include <algorithm>
+#include <cstdlib>
+#include <lean/lean.h>
 
 /***************************************************************************************
  * Function functions
@@ -112,29 +110,6 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
     delete ctype;
     return r;
 }
-
-/** Convert a Function object from C to Lean. */
-lean_object *Function::box() {
-    if (Function::m_class == nullptr)
-        Function::m_class = lean_register_external_class(finalize, foreach);
-    return lean_alloc_external(m_class, this);
-}
-
-/**
- * Unwrap a Function object from a Lean object.
- */
-Function *Function::unbox(b_lean_obj_arg obj) {
-    return (Function *)(lean_get_external_data(obj));
-}
-
-/** Finalize a Function. */
-void Function::finalize(void *p) {
-    Function *f = (Function *)p;
-    delete f;
-}
-
-/** Foreach for a Function type. */
-void Function::foreach (void *mod, b_lean_obj_arg fn) { utils_log("NOT IMPLEMENTED"); }
 
 /** Create a new Function instance.  */
 extern "C" lean_obj_res Function_mk(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,

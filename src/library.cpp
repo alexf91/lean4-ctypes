@@ -15,14 +15,12 @@
  */
 
 #include "library.hpp"
-
+#include "utils.hpp"
 #include <cstring>
 #include <dlfcn.h>
 #include <lean/lean.h>
 #include <stdint.h>
 #include <stdlib.h>
-
-#include "utils.hpp"
 
 /** Unbox the Flag enum. */
 static inline int Flag_unbox(b_lean_obj_arg flag) {
@@ -74,32 +72,6 @@ Library::~Library() {
     free(m_name);
     dlclose(m_handle);
 }
-
-/**
- * Wrap a Library object in a Lean object.
- */
-lean_obj_res Library::box(void) {
-    if (m_class == NULL)
-        m_class = lean_register_external_class(finalize, foreach);
-    return lean_alloc_external(m_class, this);
-}
-
-/**
- * Unwrap a Library object from a Lean object.
- */
-Library *Library::unbox(b_lean_obj_arg obj) {
-    return (Library *)(lean_get_external_data(obj));
-}
-
-/** Finalize a Library. */
-void Library::finalize(void *p) {
-    Library *lib = (Library *)p;
-    utils_log("finalizing %s", lib->get_name());
-    delete lib;
-}
-
-/** Foreach for a Library handle. */
-void Library::foreach (void *mod, b_lean_obj_arg fn) { utils_log("NOT IMPLEMENTED"); }
 
 /**
  * Create a new Library instance.

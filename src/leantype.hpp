@@ -16,13 +16,12 @@
 
 #pragma once
 
+#include "ctype.hpp"
+#include "utils.hpp"
 #include <complex>
 #include <cstdint>
 #include <lean/lean.h>
 #include <memory>
-
-#include "ctype.hpp"
-#include "utils.hpp"
 
 class CType;
 

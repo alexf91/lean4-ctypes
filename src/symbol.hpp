@@ -16,18 +16,13 @@
 
 #pragma once
 
+#include "external_type.hpp"
 #include <lean/lean.h>
 
-class Symbol {
+class Symbol final : public ExternalType<Symbol> {
   public:
     Symbol(b_lean_obj_arg lib, b_lean_obj_arg sym);
     ~Symbol();
-
-    /** Convert a Symbol object from C to Lean. */
-    lean_object *box(void);
-
-    /** Unbox a Symbol from a Lean object. */
-    static Symbol *unbox(b_lean_obj_arg obj);
 
     /** Get the name of the symbol. */
     const char *get_name(void) { return m_name; }
@@ -39,16 +34,10 @@ class Symbol {
     lean_object *get_library(void) { return m_library; }
 
   private:
-    static void finalize(void *p);
-    static void foreach (void *mod, b_lean_obj_arg fn);
-
-  private:
     // Name of the symbol for debugging.
     char *m_name;
     // Handle returned by dlsym().
     void *m_handle;
     // Library object for reference counting.
     lean_object *m_library;
-    // Registered class in Lean.
-    inline static lean_external_class *m_class = nullptr;
 };

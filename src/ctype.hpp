@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "utils.hpp"
 #include <complex>
 #include <cstdint>
 #include <ffi.h>
@@ -23,8 +24,6 @@
 #include <memory>
 #include <stddef.h>
 #include <vector>
-
-#include "utils.hpp"
 
 /**
  * A type in C.
