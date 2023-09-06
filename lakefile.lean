@@ -23,6 +23,7 @@ package ctypes {
   --       link errors with conflicting libraries provided by the Lean environment.
   moreLinkArgs := #[
     "-lffi",
+    "-lstdc++",
     "-L/usr/lib",
     "/usr/lib/libc.so.6",
     "/usr/lib/libstdc++.so.6",
@@ -77,5 +78,28 @@ lean_lib CTypes
 lean_lib Tests
 lean_exe tests {
   root := `Tests
-  moreLinkArgs := #["-lffi", "-lstdc++"]
 }
+
+-- Run tests with valgrind.
+script valgrind (args : List String) do
+  -- TODO: Support arguments
+  if args.length != 0 then
+    IO.eprintln "usage: lake run valgrind"
+    return 1
+
+  -- Build tests
+  let p ← IO.Process.spawn {
+    cmd := "lake",
+    args := #["build", "-Kdebug", "tests"]
+  }
+  let result ← p.wait
+  unless result == 0 do return result
+
+  -- Run valgrind
+  let p ← IO.Process.spawn {
+    cmd := "valgrind",
+    args := #["--leak-check=yes", "build/bin/tests"]
+  }
+  let result ← p.wait
+
+  return result
