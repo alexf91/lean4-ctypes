@@ -82,9 +82,8 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
     void *argvals[nargs];
     for (size_t i = 0; i < nargs; i++) {
         lean_object *arg = lean_array_get_core(argvals_object, i);
-        LeanType *v = LeanType::unbox(arg);
-        argvals[i] = v->to_buffer(*m_argtypes[i]);
-        delete v;
+        auto v = LeanType::unbox(arg);
+        argvals[i] = v->to_buffer(*m_argtypes[i]).release();
     }
 
     // TODO: This is bad design. We allocate a buffer with the size of the return type
@@ -94,7 +93,7 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
 
     // At least a buffer with the size of a register is required for the return buffer.
     size_t rsize = std::max((size_t)FFI_SIZEOF_ARG, m_rtype->get_size());
-    void *rvalue = ::operator new(rsize);
+    uint8_t rvalue[rsize];
 
     // Call the symbol handle.
     auto handle = (void (*)())Symbol::unbox(m_symbol)->get_handle();
@@ -104,8 +103,7 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
 
     // Cleanup the argument values and the return value.
     for (size_t i = 0; i < nargs; i++)
-        delete argvals[i];
-    delete rvalue;
+        delete[] (uint8_t *)argvals[i];
 
     // TODO: Return the correct result.
     auto ctype = CType::unbox(lean_box(CType::INT16));

@@ -47,7 +47,7 @@ class LeanType {
         LENGTH,
     };
 
-    LeanType(ObjectTag tag) { m_tag = tag; }
+    LeanType(ObjectTag tag) : m_tag(tag) {}
     virtual ~LeanType() {}
 
     /** Get a string representation of the type. */
@@ -60,13 +60,13 @@ class LeanType {
     virtual lean_obj_res box(const CType &ct) = 0;
 
     /** Convert from Lean to this class. */
-    static LeanType *unbox(b_lean_obj_arg obj);
+    static std::unique_ptr<LeanType> unbox(b_lean_obj_arg obj);
 
     /**
      * Convert the type to a buffer for calling the function.
      * The value is converted to the given CType first.
      */
-    virtual void *to_buffer(const CType &ct) = 0;
+    virtual std::unique_ptr<uint8_t[]> to_buffer(const CType &ct) = 0;
 
     /** Get the object tag. */
     ObjectTag get_tag() const { return m_tag; }
@@ -85,7 +85,7 @@ class LeanTypeUnit : public LeanType {
 
     lean_obj_res box(const CType &ct);
 
-    void *to_buffer(const CType &ct);
+    std::unique_ptr<uint8_t[]> to_buffer(const CType &ct);
 };
 
 /** LeanType specialization for Integer types. */
@@ -102,7 +102,7 @@ class LeanTypeInt : public LeanType {
 
     lean_obj_res box(const CType &ct);
 
-    void *to_buffer(const CType &ct);
+    std::unique_ptr<uint8_t[]> to_buffer(const CType &ct);
 
   private:
     // The representation of the value as a 64 bit value.
@@ -126,7 +126,7 @@ class LeanTypeFloat : public LeanType {
 
     lean_obj_res box(const CType &ct);
 
-    void *to_buffer(const CType &ct);
+    std::unique_ptr<uint8_t[]> to_buffer(const CType &ct);
 
   private:
     double m_value;
