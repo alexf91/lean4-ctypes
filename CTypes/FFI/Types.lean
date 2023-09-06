@@ -64,8 +64,6 @@ inductive LeanType where
 deriving Repr, BEq
 
 namespace LeanType
-  @[extern "LeanType_test"]
-  opaque test (type : @&LeanType) : IO Unit
 
   /-- Create a LeanType.unit object. -/
   @[export LeanType_mkUnit]

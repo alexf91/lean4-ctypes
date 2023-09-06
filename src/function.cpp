@@ -99,17 +99,12 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
     auto handle = (void (*)())Symbol::unbox(m_symbol)->get_handle();
     ffi_call(&m_cif, handle, rvalue, argvals);
 
-    // TODO: Box the rvalue!!!
-
-    // Cleanup the argument values and the return value.
+    // Cleanup the argument values and the return value. We have released the pointer
+    // already.
     for (size_t i = 0; i < nargs; i++)
         delete[] (uint8_t *)argvals[i];
 
-    // TODO: Return the correct result.
-    auto ctype = CType::unbox(lean_box(CType::INT16));
-    LeanTypeInt result((ssize_t)-1);
-    lean_object *r = result.box(*ctype);
-    return r;
+    return LeanType::from_buffer(*m_rtype, rvalue)->box(*m_rtype);
 }
 
 /** Create a new Function instance.  */

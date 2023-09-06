@@ -32,6 +32,53 @@ std::unique_ptr<LeanType> LeanType::unbox(b_lean_obj_arg obj) {
     }
 }
 
+/** Convert from a buffer and a CType back to a LeanType object.  */
+std::unique_ptr<LeanType> LeanType::from_buffer(const CType &ct,
+                                                const uint8_t *buffer) {
+    switch (ct.get_tag()) {
+    case CType::VOID:
+        return std::make_unique<LeanTypeUnit>();
+    case CType::INT8:
+        return std::make_unique<LeanTypeInt>((ssize_t)(*((const int8_t *)buffer)));
+    case CType::INT16:
+        return std::make_unique<LeanTypeInt>((ssize_t)(*((const int16_t *)buffer)));
+    case CType::INT32:
+        return std::make_unique<LeanTypeInt>((ssize_t)(*((const int32_t *)buffer)));
+    case CType::INT64:
+        return std::make_unique<LeanTypeInt>((ssize_t)(*((const int64_t *)buffer)));
+    case CType::UINT8:
+        return std::make_unique<LeanTypeInt>((size_t)(*((const uint8_t *)buffer)));
+    case CType::UINT16:
+        return std::make_unique<LeanTypeInt>((size_t)(*((const uint16_t *)buffer)));
+    case CType::UINT32:
+        return std::make_unique<LeanTypeInt>((size_t)(*((const uint32_t *)buffer)));
+    case CType::UINT64:
+        return std::make_unique<LeanTypeInt>((size_t)(*((const uint64_t *)buffer)));
+    case CType::FLOAT:
+        return std::make_unique<LeanTypeFloat>(*((const float *)buffer));
+    case CType::DOUBLE:
+        return std::make_unique<LeanTypeFloat>(*((const double *)buffer));
+    case CType::LONGDOUBLE:
+        return std::make_unique<LeanTypeFloat>(*((const long double *)buffer));
+    case CType::COMPLEX_FLOAT:
+        lean_internal_panic("COMPLEX_FLOAT not supported");
+    case CType::COMPLEX_DOUBLE:
+        lean_internal_panic("COMPLEX_DOUBLE not supported");
+    case CType::COMPLEX_LONGDOUBLE:
+        lean_internal_panic("COMPLEX_LONGDOUBLE not supported");
+    case CType::POINTER:
+        lean_internal_panic("POINTER not supported");
+    case CType::ARRAY:
+        lean_internal_panic("ARRAY not supported");
+    case CType::STRUCT:
+        lean_internal_panic("STRUCT not supported");
+    case CType::UNION:
+        lean_internal_panic("UNION not supported");
+    default:
+        lean_internal_panic_unreachable();
+    }
+}
+
 /******************************************************************************
  * UNIT TYPE
  ******************************************************************************/
@@ -147,13 +194,3 @@ std::unique_ptr<uint8_t[]> LeanTypeFloat::to_buffer(const CType &ct) {
 
 /** Convert the type to a Lean object. */
 lean_obj_res LeanTypeFloat::box(const CType &ct) { return LeanType_mkFloat(m_value); }
-
-/******************************************************************************
- * EXPOSED C FUNCTIONS
- ******************************************************************************/
-
-/** Testing of LeanType. */
-extern "C" lean_obj_res LeanType_test(b_lean_obj_arg type, lean_object *unused) {
-    auto tp = LeanType::unbox(type);
-    return lean_io_result_mk_ok(lean_box(0));
-}

@@ -68,6 +68,10 @@ class LeanType {
      */
     virtual std::unique_ptr<uint8_t[]> to_buffer(const CType &ct) = 0;
 
+    /** Convert from a buffer and a CType back to a LeanType object.  */
+    static std::unique_ptr<LeanType> from_buffer(const CType &ct,
+                                                 const uint8_t *buffer);
+
     /** Get the object tag. */
     ObjectTag get_tag() const { return m_tag; }
 
