@@ -74,6 +74,7 @@ extern_lib libctypes pkg := do
 lean_lib CTypes
 
 -- Tests
+lean_lib Tests
 lean_exe tests {
   root := `Tests
   moreLinkArgs := #["-lffi", "-lstdc++"]
