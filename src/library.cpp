@@ -61,7 +61,7 @@ Library::Library(b_lean_obj_arg path, b_lean_obj_arg flags) {
     if (handle == NULL)
         throw dlerror();
 
-    m_name = strdup(p);
+    m_path = strdup(p);
     m_handle = handle;
 }
 
@@ -69,7 +69,7 @@ Library::Library(b_lean_obj_arg path, b_lean_obj_arg flags) {
  * Close the library handle and free the path.
  */
 Library::~Library() {
-    free(m_name);
+    free(m_path);
     dlclose(m_handle);
 }
 
@@ -92,4 +92,11 @@ extern "C" lean_obj_res Library_mk(b_lean_obj_arg path, b_lean_obj_arg flags,
         lean_object *err = lean_mk_io_user_error(lean_mk_string(msg));
         return lean_io_result_mk_error(err);
     }
+}
+
+/**
+ * Get the path of the library.
+ */
+extern "C" lean_obj_res Library_path(b_lean_obj_arg obj) {
+    return lean_mk_string(Library::unbox(obj)->get_path());
 }

@@ -25,14 +25,14 @@ class Library final : public ExternalType<Library> {
     ~Library();
 
     /** Get the name of the library. */
-    const char *get_name(void) { return m_name; }
+    const char *get_path(void) { return m_path; }
 
     /** Get the handle of the library. */
     void *get_handle(void) { return m_handle; }
 
   private:
-    // Name of the library for debugging.
-    char *m_name;
+    // Path of the library for debugging.
+    char *m_path;
     // Handle returned by dlopen().
     void *m_handle;
 };

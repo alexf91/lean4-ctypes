@@ -68,6 +68,13 @@ namespace Function
     let result ← sin.call #[.float (3.14159265359 / 2)]
     assertEqual result (.float 1.0) s!"wrong result: {repr result}"
 
+  /-- Call a custom function. -/
+  testcase callCustom requires (libgen : SharedLibrary) := do
+    let lib ← libgen "int8_t foo(int8_t a, int8_t b) {return a + b;}"
+    let foo ← Function.mk (← lib["foo"]) .int8 #[.int8, .int8]
+    let r ← foo.call #[.int 41, .int 1]
+    assertEqual r (.int 42) s!"result: {repr r}"
+
 end Function
 
 end Tests.Basic

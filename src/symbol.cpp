@@ -30,7 +30,7 @@
 Symbol::Symbol(b_lean_obj_arg lib, b_lean_obj_arg sym) {
     const char *name = lean_string_cstr(sym);
     Library *l = Library::unbox(lib);
-    utils_log("opening '%s' in %s", name, l->get_name());
+    utils_log("opening '%s' in %s", name, l->get_path());
 
     // Clear dlerror() to distinguish between errors and NULL.
     dlerror();
@@ -75,4 +75,16 @@ extern "C" lean_obj_res Symbol_mk(b_lean_obj_arg lib, b_lean_obj_arg sym,
         lean_object *err = lean_mk_io_user_error(lean_mk_string(msg));
         return lean_io_result_mk_error(err);
     }
+}
+
+/** Get the name of the symbol. */
+extern "C" lean_obj_res Symbol_name(b_lean_obj_arg obj) {
+    return lean_mk_string(Symbol::unbox(obj)->get_name());
+}
+
+/** Get the library of the symbol. */
+extern "C" lean_obj_res Symbol_library(b_lean_obj_arg obj) {
+    lean_object *o = Symbol::unbox(obj)->get_library();
+    lean_inc(o);
+    return o;
 }
