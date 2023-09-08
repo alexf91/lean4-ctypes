@@ -90,7 +90,7 @@ namespace Function
 
   /-- Call a function with the given arguments. -/
   @[extern "Function_call"]
-  opaque call (function : @&Function) (args : @&Array LeanType) : IO LeanType
+  opaque call (function : @&Function) (args : @&Array LeanValue) : IO LeanValue
 end Function
 
 

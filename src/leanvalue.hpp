@@ -26,18 +26,18 @@
 class CType;
 
 extern "C" {
-/** Create a LeanType.unit object. */
-LEAN_EXPORT_WEAK lean_obj_res LeanType_mkUnit(b_lean_obj_arg obj);
-/** Create a LeanType.int object. */
-LEAN_EXPORT_WEAK lean_obj_res LeanType_mkInt(b_lean_obj_arg obj);
-/** Create a LeanType.float object. */
-LEAN_EXPORT_WEAK lean_obj_res LeanType_mkFloat(double obj);
+/** Create a LeanValue.unit object. */
+LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkUnit(b_lean_obj_arg obj);
+/** Create a LeanValue.int object. */
+LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkInt(b_lean_obj_arg obj);
+/** Create a LeanValue.float object. */
+LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkFloat(double obj);
 }
 
 /**
  * A type in Lean.
  */
-class LeanType {
+class LeanValue {
   public:
     /** The object tags of the inductive type defined in Lean.  */
     enum ObjectTag {
@@ -47,8 +47,8 @@ class LeanType {
         LENGTH,
     };
 
-    LeanType(ObjectTag tag) : m_tag(tag) {}
-    virtual ~LeanType() {}
+    LeanValue(ObjectTag tag) : m_tag(tag) {}
+    virtual ~LeanValue() {}
 
     /** Get a string representation of the type. */
     const char *to_string() const { lean_internal_panic("not implemented"); }
@@ -60,7 +60,7 @@ class LeanType {
     virtual lean_obj_res box(const CType &ct) = 0;
 
     /** Convert from Lean to this class. */
-    static std::unique_ptr<LeanType> unbox(b_lean_obj_arg obj);
+    static std::unique_ptr<LeanValue> unbox(b_lean_obj_arg obj);
 
     /**
      * Convert the type to a buffer for calling the function.
@@ -68,9 +68,9 @@ class LeanType {
      */
     virtual std::unique_ptr<uint8_t[]> to_buffer(const CType &ct) = 0;
 
-    /** Convert from a buffer and a CType back to a LeanType object.  */
-    static std::unique_ptr<LeanType> from_buffer(const CType &ct,
-                                                 const uint8_t *buffer);
+    /** Convert from a buffer and a CType back to a LeanValue object.  */
+    static std::unique_ptr<LeanValue> from_buffer(const CType &ct,
+                                                  const uint8_t *buffer);
 
     /** Get the object tag. */
     ObjectTag get_tag() const { return m_tag; }
@@ -81,28 +81,28 @@ class LeanType {
 
 // TODO: Use Template here?
 
-/** LeanType specialization for Unit types. */
-class LeanTypeUnit : public LeanType {
+/** LeanValue specialization for Unit types. */
+class LeanValueUnit : public LeanValue {
   public:
-    LeanTypeUnit();
-    ~LeanTypeUnit() {}
+    LeanValueUnit();
+    ~LeanValueUnit() {}
 
     lean_obj_res box(const CType &ct);
 
     std::unique_ptr<uint8_t[]> to_buffer(const CType &ct);
 };
 
-/** LeanType specialization for Integer types. */
-class LeanTypeInt : public LeanType {
+/** LeanValue specialization for Integer types. */
+class LeanValueInt : public LeanValue {
   public:
     /** Constructor for integer values. */
-    LeanTypeInt(size_t value);
-    LeanTypeInt(ssize_t value);
+    LeanValueInt(size_t value);
+    LeanValueInt(ssize_t value);
 
     /** Constructor for integer objects. */
-    LeanTypeInt(b_lean_obj_arg obj);
+    LeanValueInt(b_lean_obj_arg obj);
 
-    ~LeanTypeInt() {}
+    ~LeanValueInt() {}
 
     lean_obj_res box(const CType &ct);
 
@@ -114,19 +114,19 @@ class LeanTypeInt : public LeanType {
 };
 
 /**
- * LeanType specialization for Float types.
+ * LeanValue specialization for Float types.
  * We use double as the internal representation, since this is what Lean uses.
  * TODO: This might cause a loss of precision.
  */
-class LeanTypeFloat : public LeanType {
+class LeanValueFloat : public LeanValue {
   public:
     /** Constructor for floating point values. */
-    LeanTypeFloat(double value);
+    LeanValueFloat(double value);
 
     /** Constructor for floating point objects. */
-    LeanTypeFloat(b_lean_obj_arg obj);
+    LeanValueFloat(b_lean_obj_arg obj);
 
-    ~LeanTypeFloat() {}
+    ~LeanValueFloat() {}
 
     lean_obj_res box(const CType &ct);
 

@@ -16,7 +16,7 @@
 
 #include "function.hpp"
 #include "ctype.hpp"
-#include "leantype.hpp"
+#include "leanvalue.hpp"
 #include "symbol.hpp"
 #include "utils.hpp"
 #include <algorithm>
@@ -82,7 +82,7 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
     void *argvals[nargs];
     for (size_t i = 0; i < nargs; i++) {
         lean_object *arg = lean_array_get_core(argvals_object, i);
-        auto v = LeanType::unbox(arg);
+        auto v = LeanValue::unbox(arg);
         argvals[i] = v->to_buffer(*m_argtypes[i]).release();
     }
 
@@ -104,7 +104,7 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
     for (size_t i = 0; i < nargs; i++)
         delete[] (uint8_t *)argvals[i];
 
-    return LeanType::from_buffer(*m_rtype, rvalue)->box(*m_rtype);
+    return LeanValue::from_buffer(*m_rtype, rvalue)->box(*m_rtype);
 }
 
 /** Create a new Function instance.  */

@@ -56,28 +56,28 @@ namespace CType
 end CType
 
 
-/-- Types in Lean. -/
-inductive LeanType where
+/-- Values in Lean. -/
+inductive LeanValue where
   | unit
   | int   (a : Int)
   | float (a : Float)
 deriving Repr, BEq
 
-namespace LeanType
+namespace LeanValue
 
-  /-- Create a LeanType.unit object. -/
-  @[export LeanType_mkUnit]
-  private def mkUnit (_ : @&Unit) : LeanType := .unit
+  /-- Create a LeanValue.unit object. -/
+  @[export LeanValue_mkUnit]
+  private def mkUnit (_ : @&Unit) : LeanValue := .unit
 
-  /-- Create a LeanType.int object. -/
-  @[export LeanType_mkInt]
-  private def mkInt (a : @&Int) : LeanType := .int a
+  /-- Create a LeanValue.int object. -/
+  @[export LeanValue_mkInt]
+  private def mkInt (a : @&Int) : LeanValue := .int a
 
-  /-- Create a LeanType.float object. -/
-  @[export LeanType_mkFloat]
-  private def mkFloat (a : @&Float) : LeanType := .float a
+  /-- Create a LeanValue.float object. -/
+  @[export LeanValue_mkFloat]
+  private def mkFloat (a : @&Float) : LeanValue := .float a
 
-end LeanType
+end LeanValue
 
 
 end CTypes.FFI

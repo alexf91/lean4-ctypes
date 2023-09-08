@@ -31,7 +31,7 @@ class Function final : public ExternalType<Function> {
 
     /**
      * Call the function with the given arguments.
-     * The result is a boxed LeanType object. Note that the result is not yet
+     * The result is a boxed LeanValue object. Note that the result is not yet
      * in the IO monad.
      */
     lean_obj_res call(b_lean_obj_arg argvals_object);
@@ -53,6 +53,3 @@ class Function final : public ExternalType<Function> {
     // Argument types used in the CIF.
     CType **m_argtypes;
 };
-
-/** Boxing of LeanType objects. */
-extern "C" LEAN_EXPORT_WEAK lean_obj_res LeanType_box(b_lean_obj_arg o, uint64_t addr);

@@ -14,52 +14,52 @@
  * limitations under the License.
  */
 
-#include "leantype.hpp"
+#include "leanvalue.hpp"
 #include "ctype.hpp"
 #include <lean/lean.h>
 
-std::unique_ptr<LeanType> LeanType::unbox(b_lean_obj_arg obj) {
+std::unique_ptr<LeanValue> LeanValue::unbox(b_lean_obj_arg obj) {
     ObjectTag tag = (ObjectTag)lean_obj_tag(obj);
     switch (tag) {
     case UNIT:
-        return std::make_unique<LeanTypeUnit>();
+        return std::make_unique<LeanValueUnit>();
     case INT:
-        return std::make_unique<LeanTypeInt>(lean_ctor_get(obj, 0));
+        return std::make_unique<LeanValueInt>(lean_ctor_get(obj, 0));
     case FLOAT:
-        return std::make_unique<LeanTypeFloat>(obj);
+        return std::make_unique<LeanValueFloat>(obj);
     default:
         lean_internal_panic_unreachable();
     }
 }
 
-/** Convert from a buffer and a CType back to a LeanType object.  */
-std::unique_ptr<LeanType> LeanType::from_buffer(const CType &ct,
-                                                const uint8_t *buffer) {
+/** Convert from a buffer and a CType back to a LeanValue object.  */
+std::unique_ptr<LeanValue> LeanValue::from_buffer(const CType &ct,
+                                                  const uint8_t *buffer) {
     switch (ct.get_tag()) {
     case CType::VOID:
-        return std::make_unique<LeanTypeUnit>();
+        return std::make_unique<LeanValueUnit>();
     case CType::INT8:
-        return std::make_unique<LeanTypeInt>((ssize_t)(*((const int8_t *)buffer)));
+        return std::make_unique<LeanValueInt>((ssize_t)(*((const int8_t *)buffer)));
     case CType::INT16:
-        return std::make_unique<LeanTypeInt>((ssize_t)(*((const int16_t *)buffer)));
+        return std::make_unique<LeanValueInt>((ssize_t)(*((const int16_t *)buffer)));
     case CType::INT32:
-        return std::make_unique<LeanTypeInt>((ssize_t)(*((const int32_t *)buffer)));
+        return std::make_unique<LeanValueInt>((ssize_t)(*((const int32_t *)buffer)));
     case CType::INT64:
-        return std::make_unique<LeanTypeInt>((ssize_t)(*((const int64_t *)buffer)));
+        return std::make_unique<LeanValueInt>((ssize_t)(*((const int64_t *)buffer)));
     case CType::UINT8:
-        return std::make_unique<LeanTypeInt>((size_t)(*((const uint8_t *)buffer)));
+        return std::make_unique<LeanValueInt>((size_t)(*((const uint8_t *)buffer)));
     case CType::UINT16:
-        return std::make_unique<LeanTypeInt>((size_t)(*((const uint16_t *)buffer)));
+        return std::make_unique<LeanValueInt>((size_t)(*((const uint16_t *)buffer)));
     case CType::UINT32:
-        return std::make_unique<LeanTypeInt>((size_t)(*((const uint32_t *)buffer)));
+        return std::make_unique<LeanValueInt>((size_t)(*((const uint32_t *)buffer)));
     case CType::UINT64:
-        return std::make_unique<LeanTypeInt>((size_t)(*((const uint64_t *)buffer)));
+        return std::make_unique<LeanValueInt>((size_t)(*((const uint64_t *)buffer)));
     case CType::FLOAT:
-        return std::make_unique<LeanTypeFloat>(*((const float *)buffer));
+        return std::make_unique<LeanValueFloat>(*((const float *)buffer));
     case CType::DOUBLE:
-        return std::make_unique<LeanTypeFloat>(*((const double *)buffer));
+        return std::make_unique<LeanValueFloat>(*((const double *)buffer));
     case CType::LONGDOUBLE:
-        return std::make_unique<LeanTypeFloat>(*((const long double *)buffer));
+        return std::make_unique<LeanValueFloat>(*((const long double *)buffer));
     case CType::COMPLEX_FLOAT:
         lean_internal_panic("COMPLEX_FLOAT not supported");
     case CType::COMPLEX_DOUBLE:
@@ -84,21 +84,21 @@ std::unique_ptr<LeanType> LeanType::from_buffer(const CType &ct,
  ******************************************************************************/
 
 /** Constructor for the unit type. */
-LeanTypeUnit::LeanTypeUnit() : LeanType(UNIT) {}
+LeanValueUnit::LeanValueUnit() : LeanValue(UNIT) {}
 
 /**
  * We can't create a buffer from the unit data type, as it can't be used as an
  * argument.
  */
-std::unique_ptr<uint8_t[]> LeanTypeUnit::to_buffer(const CType &ct) {
+std::unique_ptr<uint8_t[]> LeanValueUnit::to_buffer(const CType &ct) {
     lean_internal_panic("can't create buffer from unit type");
 }
 
 /** Convert the type to a Lean object. */
-lean_obj_res LeanTypeUnit::box(const CType &ct) {
+lean_obj_res LeanValueUnit::box(const CType &ct) {
     if (ct.get_tag() != CType::VOID)
         lean_internal_panic("can't convert unit to other than void");
-    return LeanType_mkUnit(lean_box(0));
+    return LeanValue_mkUnit(lean_box(0));
 }
 
 /******************************************************************************
@@ -106,13 +106,16 @@ lean_obj_res LeanTypeUnit::box(const CType &ct) {
  ******************************************************************************/
 
 /** Constructor for integer types from a value. */
-LeanTypeInt::LeanTypeInt(size_t value) : LeanType(INT) { m_value = (uint64_t)value; }
-LeanTypeInt::LeanTypeInt(ssize_t value) : LeanType(INT) { m_value = (uint64_t)value; }
+LeanValueInt::LeanValueInt(size_t value) : LeanValue(INT) { m_value = (uint64_t)value; }
+LeanValueInt::LeanValueInt(ssize_t value) : LeanValue(INT) {
+    m_value = (uint64_t)value;
+}
 
 /** Constructor for integer types from an object. */
-LeanTypeInt::LeanTypeInt(b_lean_obj_arg obj) : LeanTypeInt(lean_uint64_of_nat(obj)) {}
+LeanValueInt::LeanValueInt(b_lean_obj_arg obj)
+    : LeanValueInt(lean_uint64_of_nat(obj)) {}
 
-std::unique_ptr<uint8_t[]> LeanTypeInt::to_buffer(const CType &ct) {
+std::unique_ptr<uint8_t[]> LeanValueInt::to_buffer(const CType &ct) {
     std::unique_ptr<uint8_t[]> buffer(new uint8_t[ct.get_size()]);
     switch (ct.get_tag()) {
     case CType::INT8:
@@ -146,7 +149,7 @@ std::unique_ptr<uint8_t[]> LeanTypeInt::to_buffer(const CType &ct) {
 }
 
 /** Convert the type to a Lean object. */
-lean_obj_res LeanTypeInt::box(const CType &ct) {
+lean_obj_res LeanValueInt::box(const CType &ct) {
     if (!ct.is_integer())
         lean_internal_panic("can't convert integer to non-integer type");
 
@@ -155,11 +158,11 @@ lean_obj_res LeanTypeInt::box(const CType &ct) {
     if (ct.is_signed()) {
         // Shift left and then back to sign extend the value.
         int64_t value = ((int64_t)m_value << shift) >> shift;
-        return LeanType_mkInt(lean_int64_to_int(value));
+        return LeanValue_mkInt(lean_int64_to_int(value));
     } else {
         // Shift left and then back to crop the value.
         uint64_t value = (m_value << shift) >> shift;
-        return LeanType_mkInt(lean_uint64_to_nat(value));
+        return LeanValue_mkInt(lean_uint64_to_nat(value));
     }
 }
 
@@ -168,13 +171,13 @@ lean_obj_res LeanTypeInt::box(const CType &ct) {
  ******************************************************************************/
 
 /** Constructor for floating point types from a value. */
-LeanTypeFloat::LeanTypeFloat(double value) : LeanType(FLOAT) { m_value = value; }
+LeanValueFloat::LeanValueFloat(double value) : LeanValue(FLOAT) { m_value = value; }
 
 /** Constructor for floating point types from an object. */
-LeanTypeFloat::LeanTypeFloat(b_lean_obj_arg obj)
-    : LeanTypeFloat(lean_unbox_float(obj)) {}
+LeanValueFloat::LeanValueFloat(b_lean_obj_arg obj)
+    : LeanValueFloat(lean_unbox_float(obj)) {}
 
-std::unique_ptr<uint8_t[]> LeanTypeFloat::to_buffer(const CType &ct) {
+std::unique_ptr<uint8_t[]> LeanValueFloat::to_buffer(const CType &ct) {
     std::unique_ptr<uint8_t[]> buffer(new uint8_t[ct.get_size()]);
     switch (ct.get_tag()) {
     case CType::FLOAT:
@@ -193,4 +196,8 @@ std::unique_ptr<uint8_t[]> LeanTypeFloat::to_buffer(const CType &ct) {
 }
 
 /** Convert the type to a Lean object. */
-lean_obj_res LeanTypeFloat::box(const CType &ct) { return LeanType_mkFloat(m_value); }
+lean_obj_res LeanValueFloat::box(const CType &ct) {
+    if (!ct.is_float())
+        lean_internal_panic("can't convert float to non-float type");
+    return LeanValue_mkFloat(m_value);
+}
