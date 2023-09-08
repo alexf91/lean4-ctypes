@@ -61,6 +61,7 @@ inductive LeanValue where
   | unit
   | int   (a : Int)
   | float (a : Float)
+  | complex (a b : Float)
 deriving Repr, BEq
 
 namespace LeanValue
@@ -76,6 +77,10 @@ namespace LeanValue
   /-- Create a LeanValue.float object. -/
   @[export LeanValue_mkFloat]
   private def mkFloat (a : @&Float) : LeanValue := .float a
+
+  /-- Create a LeanValue.complex object. -/
+  @[export LeanValue_mkComplex]
+  private def mkComplex (a b : @&Float) : LeanValue := .complex a b
 
 end LeanValue
 

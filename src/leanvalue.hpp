@@ -32,6 +32,8 @@ LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkUnit(b_lean_obj_arg obj);
 LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkInt(b_lean_obj_arg obj);
 /** Create a LeanValue.float object. */
 LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkFloat(double obj);
+/** Create a LeanValue.complex object. */
+LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkComplex(double a, double b);
 }
 
 /**
@@ -44,6 +46,7 @@ class LeanValue {
         UNIT,
         INT,
         FLOAT,
+        COMPLEX,
         LENGTH,
     };
 
@@ -116,7 +119,6 @@ class LeanValueInt : public LeanValue {
 /**
  * LeanValue specialization for Float types.
  * We use double as the internal representation, since this is what Lean uses.
- * TODO: This might cause a loss of precision.
  */
 class LeanValueFloat : public LeanValue {
   public:
@@ -134,4 +136,27 @@ class LeanValueFloat : public LeanValue {
 
   private:
     double m_value;
+};
+
+/**
+ * LeanValue specialization for complex types.
+ * We use complex<double> as the internal representation, since this is what Lean uses
+ * for floats.
+ */
+class LeanValueComplex : public LeanValue {
+  public:
+    /** Constructor for complex floating point values. */
+    LeanValueComplex(std::complex<double> value);
+
+    /** Constructor for floating point objects. */
+    LeanValueComplex(b_lean_obj_arg obj);
+
+    ~LeanValueComplex() {}
+
+    lean_obj_res box(const CType &ct);
+
+    std::unique_ptr<uint8_t[]> to_buffer(const CType &ct);
+
+  private:
+    std::complex<double> m_value;
 };

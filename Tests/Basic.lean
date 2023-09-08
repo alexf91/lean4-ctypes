@@ -81,6 +81,12 @@ namespace Function
     let r ← add.call #[.float 41.0, .float 1.0]
     assertEqual r (.float 42.0) s!"result: {repr r}"
 
+  testcase callComplex requires (libgen : SharedLibrary) := do
+    let lib ← libgen "complex double add(complex double a, complex double b) {return a + b;}"
+    let add ← Function.mk (← lib["add"]) .complex_double #[.complex_double, .complex_double]
+    let r ← add.call #[.complex 41.0 1.0, .complex 1.0 41.0]
+    assertEqual r (.complex 42.0 42.0) s!"result: {repr r}"
+
 end Function
 
 end Tests.Basic

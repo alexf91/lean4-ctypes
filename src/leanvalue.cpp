@@ -24,9 +24,11 @@ std::unique_ptr<LeanValue> LeanValue::unbox(b_lean_obj_arg obj) {
     case UNIT:
         return std::make_unique<LeanValueUnit>();
     case INT:
-        return std::make_unique<LeanValueInt>(lean_ctor_get(obj, 0));
+        return std::make_unique<LeanValueInt>(obj);
     case FLOAT:
         return std::make_unique<LeanValueFloat>(obj);
+    case COMPLEX:
+        return std::make_unique<LeanValueComplex>(obj);
     default:
         lean_internal_panic_unreachable();
     }
@@ -61,11 +63,14 @@ std::unique_ptr<LeanValue> LeanValue::from_buffer(const CType &ct,
     case CType::LONGDOUBLE:
         return std::make_unique<LeanValueFloat>(*((const long double *)buffer));
     case CType::COMPLEX_FLOAT:
-        lean_internal_panic("COMPLEX_FLOAT not supported");
+        return std::make_unique<LeanValueComplex>(
+            (std::complex<double>)(*((const std::complex<float> *)buffer)));
     case CType::COMPLEX_DOUBLE:
-        lean_internal_panic("COMPLEX_DOUBLE not supported");
+        return std::make_unique<LeanValueComplex>(
+            (std::complex<double>)(*((const std::complex<double> *)buffer)));
     case CType::COMPLEX_LONGDOUBLE:
-        lean_internal_panic("COMPLEX_LONGDOUBLE not supported");
+        return std::make_unique<LeanValueComplex>(
+            (std::complex<double>)(*((const std::complex<long double> *)buffer)));
     case CType::POINTER:
         lean_internal_panic("POINTER not supported");
     case CType::ARRAY:
@@ -113,7 +118,7 @@ LeanValueInt::LeanValueInt(ssize_t value) : LeanValue(INT) {
 
 /** Constructor for integer types from an object. */
 LeanValueInt::LeanValueInt(b_lean_obj_arg obj)
-    : LeanValueInt(lean_uint64_of_nat(obj)) {}
+    : LeanValueInt(lean_uint64_of_nat(lean_ctor_get(obj, 0))) {}
 
 std::unique_ptr<uint8_t[]> LeanValueInt::to_buffer(const CType &ct) {
     std::unique_ptr<uint8_t[]> buffer(new uint8_t[ct.get_size()]);
@@ -200,4 +205,47 @@ lean_obj_res LeanValueFloat::box(const CType &ct) {
     if (!ct.is_float())
         lean_internal_panic("can't convert float to non-float type");
     return LeanValue_mkFloat(m_value);
+}
+
+/******************************************************************************
+ * COMPLEX FLOATING POINT TYPE
+ ******************************************************************************/
+
+/** Constructor for complex floating point types from a value. */
+LeanValueComplex::LeanValueComplex(std::complex<double> value) : LeanValue(COMPLEX) {
+    m_value = value;
+}
+
+/** Constructor for complex floating point types from an object. */
+LeanValueComplex::LeanValueComplex(b_lean_obj_arg obj) : LeanValue(COMPLEX) {
+    using namespace std::complex_literals;
+    double real = lean_ctor_get_float(obj, 0);
+    double imag = lean_ctor_get_float(obj, sizeof(double));
+    m_value = real + imag * 1i;
+}
+
+std::unique_ptr<uint8_t[]> LeanValueComplex::to_buffer(const CType &ct) {
+    std::unique_ptr<uint8_t[]> buffer(new uint8_t[ct.get_size()]);
+    switch (ct.get_tag()) {
+    case CType::COMPLEX_FLOAT:
+        *((std::complex<float> *)buffer.get()) = (std::complex<float>)m_value;
+        break;
+    case CType::COMPLEX_DOUBLE:
+        *((std::complex<double> *)buffer.get()) = (std::complex<double>)m_value;
+        break;
+    case CType::COMPLEX_LONGDOUBLE:
+        *((std::complex<long double> *)buffer.get()) =
+            (std::complex<long double>)m_value;
+        break;
+    default:
+        lean_internal_panic("invalid type");
+    }
+    return buffer;
+}
+
+/** Convert the type to a Lean object. */
+lean_obj_res LeanValueComplex::box(const CType &ct) {
+    if (!ct.is_complex())
+        lean_internal_panic("can't convert complex to non-complex type");
+    return LeanValue_mkComplex(std::real(m_value), std::imag(m_value));
 }
