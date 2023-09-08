@@ -76,15 +76,3 @@ private def generateLibrary (path : FilePath) (code : String) : IO Library := do
 -/
 fixture SharedLibrary FilePath (String → IO Library) requires (td : TemporaryDirectory) where
   setup := do return generateLibrary td
-
-/-- Fixture for `libm`. -/
-fixture LibMath Unit Library where
-  setup := Library.mk "/usr/lib/libm.so.6" #[.RTLD_NOW]
-
-/-- Fixture for the symbol `sin()`. -/
-fixture SymSin Unit Symbol requires (m : LibMath) where
-  setup := Symbol.mk m "sin"
-
-/-- Fixture for the function `sin()`. -/
-fixture FuncSin Unit Function requires (s : SymSin) where
-  setup := Function.mk s .double #[.double]

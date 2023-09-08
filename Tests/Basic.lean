@@ -42,17 +42,19 @@ end Library
 namespace Symbol
 
   /-- Successfully get a symbol. -/
-  testcase mkSuccess requires (h : LibMath) := do
-    discard <| Symbol.mk h "sin"
+  testcase mkSuccess requires (libgen : SharedLibrary) := do
+    let lib ← libgen "int foo(void) { return 0; }"
+    discard <| Symbol.mk lib "foo"
 
   /-- Fail to get a symbol. -/
-  testcase mkFailure requires (h : LibMath) := do
+  testcase mkFailure requires (libgen : SharedLibrary) := do
+    let lib ← libgen "int foo(void) { return 0; }"
     try
-      discard <| Symbol.mk h "doesnotexist"
+      discard <| Symbol.mk lib "doesnotexist"
       assertTrue false "Symbol.mk did not fail"
     catch e =>
-      let msg := "/usr/lib/libm.so.6: undefined symbol: doesnotexist"
-      assertTrue (e.toString == msg) s!"invalid error message: {e}"
+      let msg := "undefined symbol: doesnotexist"
+      assertTrue (e.toString.endsWith msg) s!"invalid error message: {e}"
 
 end Symbol
 
@@ -60,20 +62,24 @@ end Symbol
 namespace Function
 
   /-- Create a new function. -/
-  testcase mkPrimitive requires (s : SymSin) := do
-    discard <| Function.mk s .double #[.double]
+  testcase mkPrimitive requires (libgen : SharedLibrary) := do
+    let lib ← libgen "uint32_t foo(uint32_t a, uint32_t b) { return 0; }"
+    let s ← lib["foo"]
+    discard <| Function.mk s .uint32 #[.uint32, .uint32]
 
-  /-- Call a function. -/
-  testcase callSuccess requires (sin : FuncSin) := do
-    let result ← sin.call #[.float (3.14159265359 / 2)]
-    assertEqual result (.float 1.0) s!"wrong result: {repr result}"
-
-  /-- Call a custom function. -/
-  testcase callCustom requires (libgen : SharedLibrary) := do
-    let lib ← libgen "int8_t foo(int8_t a, int8_t b) {return a + b;}"
-    let foo ← Function.mk (← lib["foo"]) .int8 #[.int8, .int8]
-    let r ← foo.call #[.int 41, .int 1]
+  /-- Call a function with integer arguments and return value. -/
+  testcase callInt requires (libgen : SharedLibrary) := do
+    let lib ← libgen "int8_t add(int8_t a, int8_t b) {return a + b;}"
+    let add ← Function.mk (← lib["add"]) .int8 #[.int8, .int8]
+    let r ← add.call #[.int 41, .int 1]
     assertEqual r (.int 42) s!"result: {repr r}"
+
+  /-- Call a function with float arguments and return value. -/
+  testcase callFloat requires (libgen : SharedLibrary) := do
+    let lib ← libgen "double add(double a, double b) {return a + b;}"
+    let add ← Function.mk (← lib["add"]) .double #[.double, .double]
+    let r ← add.call #[.float 41.0, .float 1.0]
+    assertEqual r (.float 42.0) s!"result: {repr r}"
 
 end Function
 
