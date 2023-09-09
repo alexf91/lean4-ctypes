@@ -35,8 +35,7 @@ namespace Memory
   opaque toByteArray (m : @&Memory) : IO ByteArray
 
   /-- Allocate a new memory and initialize it to 0. -/
-  @[extern "Memory_allocate"]
-  opaque allocate (size : @&USize) : IO Memory
+  def allocate (size : Nat) : IO Memory := fromByteArray $ size.repeat (· ++ .mk #[(0 : UInt8)]) .empty
 
   /-- Get the size of the memory view. -/
   @[extern "Memory_size"]
@@ -48,7 +47,7 @@ namespace Memory
 
   /-- Extract a slice from the memory view and return a new slice. -/
   @[extern "Memory_extract"]
-  opaque extract (m : Memory) (b e : @&Nat) : IO Memory
+  opaque extract (m : @&Memory) (b e : @&Nat) : IO Memory
 
   /-- Dereference a pointer and create a new memory view with the given size. -/
   @[extern "Memory_dereference"]

@@ -36,8 +36,9 @@ namespace Tests.Memory
     let m ← Memory.fromByteArray a
     let na := a.extract 1 7
     let nm ← m.extract 1 7
-    assertFalse nm.allocated
-    assertEqual (← nm.toByteArray).data na.data
+    let ba ← nm.toByteArray
+    assertFalse nm.allocated s!"allocated: {nm.allocated}"
+    assertEqual ba.data na.data s!"data: {ba}"
 
   /-- Read all integer types. -/
   testcase testReadInt_int8 := do

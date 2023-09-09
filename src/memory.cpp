@@ -23,155 +23,163 @@
 #include <complex>
 #include <cstdint>
 
-extern "C" {
-
-/** Lean class */
-lean_external_class *Memory_class = nullptr;
-
-/** Finalize a Memory. */
-static void Memory_finalize(void *p) {
-    Memory *m = (Memory *)p;
-    utils_log("finalizing memory %p with buffer %p", m, m->buffer);
-
-    delete m;
+/** Create a new memory. */
+Memory::Memory(lean_obj_arg parent, void *buffer, size_t size, bool allocated)
+    : m_parent(parent), m_buffer((uint8_t *)buffer), m_size(size),
+      m_allocated(allocated) {
+    if (parent != nullptr)
+        lean_inc(m_parent);
 }
 
-/** Foreach for a Memory. */
-static void Memory_foreach(void *mod, b_lean_obj_arg fn) {
-    utils_log("NOT IMPLEMENTED");
-}
-
-/** Convert a Memory object from C to Lean. */
-static inline lean_object *Memory_box(Memory *m) {
-    if (Memory_class == nullptr)
-        Memory_class = lean_register_external_class(Memory_finalize, Memory_foreach);
-    return lean_alloc_external(Memory_class, m);
+Memory::~Memory() {
+    // Views with parents can never be allocated.
+    assert(!(m_allocated && m_parent));
+    if (m_parent)
+        lean_dec(m_parent);
+    if (m_allocated)
+        delete[] m_buffer;
 }
 
 /**
  * Create a new Memory instance from a ByteArray.
  */
-lean_obj_res Memory_fromByteArray(b_lean_obj_arg array, lean_object *unused) {
+Memory *Memory::fromByteArray(b_lean_obj_arg array) {
     size_t size = lean_unbox(lean_byte_array_size(array));
-    uint8_t *buffer = (uint8_t *)malloc(size);
-    if (buffer == nullptr)
-        lean_internal_panic_out_of_memory();
+    uint8_t *buffer = new uint8_t[size];
 
     for (size_t i = 0; i < size; i++)
         buffer[i] = lean_byte_array_uget(array, i);
 
-    Memory *m = new Memory();
-    m->buffer = buffer;
-    m->size = size;
-    m->allocated = true;
-    return lean_io_result_mk_ok(Memory_box(m));
+    return new Memory(nullptr, buffer, size, true);
 }
 
 /**
  * Convert a Memory region to a ByteArray.
  */
-lean_obj_res Memory_toByteArray(b_lean_obj_arg memory, lean_object *unused) {
-    Memory *m = Memory_unbox(memory);
-
-    lean_object *array = lean_mk_empty_byte_array(lean_box(m->size));
-    for (size_t i = 0; i < m->size; i++)
-        array = lean_byte_array_push(array, ((uint8_t *)m->buffer)[i]);
-    return lean_io_result_mk_ok(array);
+lean_obj_res Memory::toByteArray() {
+    lean_object *array = lean_mk_empty_byte_array(lean_box(get_size()));
+    for (size_t i = 0; i < get_size(); i++)
+        array = lean_byte_array_push(array, m_buffer[i]);
+    return array;
 }
 
-/**
- * Allocate a new memory in C.
- */
-lean_obj_res Memory_allocate(size_t size, lean_object *unused) {
-    Memory *m = new Memory();
-    m->allocated = true;
-    m->buffer = calloc(size, sizeof(uint8_t));
-    m->size = size;
+/** Extract part of a memory view and create a new one. */
+Memory *Memory::extract(size_t begin, size_t end) {
+    // Check if we are out of bounds.
+    if (begin >= get_size())
+        throw "begin index out of bounds";
+    if (end >= get_size())
+        throw "end index out of bounds";
 
-    if (m->buffer == nullptr) {
-        delete m;
-        lean_internal_panic_out_of_memory();
+    void *new_buffer = m_buffer + begin;
+    return new Memory(m_parent, new_buffer, std::max(0L, (ssize_t)end - (ssize_t)begin),
+                      false);
+}
+
+/** Read a CType from the memory and create a LeanValue. */
+std::unique_ptr<LeanValue> Memory::read(const CType &ct, size_t offset) {
+    if (offset + ct.get_size() > get_size())
+        throw "reading out of bounds";
+
+    uint8_t *address = m_buffer + offset;
+    // TODO: Probably a memory leak.
+    return LeanValue::from_buffer(ct, address);
+}
+
+/** Dereference a pointer and create a new memory view. */
+Memory *Memory::dereference(size_t offset, size_t size) {
+    if (offset + sizeof(void *) > get_size())
+        throw "reading out of bounds";
+
+    void *address = m_buffer + offset;
+
+    // TODO: Does this need a parent?
+    return new Memory(nullptr, address, size, false);
+}
+
+/** Create a memory view from a byte array. */
+extern "C" lean_obj_res Memory_fromByteArray(b_lean_obj_arg array,
+                                             lean_object *unused) {
+    try {
+        Memory *m = Memory::fromByteArray(array);
+        return lean_io_result_mk_ok(m->box());
+    } catch (const char *msg) {
+        lean_object *err = lean_mk_io_user_error(lean_mk_string(msg));
+        return lean_io_result_mk_error(err);
     }
-    return lean_io_result_mk_ok(Memory_box(m));
 }
 
-/**
- * Get the size of the memory.
- */
-lean_obj_res Memory_size(b_lean_obj_arg memory) {
-    Memory *m = Memory_unbox(memory);
-    return lean_box(m->size);
+/** Create a byte array from a memory view. */
+extern "C" lean_obj_res Memory_toByteArray(b_lean_obj_arg memory, lean_object *unused) {
+    auto m = Memory::unbox(memory);
+    try {
+        lean_object *array = m->toByteArray();
+        return lean_io_result_mk_ok(array);
+    } catch (const char *msg) {
+        lean_object *err = lean_mk_io_user_error(lean_mk_string(msg));
+        return lean_io_result_mk_error(err);
+    }
 }
 
-/**
- * Check if the memory is allocated
- */
-uint8_t Memory_allocated(b_lean_obj_arg memory) {
-    Memory *m = Memory_unbox(memory);
-    return m->allocated;
+/** Get the size of the memory. */
+extern "C" lean_obj_res Memory_size(b_lean_obj_arg memory) {
+    auto m = Memory::unbox(memory);
+    return lean_box(m->get_size());
 }
 
-/**
- * Extract part of a memory view and create a new one.
- */
-lean_obj_res Memory_extract(lean_obj_arg memory, b_lean_obj_arg begin,
-                            b_lean_obj_arg end, lean_object *unused) {
-    Memory *m = Memory_unbox(memory);
+/** Check if the memory is allocated. */
+extern "C" uint8_t Memory_allocated(b_lean_obj_arg memory) {
+    auto m = Memory::unbox(memory);
+    return m->is_allocated();
+}
+
+/** Extract part of a memory view and create a new one. */
+extern "C" lean_obj_res Memory_extract(lean_obj_arg memory, b_lean_obj_arg begin,
+                                       b_lean_obj_arg end, lean_object *unused) {
+    auto m = Memory::unbox(memory);
     size_t b = lean_unbox(begin);
     size_t e = lean_unbox(end);
 
-    // Check if we are out of bounds.
-    if (b >= m->size || e >= m->size) {
-        lean_dec(memory); // Release the parent memory.
-        lean_object *msg = lean_mk_string("index out of bounds");
-        return lean_io_result_mk_error(lean_mk_io_user_error(msg));
+    try {
+        Memory *nm = m->extract(b, e);
+        return lean_io_result_mk_ok(nm->box());
+    } catch (const char *msg) {
+        lean_object *err = lean_mk_io_user_error(lean_mk_string(msg));
+        return lean_io_result_mk_error(err);
     }
-
-    Memory *nm = new Memory();
-    nm->parent = memory;
-    nm->buffer = ((uint8_t *)m->buffer) + b;
-    nm->size = std::max(0L, (ssize_t)e - (ssize_t)b);
-
-    return lean_io_result_mk_ok(Memory_box(nm));
 }
 
 /**
  * Read an arbitrary value from the memory view.
  */
-lean_obj_res Memory_read(b_lean_obj_arg memory, b_lean_obj_arg offset,
-                         b_lean_obj_arg type, lean_object *unused) {
-    Memory *m = Memory_unbox(memory);
+extern "C" lean_obj_res Memory_read(b_lean_obj_arg memory, b_lean_obj_arg offset,
+                                    b_lean_obj_arg type, lean_object *unused) {
+    Memory *m = Memory::unbox(memory);
     size_t o = lean_unbox(offset);
-    auto tp = CType::unbox(type);
+    auto ct = CType::unbox(type);
 
-    if (o + tp->get_size() > m->size) {
-        lean_object *msg = lean_mk_string("reading out of bounds");
-        return lean_io_result_mk_error(lean_mk_io_user_error(msg));
+    try {
+        return lean_io_result_mk_ok(m->read(*ct, o)->box(*ct));
+    } catch (const char *msg) {
+        lean_object *err = lean_mk_io_user_error(lean_mk_string(msg));
+        return lean_io_result_mk_error(err);
     }
-    uint8_t *address = ((uint8_t *)m->buffer) + o;
-
-    auto value = LeanValue::from_buffer(*tp, address);
-    return lean_io_result_mk_ok(value->box(*tp));
 }
 
 /**
  * Dereference a pointer and create a new memory view.
  */
-lean_obj_res Memory_dereference(b_lean_obj_arg memory, b_lean_obj_arg offset,
-                                b_lean_obj_arg nsize, lean_object *unused) {
-    Memory *m = Memory_unbox(memory);
+extern "C" lean_obj_res Memory_dereference(b_lean_obj_arg memory, b_lean_obj_arg offset,
+                                           b_lean_obj_arg nsize, lean_object *unused) {
+    Memory *m = Memory::unbox(memory);
     size_t o = lean_unbox(offset);
+    size_t size = lean_unbox(nsize);
 
-    if (o + sizeof(void *) > m->size) {
-        lean_object *msg = lean_mk_string("reading out of bounds");
-        return lean_io_result_mk_error(lean_mk_io_user_error(msg));
+    try {
+        auto nm = m->dereference(o, size);
+        return lean_io_result_mk_ok(nm->box());
+    } catch (const char *msg) {
+        lean_object *err = lean_mk_io_user_error(lean_mk_string(msg));
+        return lean_io_result_mk_error(err);
     }
-    void *address = ((uint8_t *)m->buffer) + o;
-
-    Memory *nm = new Memory();
-    nm->buffer = *((void **)address);
-    nm->size = lean_unbox(nsize);
-
-    return lean_io_result_mk_ok(Memory_box(nm));
-}
 }

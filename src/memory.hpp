@@ -16,36 +16,42 @@
 
 #pragma once
 
+#include "ctype.hpp"
+#include "external_type.hpp"
+#include "leanvalue.hpp"
 #include <cassert>
+#include <cstdlib>
 #include <lean/lean.h>
-#include <stdlib.h>
 
-extern "C" {
+class Memory final : public ExternalType<Memory> {
+  public:
+    Memory(lean_obj_arg parent, void *buffer, size_t size, bool allocated);
+    ~Memory();
 
-/**
- * Internal representation of a memory region.
- * If the memory is allocated in the constructor, then it has to be freed when
- * it is finalized.
- */
-struct Memory {
-    lean_object *parent;
-    void *buffer;
-    size_t size;
-    bool allocated;
+    /** Create a memory view and initialize it from the byte array. */
+    static Memory *fromByteArray(b_lean_obj_arg array);
 
-    Memory() : parent(nullptr), buffer(nullptr), size(0), allocated(false) {}
-    ~Memory() {
-        // Views with parents can never be allocated.
-        assert(!(allocated && parent));
-        if (parent)
-            lean_dec(parent);
-        if (allocated)
-            free(buffer);
-    };
+    /** Create a Lean ByteArray from the memory view. */
+    lean_obj_res toByteArray();
+
+    /** Extract part of a memory view and create a new one. */
+    Memory *extract(size_t begin, size_t end);
+
+    /** Read a CType from the memory, creating a LeanValue. */
+    std::unique_ptr<LeanValue> read(const CType &type, size_t offset);
+
+    /** Dereference a pointer and create a new memory view. */
+    Memory *dereference(size_t offset, size_t size);
+
+    /** Get the size of the memory. */
+    size_t get_size() { return m_size; }
+
+    /** Check if the memory is allocated. */
+    bool is_allocated() { return m_allocated; }
+
+  private:
+    lean_object *m_parent;
+    uint8_t *m_buffer;
+    size_t m_size;
+    bool m_allocated;
 };
-
-/** Convert a Memory object from Lean to C. */
-static inline Memory *Memory_unbox(b_lean_obj_arg m) {
-    return (Memory *)(lean_get_external_data(m));
-}
-}
