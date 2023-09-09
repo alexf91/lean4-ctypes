@@ -42,75 +42,80 @@ namespace Tests.Memory
   /-- Read all integer types. -/
   testcase testReadInt_int8 := do
     let m ← Memory.fromByteArray $ .mk (#[(0xFF : UInt8)] * 8)
-    assertEqual (-1) (← m.readInt 0 .int8)
+    let v ← m.read 0 .int8
+    assertEqual v (.int (-1))
 
   testcase testReadInt_uint8 := do
     let m ← Memory.fromByteArray $ .mk (#[(0xFF : UInt8)] * 8)
-    assertEqual 255 (← m.readInt 0 .uint8)
+    let v ← m.read 0 .uint8
+    assertEqual v (.int 255)
 
   testcase testReadInt_int16 := do
     let m ← Memory.fromByteArray $ .mk (#[(0xFF : UInt8)] * 8)
-    assertEqual (-1) (← m.readInt 0 .int16)
+    let v ← m.read 0 .int16
+    assertEqual v (.int (-1))
 
   testcase testReadInt_uint16 := do
     let m ← Memory.fromByteArray $ .mk (#[(0xFF : UInt8)] * 8)
-    assertEqual 65535 (← m.readInt 0 .uint16)
+    let v ← m.read 0 .uint16
+    assertEqual v (.int 65535)
 
   testcase testReadInt_int32 := do
     let m ← Memory.fromByteArray $ .mk (#[(0xFF : UInt8)] * 8)
-    assertEqual (-1) (← m.readInt 0 .int32)
+    let v ← m.read 0 .int32
+    assertEqual v (.int (-1))
 
   testcase testReadInt_uint32 := do
     let m ← Memory.fromByteArray $ .mk (#[(0xFF : UInt8)] * 8)
-    assertEqual 4294967295 (← m.readInt 0 .uint32)
+    let v ← m.read 0 .uint32
+    assertEqual v (.int 4294967295)
 
   testcase testReadInt_int64 := do
     let m ← Memory.fromByteArray $ .mk (#[(0xFF : UInt8)] * 8)
-    assertEqual (-1) (← m.readInt 0 .int64)
+    let v ← m.read 0 .int64
+    assertEqual v (.int (-1))
 
   testcase testReadInt_uint64 := do
     let m ← Memory.fromByteArray $ .mk (#[(0xFF : UInt8)] * 8)
-    assertEqual 18446744073709551615 (← m.readInt 0 .uint64)
+    let v ← m.read 0 .uint64
+    assertEqual v (.int 18446744073709551615)
 
   /-- Read all floating point types. -/
   testcase testReadFloat_float := do
     let m ← Memory.fromByteArray $ .mk #[0xdb, 0x0f, 0x49, 0x40]
-    let v ← m.readFloat 0 .float
-    assertEqual v.toString "3.141593"
+    let v ← m.read 0 .float
+    assertEqual s!"{repr v}" s!"{repr (LeanValue.float 3.141593)}"
 
   testcase testReadFloat_double := do
     let m ← Memory.fromByteArray $ .mk #[0x18, 0x2d, 0x44, 0x54, 0xfb, 0x21, 0x09, 0x40]
-    let v ← m.readFloat 0 .double
-    assertEqual v.toString "3.141593"
+    let v ← m.read 0 .double
+    assertEqual s!"{repr v}" s!"{repr (LeanValue.float 3.141593)}"
 
   testcase testReadFloat_longdouble := do
     let m ← Memory.fromByteArray $ .mk #[0x00, 0xc0, 0x68, 0x21, 0xa2, 0xda, 0x0f, 0xc9,
                                          0x00, 0x40, 0x65, 0xb5, 0xee, 0x7f, 0x00, 0x00]
-    let v ← m.readFloat 0 .longdouble
-    assertEqual v.toString "3.141593"
+    let v ← m.read 0 .longdouble
+    assertEqual s!"{repr v}" s!"{repr (LeanValue.float 3.141593)}"
 
   /-- Read all complex types. -/
   testcase testReadComplex_float := do
     let m ← Memory.fromByteArray $ .mk #[0xdb, 0x0f, 0x49, 0x40, 0xdb, 0x0f, 0x49, 0xc0]
-    let v ← m.readComplex 0 .complex_float
-    assertEqual v.1.toString "3.141593"
-    assertEqual v.2.toString "-3.141593"
+    let v ← m.read 0 .complex_float
+    assertEqual s!"{repr v}" s!"{repr (LeanValue.complex 3.141593 (-3.141593))}"
 
   testcase testReadComplex_double := do
     let m ← Memory.fromByteArray $ .mk #[0x18, 0x2d, 0x44, 0x54, 0xfb, 0x21, 0x09, 0x40,
                                          0x18, 0x2d, 0x44, 0x54, 0xfb, 0x21, 0x09, 0xc0]
-    let v ← m.readComplex 0 .complex_double
-    assertEqual v.1.toString "3.141593"
-    assertEqual v.2.toString "-3.141593"
+    let v ← m.read 0 .complex_double
+    assertEqual s!"{repr v}" s!"{repr (LeanValue.complex 3.141593 (-3.141593))}"
 
   testcase testReadComplex_longdouble := do
     let m ← Memory.fromByteArray $ .mk #[0x00, 0xc0, 0x68, 0x21, 0xa2, 0xda, 0x0f, 0xc9,
                                          0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                                          0x00, 0xc0, 0x68, 0x21, 0xa2, 0xda, 0x0f, 0xc9,
                                          0x00, 0xc0, 0x80, 0xf9, 0x9b, 0x7f, 0x00, 0x00]
-    let v ← m.readComplex 0 .complex_longdouble
-    assertEqual v.1.toString "3.141593"
-    assertEqual v.2.toString "-3.141593"
+    let v ← m.read 0 .complex_longdouble
+    assertEqual s!"{repr v}" s!"{repr (LeanValue.complex 3.141593 (-3.141593))}"
 
   /-- Dereference a pointer. -/
   testcase testDereferenceEmpty := do

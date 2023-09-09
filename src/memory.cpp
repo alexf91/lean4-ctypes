@@ -17,6 +17,7 @@
 #include "memory.hpp"
 #include "ctype.hpp"
 #include "lean/lean.h"
+#include "leanvalue.hpp"
 #include "utils.hpp"
 #include <algorithm>
 #include <complex>
@@ -135,10 +136,10 @@ lean_obj_res Memory_extract(lean_obj_arg memory, b_lean_obj_arg begin,
 }
 
 /**
- * Read an integer from the memory view.
+ * Read an arbitrary value from the memory view.
  */
-lean_obj_res Memory_readInt(b_lean_obj_arg memory, b_lean_obj_arg offset,
-                            b_lean_obj_arg type, lean_object *unused) {
+lean_obj_res Memory_read(b_lean_obj_arg memory, b_lean_obj_arg offset,
+                         b_lean_obj_arg type, lean_object *unused) {
     Memory *m = Memory_unbox(memory);
     size_t o = lean_unbox(offset);
     auto tp = CType::unbox(type);
@@ -147,95 +148,10 @@ lean_obj_res Memory_readInt(b_lean_obj_arg memory, b_lean_obj_arg offset,
         lean_object *msg = lean_mk_string("reading out of bounds");
         return lean_io_result_mk_error(lean_mk_io_user_error(msg));
     }
-    void *address = ((uint8_t *)m->buffer) + o;
+    uint8_t *address = ((uint8_t *)m->buffer) + o;
 
-    switch (tp->get_tag()) {
-    case CType::INT8:
-        return lean_io_result_mk_ok(lean_int64_to_int(*((int8_t *)address)));
-    case CType::UINT8:
-        return lean_io_result_mk_ok(lean_int64_to_int(*((uint8_t *)address)));
-    case CType::INT16:
-        return lean_io_result_mk_ok(lean_int64_to_int(*((int16_t *)address)));
-    case CType::UINT16:
-        return lean_io_result_mk_ok(lean_int64_to_int(*((uint16_t *)address)));
-    case CType::INT32:
-        return lean_io_result_mk_ok(lean_int64_to_int(*((int32_t *)address)));
-    case CType::UINT32:
-        return lean_io_result_mk_ok(lean_int64_to_int(*((uint32_t *)address)));
-    case CType::INT64:
-        return lean_io_result_mk_ok(lean_int64_to_int(*((int64_t *)address)));
-    case CType::UINT64:
-        return lean_io_result_mk_ok(lean_big_uint64_to_nat(*((uint64_t *)address)));
-    default:
-        lean_object *msg = lean_mk_string("not an integer type");
-        return lean_io_result_mk_error(lean_mk_io_user_error(msg));
-    }
-}
-
-/**
- * Read a floating point value from the memory view.
- */
-lean_obj_res Memory_readFloat(b_lean_obj_arg memory, b_lean_obj_arg offset,
-                              b_lean_obj_arg type, lean_object *unused) {
-    Memory *m = Memory_unbox(memory);
-    size_t o = lean_unbox(offset);
-    auto tp = CType::unbox(type);
-
-    if (o + tp->get_size() > m->size) {
-        lean_object *msg = lean_mk_string("reading out of bounds");
-        return lean_io_result_mk_error(lean_mk_io_user_error(msg));
-    }
-    void *address = ((uint8_t *)m->buffer) + o;
-
-    switch (tp->get_tag()) {
-    case CType::FLOAT:
-        return lean_io_result_mk_ok(lean_box_float(*((float *)address)));
-    case CType::DOUBLE:
-        return lean_io_result_mk_ok(lean_box_float(*((double *)address)));
-    case CType::LONGDOUBLE:
-        return lean_io_result_mk_ok(lean_box_float(*((long double *)address)));
-    default:
-        lean_object *msg = lean_mk_string("not a floating point type");
-        return lean_io_result_mk_error(lean_mk_io_user_error(msg));
-    }
-}
-
-/**
- * Read a complex floating point value from the memory view.
- */
-lean_obj_res Memory_readComplex(b_lean_obj_arg memory, b_lean_obj_arg offset,
-                                b_lean_obj_arg type, lean_object *unused) {
-    Memory *m = Memory_unbox(memory);
-    size_t o = lean_unbox(offset);
-    auto tp = CType::unbox(type);
-
-    if (o + tp->get_size() > m->size) {
-        lean_object *msg = lean_mk_string("reading out of bounds");
-        return lean_io_result_mk_error(lean_mk_io_user_error(msg));
-    }
-    void *address = ((uint8_t *)m->buffer) + o;
-    std::complex<double> result;
-
-    switch (tp->get_tag()) {
-    case CType::COMPLEX_FLOAT:
-        result = *((std::complex<float> *)address);
-        break;
-    case CType::COMPLEX_DOUBLE:
-        result = *((std::complex<double> *)address);
-        break;
-    case CType::COMPLEX_LONGDOUBLE:
-        result = *((std::complex<long double> *)address);
-        break;
-    default:
-        lean_object *msg = lean_mk_string("not a complex type");
-        return lean_io_result_mk_error(lean_mk_io_user_error(msg));
-    }
-
-    lean_object *array = lean_mk_empty_float_array(lean_box(2));
-    array = lean_float_array_push(array, result.real());
-    array = lean_float_array_push(array, result.imag());
-
-    return lean_io_result_mk_ok(array);
+    auto value = LeanValue::from_buffer(*tp, address);
+    return lean_io_result_mk_ok(value->box(*tp));
 }
 
 /**

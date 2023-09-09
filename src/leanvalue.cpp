@@ -167,7 +167,8 @@ lean_obj_res LeanValueInt::box(const CType &ct) {
     } else {
         // Shift left and then back to crop the value.
         uint64_t value = (m_value << shift) >> shift;
-        return LeanValue_mkInt(lean_uint64_to_nat(value));
+        // TODO: Do we need to change the reference count for the intermediate result?
+        return LeanValue_mkInt(lean_nat_to_int(lean_uint64_to_nat(value)));
     }
 }
 
