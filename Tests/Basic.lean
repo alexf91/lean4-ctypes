@@ -67,6 +67,12 @@ namespace Function
     let s ← lib["foo"]
     discard <| Function.mk s .uint32 #[.uint32, .uint32]
 
+  /-- Return void from a function. -/
+  testcase callVoid requires (libgen : SharedLibrary) := do
+    let lib ← libgen "void foo(void) {}"
+    let foo ← Function.mk (← lib["foo"]) .void #[]
+    assertEqual .unit (← foo.call #[])
+
   /-- Call a function with integer arguments and return value. -/
   testcase callInt requires (libgen : SharedLibrary) := do
     let lib ← libgen "int8_t add(int8_t a, int8_t b) {return a + b;}"
@@ -86,6 +92,17 @@ namespace Function
     let add ← Function.mk (← lib["add"]) .complex_double #[.complex_double, .complex_double]
     let r ← add.call #[.complex 41.0 1.0, .complex 1.0 41.0]
     assertEqual r (.complex 42.0 42.0) s!"result: {repr r}"
+
+  /-- Call multiple functions in a library multiple times. -/
+  testcase callMultiple requires (libgen : SharedLibrary) := do
+    let lib ← libgen $ "int64_t add(int64_t a, int64_t b) {return a + b;}\n" ++
+                       "int64_t mul(int64_t a, int64_t b) {return a * b;}"
+    let add ← Function.mk (← lib["add"]) .int64 #[.int64, .int64]
+    let mul ← Function.mk (← lib["mul"]) .int64 #[.int64, .int64]
+    assertEqual (.int 12) (← mul.call #[.int 2, .int 6])
+    assertEqual (.int 10) (← add.call #[.int 3, .int 7])
+    assertEqual (.int 12) (← add.call #[.int 4, .int 8])
+    assertEqual (.int 45) (← mul.call #[.int 5, .int 9])
 
 end Function
 

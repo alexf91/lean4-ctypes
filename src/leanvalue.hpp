@@ -34,6 +34,10 @@ LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkInt(b_lean_obj_arg obj);
 LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkFloat(double obj);
 /** Create a LeanValue.complex object. */
 LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkComplex(double a, double b);
+/** Create a LeanValue.struct object. */
+LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkStruct(b_lean_obj_arg values);
+/** Check if a CType is compatible with a LeanValue. */
+LEAN_EXPORT_WEAK uint8_t Types_compatible(b_lean_obj_arg ct, b_lean_obj_arg lv);
 }
 
 /**
@@ -47,14 +51,12 @@ class LeanValue {
         INT,
         FLOAT,
         COMPLEX,
+        STRUCT,
         LENGTH,
     };
 
     LeanValue(ObjectTag tag) : m_tag(tag) {}
     virtual ~LeanValue() {}
-
-    /** Get a string representation of the type. */
-    const char *to_string() const { lean_internal_panic("not implemented"); }
 
     /**
      * Box the type to a Lean object.
@@ -102,7 +104,7 @@ class LeanValueInt : public LeanValue {
     LeanValueInt(size_t value);
     LeanValueInt(ssize_t value);
 
-    /** Constructor for integer objects. */
+    /** Constructor for LeanValue.int objects. */
     LeanValueInt(b_lean_obj_arg obj);
 
     ~LeanValueInt() {}
@@ -125,7 +127,7 @@ class LeanValueFloat : public LeanValue {
     /** Constructor for floating point values. */
     LeanValueFloat(double value);
 
-    /** Constructor for floating point objects. */
+    /** Constructor for LeanValue.float objects. */
     LeanValueFloat(b_lean_obj_arg obj);
 
     ~LeanValueFloat() {}
@@ -148,7 +150,7 @@ class LeanValueComplex : public LeanValue {
     /** Constructor for complex floating point values. */
     LeanValueComplex(std::complex<double> value);
 
-    /** Constructor for floating point objects. */
+    /** Constructor for LeanValue.complex objects. */
     LeanValueComplex(b_lean_obj_arg obj);
 
     ~LeanValueComplex() {}
@@ -159,4 +161,25 @@ class LeanValueComplex : public LeanValue {
 
   private:
     std::complex<double> m_value;
+};
+
+/**
+ * LeanValue specialization for struct types.
+ */
+class LeanValueStruct : public LeanValue {
+  public:
+    /** Constructor for struct values. */
+    LeanValueStruct(std::vector<LeanValue *> values);
+
+    /** Constructor for LeanValue.struct objects. */
+    LeanValueStruct(b_lean_obj_arg obj);
+
+    ~LeanValueStruct();
+
+    lean_obj_res box(const CType &ct);
+
+    std::unique_ptr<uint8_t[]> to_buffer(const CType &ct);
+
+  private:
+    std::vector<LeanValue *> m_values;
 };

@@ -62,7 +62,40 @@ inductive LeanValue where
   | int   (a : Int)
   | float (a : Float)
   | complex (a b : Float)
+  | struct (values : Array LeanValue)
 deriving Repr, BEq
+
+
+/--
+  Check if a `CType` and a `LeanValue` have a compatible layout.
+  TODO: Prove termination.
+-/
+@[export Types_compatible]
+private unsafe def compatible : CType → LeanValue → Bool
+  | .void,               .unit    ..
+  | .int8,               .int     ..
+  | .int16,              .int     ..
+  | .int32,              .int     ..
+  | .int64,              .int     ..
+  | .uint8,              .int     ..
+  | .uint16,             .int     ..
+  | .uint32,             .int     ..
+  | .uint64,             .int     ..
+  | .float,              .float   ..
+  | .double,             .float   ..
+  | .longdouble,         .float   ..
+  | .complex_float,      .complex ..
+  | .complex_double,     .complex ..
+  | .complex_longdouble, .complex .. => true
+  | .struct es,          .struct  vs => compatibleElements es.toList vs.toList
+  | _, _ => false
+where
+  compatibleElements : List CType → List LeanValue → Bool
+  |    [],    [] => true
+  |     _,    [] => false
+  |    [],     _ => false
+  | e::es, v::vs => compatible e v && compatibleElements es vs
+
 
 namespace LeanValue
 
@@ -81,6 +114,10 @@ namespace LeanValue
   /-- Create a LeanValue.complex object. -/
   @[export LeanValue_mkComplex]
   private def mkComplex (a b : @&Float) : LeanValue := .complex a b
+
+  /-- Create a LeanValue.struct object. -/
+  @[export LeanValue_mkStruct]
+  private def mkStruct (values : @&Array LeanValue) : LeanValue := .struct values
 
 end LeanValue
 

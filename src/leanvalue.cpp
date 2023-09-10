@@ -111,14 +111,31 @@ lean_obj_res LeanValueUnit::box(const CType &ct) {
  ******************************************************************************/
 
 /** Constructor for integer types from a value. */
-LeanValueInt::LeanValueInt(size_t value) : LeanValue(INT) { m_value = (uint64_t)value; }
-LeanValueInt::LeanValueInt(ssize_t value) : LeanValue(INT) {
-    m_value = (uint64_t)value;
-}
+LeanValueInt::LeanValueInt(size_t value) : LeanValue(INT), m_value((uint64_t)value) {}
+LeanValueInt::LeanValueInt(ssize_t value) : LeanValue(INT), m_value((uint64_t)value) {}
 
 /** Constructor for integer types from an object. */
 LeanValueInt::LeanValueInt(b_lean_obj_arg obj)
     : LeanValueInt(lean_uint64_of_nat(lean_ctor_get(obj, 0))) {}
+
+/** Convert the type to a Lean object. */
+lean_obj_res LeanValueInt::box(const CType &ct) {
+    if (!ct.is_integer())
+        lean_internal_panic("can't convert integer to non-integer type");
+
+    int shift = (sizeof(uint64_t) - ct.get_size()) * 8;
+    assert(shift >= 0);
+    if (ct.is_signed()) {
+        // Shift left and then back to sign extend the value.
+        int64_t value = ((int64_t)m_value << shift) >> shift;
+        return LeanValue_mkInt(lean_int64_to_int(value));
+    } else {
+        // Shift left and then back to crop the value.
+        uint64_t value = (m_value << shift) >> shift;
+        // TODO: Do we need to change the reference count for the intermediate result?
+        return LeanValue_mkInt(lean_nat_to_int(lean_uint64_to_nat(value)));
+    }
+}
 
 std::unique_ptr<uint8_t[]> LeanValueInt::to_buffer(const CType &ct) {
     std::unique_ptr<uint8_t[]> buffer(new uint8_t[ct.get_size()]);
@@ -153,35 +170,23 @@ std::unique_ptr<uint8_t[]> LeanValueInt::to_buffer(const CType &ct) {
     return buffer;
 }
 
-/** Convert the type to a Lean object. */
-lean_obj_res LeanValueInt::box(const CType &ct) {
-    if (!ct.is_integer())
-        lean_internal_panic("can't convert integer to non-integer type");
-
-    int shift = (sizeof(uint64_t) - ct.get_size()) * 8;
-    assert(shift >= 0);
-    if (ct.is_signed()) {
-        // Shift left and then back to sign extend the value.
-        int64_t value = ((int64_t)m_value << shift) >> shift;
-        return LeanValue_mkInt(lean_int64_to_int(value));
-    } else {
-        // Shift left and then back to crop the value.
-        uint64_t value = (m_value << shift) >> shift;
-        // TODO: Do we need to change the reference count for the intermediate result?
-        return LeanValue_mkInt(lean_nat_to_int(lean_uint64_to_nat(value)));
-    }
-}
-
 /******************************************************************************
  * FLOATING POINT TYPE
  ******************************************************************************/
 
 /** Constructor for floating point types from a value. */
-LeanValueFloat::LeanValueFloat(double value) : LeanValue(FLOAT) { m_value = value; }
+LeanValueFloat::LeanValueFloat(double value) : LeanValue(FLOAT), m_value(value) {}
 
 /** Constructor for floating point types from an object. */
 LeanValueFloat::LeanValueFloat(b_lean_obj_arg obj)
     : LeanValueFloat(lean_unbox_float(obj)) {}
+
+/** Convert the type to a Lean object. */
+lean_obj_res LeanValueFloat::box(const CType &ct) {
+    if (!ct.is_float())
+        lean_internal_panic("can't convert float to non-float type");
+    return LeanValue_mkFloat(m_value);
+}
 
 std::unique_ptr<uint8_t[]> LeanValueFloat::to_buffer(const CType &ct) {
     std::unique_ptr<uint8_t[]> buffer(new uint8_t[ct.get_size()]);
@@ -201,21 +206,13 @@ std::unique_ptr<uint8_t[]> LeanValueFloat::to_buffer(const CType &ct) {
     return buffer;
 }
 
-/** Convert the type to a Lean object. */
-lean_obj_res LeanValueFloat::box(const CType &ct) {
-    if (!ct.is_float())
-        lean_internal_panic("can't convert float to non-float type");
-    return LeanValue_mkFloat(m_value);
-}
-
 /******************************************************************************
  * COMPLEX FLOATING POINT TYPE
  ******************************************************************************/
 
 /** Constructor for complex floating point types from a value. */
-LeanValueComplex::LeanValueComplex(std::complex<double> value) : LeanValue(COMPLEX) {
-    m_value = value;
-}
+LeanValueComplex::LeanValueComplex(std::complex<double> value)
+    : LeanValue(COMPLEX), m_value(value) {}
 
 /** Constructor for complex floating point types from an object. */
 LeanValueComplex::LeanValueComplex(b_lean_obj_arg obj) : LeanValue(COMPLEX) {
@@ -223,6 +220,13 @@ LeanValueComplex::LeanValueComplex(b_lean_obj_arg obj) : LeanValue(COMPLEX) {
     double real = lean_ctor_get_float(obj, 0);
     double imag = lean_ctor_get_float(obj, sizeof(double));
     m_value = real + imag * 1i;
+}
+
+/** Convert the type to a Lean object. */
+lean_obj_res LeanValueComplex::box(const CType &ct) {
+    if (!ct.is_complex())
+        lean_internal_panic("can't convert complex to non-complex type");
+    return LeanValue_mkComplex(std::real(m_value), std::imag(m_value));
 }
 
 std::unique_ptr<uint8_t[]> LeanValueComplex::to_buffer(const CType &ct) {
@@ -244,9 +248,19 @@ std::unique_ptr<uint8_t[]> LeanValueComplex::to_buffer(const CType &ct) {
     return buffer;
 }
 
-/** Convert the type to a Lean object. */
-lean_obj_res LeanValueComplex::box(const CType &ct) {
-    if (!ct.is_complex())
-        lean_internal_panic("can't convert complex to non-complex type");
-    return LeanValue_mkComplex(std::real(m_value), std::imag(m_value));
+/******************************************************************************
+ * STRUCT TYPE
+ ******************************************************************************/
+
+/** Constructor for struct values. */
+LeanValueStruct::LeanValueStruct(std::vector<LeanValue *> values)
+    : LeanValue(STRUCT), m_values(values) {}
+
+/** Constructor for struct objects. */
+LeanValueStruct::LeanValueStruct(b_lean_obj_arg obj) : LeanValue(STRUCT) {}
+
+lean_obj_res LeanValueStruct::box(const CType &ct) { return nullptr; }
+
+std::unique_ptr<uint8_t[]> LeanValueStruct::to_buffer(const CType &ct) {
+    return nullptr;
 }
