@@ -49,23 +49,23 @@ Function::Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
         throw "creating CIF failed";
 
     // Convert arguments into owned objects.
-    lean_inc(symbol);
-    lean_inc(rtype_object);
-    lean_inc(argtypes_object);
+    lean_inc(m_symbol);
+    lean_inc(m_rtype_object);
+    lean_inc(m_argtypes_object);
 }
 
 /**
  * Free prepared structures and release referenced objects.
  */
 Function::~Function() {
-    lean_dec(m_symbol);
-    lean_dec(m_rtype_object);
-    lean_dec(m_argtypes_object);
-
     delete m_rtype;
     for (size_t i = 0; i < get_nargs(); i++)
         delete m_argtypes[i];
     delete[] m_argtypes;
+
+    lean_dec(m_argtypes_object);
+    lean_dec(m_rtype_object);
+    lean_dec(m_symbol);
 }
 
 /**

@@ -103,6 +103,10 @@ class CType : public ffi_type {
     bool is_integer() const { return FIRST_INT <= m_tag && m_tag <= LAST_INT; }
     /** Check if the type is a signed integer. */
     bool is_signed() const { return FIRST_SIGNED <= m_tag && m_tag <= LAST_SIGNED; }
+    /** Check if the type is an unsigned integer. */
+    bool is_unsigned() const {
+        return FIRST_UNSIGNED <= m_tag && m_tag <= LAST_UNSIGNED;
+    }
     /** Check if the type is a floating point type. */
     bool is_float() const { return FIRST_FLOAT <= m_tag && m_tag <= LAST_FLOAT; }
     /** Check if the type is a complex floating point type. */

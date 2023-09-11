@@ -59,7 +59,8 @@ end CType
 /-- Values in Lean. -/
 inductive LeanValue where
   | unit
-  | int   (a : Int)
+  | int (a : Int)
+  | nat (a : Nat)
   | float (a : Float)
   | complex (a b : Float)
   | struct (values : Array LeanValue)
@@ -77,10 +78,10 @@ private unsafe def compatible : CType → LeanValue → Bool
   | .int16,              .int     ..
   | .int32,              .int     ..
   | .int64,              .int     ..
-  | .uint8,              .int     ..
-  | .uint16,             .int     ..
-  | .uint32,             .int     ..
-  | .uint64,             .int     ..
+  | .uint8,              .nat     ..
+  | .uint16,             .nat     ..
+  | .uint32,             .nat     ..
+  | .uint64,             .nat     ..
   | .float,              .float   ..
   | .double,             .float   ..
   | .longdouble,         .float   ..
@@ -106,6 +107,10 @@ namespace LeanValue
   /-- Create a LeanValue.int object. -/
   @[export LeanValue_mkInt]
   private def mkInt (a : @&Int) : LeanValue := .int a
+
+  /-- Create a LeanValue.nat object. -/
+  @[export LeanValue_mkNat]
+  private def mkNat (a : @&Nat) : LeanValue := .nat a
 
   /-- Create a LeanValue.float object. -/
   @[export LeanValue_mkFloat]

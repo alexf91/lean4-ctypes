@@ -41,21 +41,21 @@ std::unique_ptr<LeanValue> LeanValue::from_buffer(const CType &ct,
     case CType::VOID:
         return std::make_unique<LeanValueUnit>();
     case CType::INT8:
-        return std::make_unique<LeanValueInt>((ssize_t)(*((const int8_t *)buffer)));
+        return std::make_unique<LeanValueInt>(*((const int8_t *)buffer));
     case CType::INT16:
-        return std::make_unique<LeanValueInt>((ssize_t)(*((const int16_t *)buffer)));
+        return std::make_unique<LeanValueInt>(*((const int16_t *)buffer));
     case CType::INT32:
-        return std::make_unique<LeanValueInt>((ssize_t)(*((const int32_t *)buffer)));
+        return std::make_unique<LeanValueInt>(*((const int32_t *)buffer));
     case CType::INT64:
-        return std::make_unique<LeanValueInt>((ssize_t)(*((const int64_t *)buffer)));
+        return std::make_unique<LeanValueInt>(*((const int64_t *)buffer));
     case CType::UINT8:
-        return std::make_unique<LeanValueInt>((size_t)(*((const uint8_t *)buffer)));
+        return std::make_unique<LeanValueNat>(*((const uint8_t *)buffer));
     case CType::UINT16:
-        return std::make_unique<LeanValueInt>((size_t)(*((const uint16_t *)buffer)));
+        return std::make_unique<LeanValueNat>(*((const uint16_t *)buffer));
     case CType::UINT32:
-        return std::make_unique<LeanValueInt>((size_t)(*((const uint32_t *)buffer)));
+        return std::make_unique<LeanValueNat>(*((const uint32_t *)buffer));
     case CType::UINT64:
-        return std::make_unique<LeanValueInt>((size_t)(*((const uint64_t *)buffer)));
+        return std::make_unique<LeanValueNat>(*((const uint64_t *)buffer));
     case CType::FLOAT:
         return std::make_unique<LeanValueFloat>(*((const float *)buffer));
     case CType::DOUBLE:
@@ -107,12 +107,11 @@ lean_obj_res LeanValueUnit::box(const CType &ct) {
 }
 
 /******************************************************************************
- * INTEGER TYPE
+ * SIGNED INTEGER TYPE
  ******************************************************************************/
 
 /** Constructor for integer types from a value. */
-LeanValueInt::LeanValueInt(size_t value) : LeanValue(INT), m_value((uint64_t)value) {}
-LeanValueInt::LeanValueInt(ssize_t value) : LeanValue(INT), m_value((uint64_t)value) {}
+LeanValueInt::LeanValueInt(int64_t value) : LeanValue(INT), m_value(value) {}
 
 /** Constructor for integer types from an object. */
 LeanValueInt::LeanValueInt(b_lean_obj_arg obj)
@@ -120,49 +119,72 @@ LeanValueInt::LeanValueInt(b_lean_obj_arg obj)
 
 /** Convert the type to a Lean object. */
 lean_obj_res LeanValueInt::box(const CType &ct) {
-    if (!ct.is_integer())
+    if (!ct.is_signed())
         lean_internal_panic("can't convert integer to non-integer type");
 
     int shift = (sizeof(uint64_t) - ct.get_size()) * 8;
     assert(shift >= 0);
-    if (ct.is_signed()) {
-        // Shift left and then back to sign extend the value.
-        int64_t value = ((int64_t)m_value << shift) >> shift;
-        return LeanValue_mkInt(lean_int64_to_int(value));
-    } else {
-        // Shift left and then back to crop the value.
-        uint64_t value = (m_value << shift) >> shift;
-        // TODO: Do we need to change the reference count for the intermediate result?
-        return LeanValue_mkInt(lean_nat_to_int(lean_uint64_to_nat(value)));
-    }
+    int64_t value = ((int64_t)m_value << shift) >> shift;
+    return LeanValue_mkInt(lean_int64_to_int(value));
 }
 
 std::unique_ptr<uint8_t[]> LeanValueInt::to_buffer(const CType &ct) {
     std::unique_ptr<uint8_t[]> buffer(new uint8_t[ct.get_size()]);
     switch (ct.get_tag()) {
     case CType::INT8:
-        *((int8_t *)buffer.get()) = (int8_t)m_value;
-        break;
-    case CType::UINT8:
-        *((uint8_t *)buffer.get()) = (uint8_t)m_value;
+        *((int8_t *)buffer.get()) = m_value;
         break;
     case CType::INT16:
-        *((int16_t *)buffer.get()) = (int16_t)m_value;
-        break;
-    case CType::UINT16:
-        *((uint16_t *)buffer.get()) = (uint16_t)m_value;
+        *((int16_t *)buffer.get()) = m_value;
         break;
     case CType::INT32:
-        *((int32_t *)buffer.get()) = (int32_t)m_value;
-        break;
-    case CType::UINT32:
-        *((uint32_t *)buffer.get()) = (uint32_t)m_value;
+        *((int32_t *)buffer.get()) = m_value;
         break;
     case CType::INT64:
-        *((int64_t *)buffer.get()) = (int64_t)m_value;
+        *((int64_t *)buffer.get()) = m_value;
+        break;
+    default:
+        lean_internal_panic("invalid type");
+    }
+    return buffer;
+}
+
+/******************************************************************************
+ * UNSIGNED INTEGER TYPE
+ ******************************************************************************/
+
+/** Constructor for integer types from a value. */
+LeanValueNat::LeanValueNat(uint64_t value) : LeanValue(NAT), m_value(value) {}
+
+/** Constructor for integer types from an object. */
+LeanValueNat::LeanValueNat(b_lean_obj_arg obj)
+    : LeanValueNat(lean_uint64_of_nat(lean_ctor_get(obj, 0))) {}
+
+/** Convert the type to a Lean object. */
+lean_obj_res LeanValueNat::box(const CType &ct) {
+    if (!ct.is_unsigned())
+        lean_internal_panic("can't convert integer to non-integer type");
+
+    int shift = (sizeof(uint64_t) - ct.get_size()) * 8;
+    assert(shift >= 0);
+    uint64_t value = (m_value << shift) >> shift;
+    return LeanValue_mkNat(lean_uint64_to_nat(value));
+}
+
+std::unique_ptr<uint8_t[]> LeanValueNat::to_buffer(const CType &ct) {
+    std::unique_ptr<uint8_t[]> buffer(new uint8_t[ct.get_size()]);
+    switch (ct.get_tag()) {
+    case CType::UINT8:
+        *((uint8_t *)buffer.get()) = m_value;
+        break;
+    case CType::UINT16:
+        *((uint16_t *)buffer.get()) = m_value;
+        break;
+    case CType::UINT32:
+        *((uint32_t *)buffer.get()) = m_value;
         break;
     case CType::UINT64:
-        *((uint64_t *)buffer.get()) = (uint64_t)m_value;
+        *((uint64_t *)buffer.get()) = m_value;
         break;
     default:
         lean_internal_panic("invalid type");
@@ -258,6 +280,8 @@ LeanValueStruct::LeanValueStruct(std::vector<LeanValue *> values)
 
 /** Constructor for struct objects. */
 LeanValueStruct::LeanValueStruct(b_lean_obj_arg obj) : LeanValue(STRUCT) {}
+
+LeanValueStruct::~LeanValueStruct() {}
 
 lean_obj_res LeanValueStruct::box(const CType &ct) { return nullptr; }
 

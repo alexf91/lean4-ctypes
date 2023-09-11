@@ -30,6 +30,8 @@ extern "C" {
 LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkUnit(b_lean_obj_arg obj);
 /** Create a LeanValue.int object. */
 LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkInt(b_lean_obj_arg obj);
+/** Create a LeanValue.nat object. */
+LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkNat(b_lean_obj_arg obj);
 /** Create a LeanValue.float object. */
 LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkFloat(double obj);
 /** Create a LeanValue.complex object. */
@@ -49,6 +51,7 @@ class LeanValue {
     enum ObjectTag {
         UNIT,
         INT,
+        NAT,
         FLOAT,
         COMPLEX,
         STRUCT,
@@ -97,17 +100,36 @@ class LeanValueUnit : public LeanValue {
     std::unique_ptr<uint8_t[]> to_buffer(const CType &ct);
 };
 
-/** LeanValue specialization for Integer types. */
+/** LeanValue specialization for signed integer types. */
 class LeanValueInt : public LeanValue {
   public:
-    /** Constructor for integer values. */
-    LeanValueInt(size_t value);
-    LeanValueInt(ssize_t value);
+    /** Constructor for signed integer values. */
+    LeanValueInt(int64_t value);
 
     /** Constructor for LeanValue.int objects. */
     LeanValueInt(b_lean_obj_arg obj);
 
     ~LeanValueInt() {}
+
+    lean_obj_res box(const CType &ct);
+
+    std::unique_ptr<uint8_t[]> to_buffer(const CType &ct);
+
+  private:
+    // The representation of the value as a 64 bit value.
+    int64_t m_value;
+};
+
+/** LeanValue specialization for unsigned integer types. */
+class LeanValueNat : public LeanValue {
+  public:
+    /** Constructor for signed integer values. */
+    LeanValueNat(uint64_t value);
+
+    /** Constructor for LeanValue.int objects. */
+    LeanValueNat(b_lean_obj_arg obj);
+
+    ~LeanValueNat() {}
 
     lean_obj_res box(const CType &ct);
 

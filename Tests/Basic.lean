@@ -104,6 +104,14 @@ namespace Function
     assertEqual (.int 12) (← add.call #[.int 4, .int 8])
     assertEqual (.int 45) (← mul.call #[.int 5, .int 9])
 
+  /-- Call a function with overflowing arguments. -/
+  testcase callOverflow_int8 requires (libgen : SharedLibrary) := do
+    let lib ← libgen $ "int8_t foo(int8_t a) {return a;}"
+    let foo ← Function.mk (← lib["foo"]) .int8 #[.int8]
+    assertEqual (.int (-128)) (← foo.call #[.int 128])
+    assertEqual (.int (-128)) (← foo.call #[.int (-128)])
+    assertEqual (.int 0) (← foo.call #[.int 256])
+
 end Function
 
 end Tests.Basic
