@@ -61,11 +61,8 @@ class LeanValue {
     LeanValue(ObjectTag tag) : m_tag(tag) {}
     virtual ~LeanValue() {}
 
-    /**
-     * Box the type to a Lean object.
-     * To treat values correctly, we require the corresponding C type.
-     */
-    virtual lean_obj_res box(const CType &ct) = 0;
+    /** Box the type to a Lean object.  */
+    virtual lean_obj_res box() = 0;
 
     /** Convert from Lean to this class. */
     static std::unique_ptr<LeanValue> unbox(b_lean_obj_arg obj);
@@ -95,7 +92,7 @@ class LeanValueUnit : public LeanValue {
     LeanValueUnit();
     ~LeanValueUnit() {}
 
-    lean_obj_res box(const CType &ct);
+    lean_obj_res box();
 
     std::unique_ptr<uint8_t[]> to_buffer(const CType &ct);
 };
@@ -111,7 +108,7 @@ class LeanValueInt : public LeanValue {
 
     ~LeanValueInt() {}
 
-    lean_obj_res box(const CType &ct);
+    lean_obj_res box();
 
     std::unique_ptr<uint8_t[]> to_buffer(const CType &ct);
 
@@ -131,7 +128,7 @@ class LeanValueNat : public LeanValue {
 
     ~LeanValueNat() {}
 
-    lean_obj_res box(const CType &ct);
+    lean_obj_res box();
 
     std::unique_ptr<uint8_t[]> to_buffer(const CType &ct);
 
@@ -154,7 +151,7 @@ class LeanValueFloat : public LeanValue {
 
     ~LeanValueFloat() {}
 
-    lean_obj_res box(const CType &ct);
+    lean_obj_res box();
 
     std::unique_ptr<uint8_t[]> to_buffer(const CType &ct);
 
@@ -177,7 +174,7 @@ class LeanValueComplex : public LeanValue {
 
     ~LeanValueComplex() {}
 
-    lean_obj_res box(const CType &ct);
+    lean_obj_res box();
 
     std::unique_ptr<uint8_t[]> to_buffer(const CType &ct);
 
@@ -198,7 +195,7 @@ class LeanValueStruct : public LeanValue {
 
     ~LeanValueStruct();
 
-    lean_obj_res box(const CType &ct);
+    lean_obj_res box();
 
     std::unique_ptr<uint8_t[]> to_buffer(const CType &ct);
 

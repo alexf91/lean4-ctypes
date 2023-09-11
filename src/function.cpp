@@ -104,7 +104,7 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
     for (size_t i = 0; i < nargs; i++)
         delete[] (uint8_t *)argvals[i];
 
-    return LeanValue::from_buffer(*m_rtype, rvalue)->box(*m_rtype);
+    return LeanValue::from_buffer(*m_rtype, rvalue)->box();
 }
 
 /** Create a new Function instance.  */

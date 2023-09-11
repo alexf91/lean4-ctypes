@@ -159,7 +159,7 @@ extern "C" lean_obj_res Memory_read(b_lean_obj_arg memory, b_lean_obj_arg offset
     auto ct = CType::unbox(type);
 
     try {
-        return lean_io_result_mk_ok(m->read(*ct, o)->box(*ct));
+        return lean_io_result_mk_ok(m->read(*ct, o)->box());
     } catch (const char *msg) {
         lean_object *err = lean_mk_io_user_error(lean_mk_string(msg));
         return lean_io_result_mk_error(err);

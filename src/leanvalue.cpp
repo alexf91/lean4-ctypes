@@ -100,11 +100,7 @@ std::unique_ptr<uint8_t[]> LeanValueUnit::to_buffer(const CType &ct) {
 }
 
 /** Convert the type to a Lean object. */
-lean_obj_res LeanValueUnit::box(const CType &ct) {
-    if (ct.get_tag() != CType::VOID)
-        lean_internal_panic("can't convert unit to other than void");
-    return LeanValue_mkUnit(lean_box(0));
-}
+lean_obj_res LeanValueUnit::box() { return LeanValue_mkUnit(lean_box(0)); }
 
 /******************************************************************************
  * SIGNED INTEGER TYPE
@@ -118,15 +114,7 @@ LeanValueInt::LeanValueInt(b_lean_obj_arg obj)
     : LeanValueInt(lean_uint64_of_nat(lean_ctor_get(obj, 0))) {}
 
 /** Convert the type to a Lean object. */
-lean_obj_res LeanValueInt::box(const CType &ct) {
-    if (!ct.is_signed())
-        lean_internal_panic("can't convert integer to non-integer type");
-
-    int shift = (sizeof(uint64_t) - ct.get_size()) * 8;
-    assert(shift >= 0);
-    int64_t value = ((int64_t)m_value << shift) >> shift;
-    return LeanValue_mkInt(lean_int64_to_int(value));
-}
+lean_obj_res LeanValueInt::box() { return LeanValue_mkInt(lean_int64_to_int(m_value)); }
 
 std::unique_ptr<uint8_t[]> LeanValueInt::to_buffer(const CType &ct) {
     std::unique_ptr<uint8_t[]> buffer(new uint8_t[ct.get_size()]);
@@ -161,14 +149,8 @@ LeanValueNat::LeanValueNat(b_lean_obj_arg obj)
     : LeanValueNat(lean_uint64_of_nat(lean_ctor_get(obj, 0))) {}
 
 /** Convert the type to a Lean object. */
-lean_obj_res LeanValueNat::box(const CType &ct) {
-    if (!ct.is_unsigned())
-        lean_internal_panic("can't convert integer to non-integer type");
-
-    int shift = (sizeof(uint64_t) - ct.get_size()) * 8;
-    assert(shift >= 0);
-    uint64_t value = (m_value << shift) >> shift;
-    return LeanValue_mkNat(lean_uint64_to_nat(value));
+lean_obj_res LeanValueNat::box() {
+    return LeanValue_mkNat(lean_uint64_to_nat(m_value));
 }
 
 std::unique_ptr<uint8_t[]> LeanValueNat::to_buffer(const CType &ct) {
@@ -204,11 +186,7 @@ LeanValueFloat::LeanValueFloat(b_lean_obj_arg obj)
     : LeanValueFloat(lean_unbox_float(obj)) {}
 
 /** Convert the type to a Lean object. */
-lean_obj_res LeanValueFloat::box(const CType &ct) {
-    if (!ct.is_float())
-        lean_internal_panic("can't convert float to non-float type");
-    return LeanValue_mkFloat(m_value);
-}
+lean_obj_res LeanValueFloat::box() { return LeanValue_mkFloat(m_value); }
 
 std::unique_ptr<uint8_t[]> LeanValueFloat::to_buffer(const CType &ct) {
     std::unique_ptr<uint8_t[]> buffer(new uint8_t[ct.get_size()]);
@@ -245,9 +223,7 @@ LeanValueComplex::LeanValueComplex(b_lean_obj_arg obj) : LeanValue(COMPLEX) {
 }
 
 /** Convert the type to a Lean object. */
-lean_obj_res LeanValueComplex::box(const CType &ct) {
-    if (!ct.is_complex())
-        lean_internal_panic("can't convert complex to non-complex type");
+lean_obj_res LeanValueComplex::box() {
     return LeanValue_mkComplex(std::real(m_value), std::imag(m_value));
 }
 
@@ -283,7 +259,7 @@ LeanValueStruct::LeanValueStruct(b_lean_obj_arg obj) : LeanValue(STRUCT) {}
 
 LeanValueStruct::~LeanValueStruct() {}
 
-lean_obj_res LeanValueStruct::box(const CType &ct) { return nullptr; }
+lean_obj_res LeanValueStruct::box() { return nullptr; }
 
 std::unique_ptr<uint8_t[]> LeanValueStruct::to_buffer(const CType &ct) {
     return nullptr;
