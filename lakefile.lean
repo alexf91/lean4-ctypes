@@ -17,6 +17,12 @@
 import Lake
 open Lake DSL
 
+/- Control logging and build output. -/
+meta if get_config? debug |>.isSome then
+  def debugFlags := #["-DDEBUG", "-ggdb"]
+else
+  def debugFlags := #["-DNDEBUG"]
+
 package ctypes {
   precompileModules := true
   -- TODO: Don't hardcode libraries and library paths. This currently fixes some
@@ -28,16 +34,10 @@ package ctypes {
     "/usr/lib/libc.so.6",
     "/usr/lib/libstdc++.so.6",
     "/usr/lib/libunwind.so.8"
-  ]
+  ] ++ debugFlags
 }
 
 require LTest from git "git@github.com:alexf91/LTest.git" @ "main"
-
-/- Control logging output. -/
-meta if get_config? debug |>.isSome then
-  def debugFlags := #["-DDEBUG", "-ggdb"]
-else
-  def debugFlags := #["-DNDEBUG"]
 
 def createTarget (pkg : Package) (cfile : FilePath) := do
   let oFile := pkg.buildDir / cfile.withExtension "o"

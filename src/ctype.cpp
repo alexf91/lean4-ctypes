@@ -40,113 +40,69 @@ const char *CType::name_map[] = {
 
 /** Constructor for primitive types. */
 CType::CType(ObjectTag tag) : m_tag(tag) {
-    if (tag > LAST_PRIMITIVE)
-        throw std::invalid_argument("tag is not for a primitive type");
-    const ffi_type *tp = type_map[tag];
-
-    // TODO: Bad practice to do it this way. This should be done in a copy constructor
-    // or something similar. CType should probably not make ffi_type a public superclass
-    // at all.
-    size = tp->size;
-    alignment = tp->alignment;
-    type = tp->type;
-    elements = tp->elements;
-}
-
-// Constructor for array types.
-CType::CType(std::unique_ptr<CType> tp, size_t length) {
-    m_tag = ARRAY;
-    size = 0;
-    alignment = 0;
-    type = FFI_TYPE_STRUCT;
-
-    // We assign the same unique pointer to every element and release it. This is fine
-    // because we only delete the first element in the destructor.
-    elements = new ffi_type *[length + 1]();
-    for (size_t i = 0; i < length; i++)
-        elements[i] = tp.get();
-    tp.release();
-
-    // Initialize size and alignment fields.
-    ffi_get_struct_offsets(FFI_DEFAULT_ABI, this, nullptr);
-}
-
-// Constructor for struct types.
-CType::CType(std::vector<std::unique_ptr<CType>> e) {
-    m_tag = STRUCT;
-    size = 0;
-    alignment = 0;
-    type = FFI_TYPE_STRUCT;
-
-    elements = new ffi_type *[e.size() + 1]();
-    for (size_t i = 0; i < e.size(); i++)
-        elements[i] = e[i].release();
-
-    // Initialize size and alignment fields.
-    ffi_get_struct_offsets(FFI_DEFAULT_ABI, this, nullptr);
-}
-
-CType::~CType() {
-    switch (m_tag) {
-    case ARRAY:
-        if (elements) {
-            if (elements[0])
-                delete (CType *)elements[0];
-            delete[] elements;
-        }
-        break;
-    case STRUCT:
-        if (elements) {
-            for (size_t i = 0; elements[i]; i++)
-                delete (CType *)elements[i];
-            delete[] elements;
-        }
-        break;
-    case UNION:
-        lean_internal_panic("union not implemented");
-    default:
-        assert(elements == nullptr || is_complex());
+    m_ffi_type = {0};
+    if (tag <= LAST_PRIMITIVE) {
+        const ffi_type *tp = type_map[tag];
+        m_ffi_type.size = tp->size;
+        m_ffi_type.alignment = tp->alignment;
+        m_ffi_type.type = tp->type;
+        m_ffi_type.elements = tp->elements;
     }
 }
 
 /** Unbox the type into a CType class. */
 std::unique_ptr<CType> CType::unbox(b_lean_obj_arg obj) {
     ObjectTag tag = (ObjectTag)lean_obj_tag(obj);
-    if (tag <= LAST_PRIMITIVE) {
-        return std::make_unique<CType>(tag);
-    } else if (tag == ARRAY) {
-        size_t length = lean_unbox(lean_ctor_get(obj, 1));
-
-        // If the length is 0 we would lose the reference to tp, so we don't even unbox
-        // it. Technically this is illegal anyway, but we support it for consistency.
-        if (length == 0) {
-            return std::make_unique<CType>(nullptr, length);
-        } else {
-            auto type = CType::unbox(lean_ctor_get(obj, 0));
-            return std::make_unique<CType>(std::move(type), length);
-        }
-    } else if (tag == STRUCT) {
-        // std::vector<CType *> elements;
-        std::vector<std::unique_ptr<CType>> elements;
-        lean_object *array = lean_ctor_get(obj, 0);
-        assert(lean_is_array(array));
-
-        for (size_t i = 0; i < lean_array_size(array); i++) {
-            auto tp = CType::unbox(lean_array_get_core(array, i));
-            elements.push_back(std::move(tp));
-        }
-        return std::make_unique<CType>(std::move(elements));
-    } else if (tag == UNION) {
-        lean_internal_panic("union not implemented");
+    switch (tag) {
+    case VOID:
+        return std::make_unique<CTypeVoid>();
+    case INT8:
+        return std::make_unique<CTypeInt<int8_t>>(tag);
+    case INT16:
+        return std::make_unique<CTypeInt<int16_t>>(tag);
+    case INT32:
+        return std::make_unique<CTypeInt<int32_t>>(tag);
+    case INT64:
+        return std::make_unique<CTypeInt<int64_t>>(tag);
+    case UINT8:
+        return std::make_unique<CTypeInt<uint8_t>>(tag);
+    case UINT16:
+        return std::make_unique<CTypeInt<uint16_t>>(tag);
+    case UINT32:
+        return std::make_unique<CTypeInt<uint32_t>>(tag);
+    case UINT64:
+        return std::make_unique<CTypeInt<uint64_t>>(tag);
+    case FLOAT:
+        return std::make_unique<CTypeFloat<float>>(tag);
+    case DOUBLE:
+        return std::make_unique<CTypeFloat<double>>(tag);
+    case LONGDOUBLE:
+        return std::make_unique<CTypeFloat<long double>>(tag);
+    case COMPLEX_FLOAT:
+        return std::make_unique<CTypeComplex<std::complex<float>>>(tag);
+    case COMPLEX_DOUBLE:
+        return std::make_unique<CTypeComplex<std::complex<double>>>(tag);
+    case COMPLEX_LONGDOUBLE:
+        return std::make_unique<CTypeComplex<std::complex<long double>>>(tag);
+    case POINTER:
+        return std::make_unique<CTypePointer>();
+    case ARRAY:
+        return std::make_unique<CTypeArray>(lean_ctor_get(obj, 0),
+                                            lean_ctor_get(obj, 1));
+    case STRUCT:
+        return std::make_unique<CTypeStruct>(lean_ctor_get(obj, 0));
+    case UNION:
+        lean_internal_panic("UNION not supported");
+    default:
+        lean_internal_panic_unreachable();
     }
-    lean_internal_panic_unreachable();
 }
 
 /** Get the number of elements. */
 size_t CType::get_nelements() {
-    if (elements) {
+    if (m_ffi_type.elements) {
         size_t n = 0;
-        while (elements[n])
+        while (m_ffi_type.elements[n])
             n++;
         return n;
     }
@@ -159,7 +115,7 @@ std::vector<size_t> CType::get_offsets() {
     std::vector<size_t> offsets;
 
     size_t offs[n];
-    ffi_status status = ffi_get_struct_offsets(FFI_DEFAULT_ABI, this, offs);
+    ffi_status status = ffi_get_struct_offsets(FFI_DEFAULT_ABI, &m_ffi_type, offs);
 
     if (status == FFI_BAD_TYPEDEF)
         return offsets;

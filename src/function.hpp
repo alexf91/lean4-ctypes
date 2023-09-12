@@ -37,19 +37,21 @@ class Function final : public ExternalType<Function> {
     lean_obj_res call(b_lean_obj_arg argvals_object);
 
     /** Get the number of arguments. */
-    size_t get_nargs() { return lean_array_size(m_argtypes_object); }
+    size_t get_nargs() { return m_argtypes.size(); }
 
   private:
     // Symbol assocated with the function.
     lean_object *m_symbol;
-    // Return type as a Lean object.
-    lean_object *m_rtype_object;
-    // Argument types as a Lean object.
-    lean_object *m_argtypes_object;
+
+    // Unboxed CType for the return type.
+    std::unique_ptr<CType> m_rtype;
+    // Unboxed CTypes for the argument types.
+    std::vector<std::unique_ptr<CType>> m_argtypes;
+
     // CIF to call the function.
     ffi_cif m_cif;
     // Return type used in the CIF.
-    CType *m_rtype;
+    ffi_type *m_ffi_rtype;
     // Argument types used in the CIF.
-    CType **m_argtypes;
+    ffi_type **m_ffi_argtypes;
 };

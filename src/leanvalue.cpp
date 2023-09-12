@@ -25,10 +25,14 @@ std::unique_ptr<LeanValue> LeanValue::unbox(b_lean_obj_arg obj) {
         return std::make_unique<LeanValueUnit>();
     case INT:
         return std::make_unique<LeanValueInt>(obj);
+    case NAT:
+        return std::make_unique<LeanValueNat>(obj);
     case FLOAT:
         return std::make_unique<LeanValueFloat>(obj);
     case COMPLEX:
         return std::make_unique<LeanValueComplex>(obj);
+    case STRUCT:
+        lean_internal_panic("STRUCT not implemented");
     default:
         lean_internal_panic_unreachable();
     }

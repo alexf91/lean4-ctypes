@@ -60,7 +60,7 @@ private def generateLibrary (path : FilePath) (code : String) : IO Library := do
   -- Compile the object file
   discard <| IO.Process.run {
     cmd := "gcc",
-    args := #["-o", ofile, "-c", "-Wall", "-Werror", "-fPIC",  cfile]
+    args := #["-o", ofile, "-c", "-Wall", "-Werror", "-O0", "-ggdb", "-fPIC",  cfile]
   }
 
   -- Link the shared library

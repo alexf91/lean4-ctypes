@@ -22,8 +22,7 @@
 #include <cstdint>
 #include <lean/lean.h>
 #include <memory>
-
-class CType;
+#include <vector>
 
 extern "C" {
 /** Create a LeanValue.unit object. */

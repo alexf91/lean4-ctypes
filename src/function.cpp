@@ -33,38 +33,36 @@
  */
 Function::Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
                    b_lean_obj_arg argtypes_object)
-    : m_symbol(symbol), m_rtype_object(rtype_object),
-      m_argtypes_object(argtypes_object) {
+    : m_symbol(symbol) {
+
+    size_t nargs = lean_array_size(argtypes_object);
 
     // Unbox the return type and the arguments.
-    m_rtype = CType::unbox(rtype_object).release();
-    m_argtypes = new CType *[get_nargs()];
-    for (size_t i = 0; i < get_nargs(); i++)
-        m_argtypes[i] = CType::unbox(lean_array_get_core(argtypes_object, i)).release();
+    m_rtype = CType::unbox(rtype_object);
+    m_ffi_rtype = m_rtype->get_ffi_type();
+
+    m_ffi_argtypes = new ffi_type *[nargs];
+    for (size_t i = 0; i < nargs; i++) {
+        lean_object *o = lean_array_get_core(argtypes_object, i);
+        m_argtypes.push_back(std::move(CType::unbox(o)));
+        m_ffi_argtypes[i] = m_argtypes[i]->get_ffi_type();
+    }
 
     // Create the call interface for the function.
-    ffi_status stat = ffi_prep_cif(&m_cif, FFI_DEFAULT_ABI, get_nargs(), m_rtype,
-                                   (ffi_type **)m_argtypes);
+    ffi_status stat =
+        ffi_prep_cif(&m_cif, FFI_DEFAULT_ABI, nargs, m_ffi_rtype, m_ffi_argtypes);
     if (stat != FFI_OK)
         throw "creating CIF failed";
 
     // Convert arguments into owned objects.
     lean_inc(m_symbol);
-    lean_inc(m_rtype_object);
-    lean_inc(m_argtypes_object);
 }
 
 /**
  * Free prepared structures and release referenced objects.
  */
 Function::~Function() {
-    delete m_rtype;
-    for (size_t i = 0; i < get_nargs(); i++)
-        delete m_argtypes[i];
-    delete[] m_argtypes;
-
-    lean_dec(m_argtypes_object);
-    lean_dec(m_rtype_object);
+    delete[] m_ffi_argtypes;
     lean_dec(m_symbol);
 }
 
@@ -85,11 +83,6 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
         auto v = LeanValue::unbox(arg);
         argvals[i] = v->to_buffer(*m_argtypes[i]).release();
     }
-
-    // TODO: This is bad design. We allocate a buffer with the size of the return type
-    //       and later require the return type again to create the value, just to use
-    //       the return type another time during boxing. This should be encapsulated
-    //       into a custom buffer type with an associated CType.
 
     // At least a buffer with the size of a register is required for the return buffer.
     size_t rsize = std::max((size_t)FFI_SIZEOF_ARG, m_rtype->get_size());

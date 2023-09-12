@@ -23,12 +23,13 @@
 #include <lean/lean.h>
 #include <memory>
 #include <stddef.h>
+#include <type_traits>
 #include <vector>
 
 /**
  * A type in C.
  */
-class CType : public ffi_type {
+class CType {
   public:
     /** The object tags of the inductive type defined in Lean.  */
     enum ObjectTag {
@@ -80,18 +81,17 @@ class CType : public ffi_type {
     // Constructor for static types. Values other than the tag are taken from the
     // corresponding ffi_type.
     CType(ObjectTag tag);
-    // Constructor for array types.
-    CType(std::unique_ptr<CType> type, size_t length);
-    // Constructor for struct types.
-    CType(std::vector<std::unique_ptr<CType>> elements);
 
-    ~CType();
+    // TODO: Make this virtual without destroying our assumptions about the layout.
+    //       Probably better to return a copy of the type as an ffi_type instead of
+    //       doing whatever we do now.
+    virtual ~CType() {}
 
     /** Get the size of the basic type. */
-    size_t get_size() const { return size; }
+    size_t get_size() const { return m_ffi_type.size; }
 
     /** Get alignment. */
-    size_t get_alignment() const { return alignment; }
+    size_t get_alignment() const { return m_ffi_type.alignment; }
 
     /** Get a string representation of the type. */
     const char *to_string() const { return name_map[m_tag]; }
@@ -121,9 +121,119 @@ class CType : public ffi_type {
     /** Get the array of struct offsets. */
     std::vector<size_t> get_offsets();
 
+    /** Get a pointer to the internal ffi_type. */
+    ffi_type *get_ffi_type() { return &m_ffi_type; }
+
   private:
+    // TODO: Remove this tag after implementing template classes.
     ObjectTag m_tag;
 
     static const ffi_type *type_map[];
     static const char *name_map[];
+
+  protected:
+    ffi_type m_ffi_type;
+};
+
+/** CType for void types. */
+class CTypeVoid : public CType {
+  public:
+    CTypeVoid() : CType(VOID) {}
+};
+
+/** CType for integer types. */
+template <typename T> class CTypeInt : public CType {
+  public:
+    CTypeInt(ObjectTag tag) : CType(tag) {
+        assert(FIRST_INT <= tag && tag <= LAST_INT);
+    }
+};
+
+/** CType for floating point types. */
+template <typename T> class CTypeFloat : public CType {
+  public:
+    CTypeFloat(ObjectTag tag) : CType(tag) {
+        assert(FIRST_FLOAT <= tag && tag <= LAST_FLOAT);
+    }
+};
+
+/** CType for complex floating point types. */
+template <typename T> class CTypeComplex : public CType {
+  public:
+    CTypeComplex(ObjectTag tag) : CType(tag) {
+        assert(FIRST_COMPLEX <= tag && tag <= LAST_COMPLEX);
+    }
+};
+
+/** CType for pointer types. */
+class CTypePointer : public CType {
+  public:
+    CTypePointer() : CType(POINTER) {}
+};
+
+/** CType for array types. */
+class CTypeArray : public CType {
+  public:
+    CTypeArray(std::unique_ptr<CType> tp, size_t length)
+        : CType(ARRAY), m_element_type(std::move(tp)) {
+        m_ffi_type.type = FFI_TYPE_STRUCT;
+
+        // We reuse the unique pointer, but we consider this in the destructor.
+        m_ffi_type.elements = new ffi_type *[length + 1]();
+        for (size_t i = 0; i < length; i++)
+            m_ffi_type.elements[i] = m_element_type->get_ffi_type();
+
+        // Initialize size and alignment fields.
+        ffi_get_struct_offsets(FFI_DEFAULT_ABI, &m_ffi_type, nullptr);
+    }
+
+    CTypeArray(b_lean_obj_arg type, b_lean_obj_arg length)
+        : CTypeArray(CType::unbox(type), lean_unbox(length)) {}
+
+    ~CTypeArray() {
+        assert(m_ffi_type.elements);
+        delete[] m_ffi_type.elements;
+    }
+
+  private:
+    std::unique_ptr<CType> m_element_type;
+};
+
+/** CType for struct types. */
+class CTypeStruct : public CType {
+  public:
+    CTypeStruct(std::vector<std::unique_ptr<CType>> members)
+        : CType(STRUCT), m_element_types(std::move(members)) {
+        lean_internal_panic("there");
+        init();
+    }
+
+    CTypeStruct(b_lean_obj_arg members) : CType(STRUCT) {
+        std::vector<std::unique_ptr<CType>> elements;
+        for (size_t i = 0; i < lean_array_size(members); i++) {
+            auto tp = CType::unbox(lean_array_get_core(members, i));
+            elements.push_back(std::move(tp));
+        }
+        m_element_types = std::move(elements);
+        init();
+    }
+
+    ~CTypeStruct() {
+        assert(m_ffi_type.elements);
+        delete[] m_ffi_type.elements;
+    }
+
+  private:
+    void init() {
+        m_ffi_type.type = FFI_TYPE_STRUCT;
+
+        m_ffi_type.elements = new ffi_type *[m_element_types.size() + 1]();
+        for (size_t i = 0; i < m_element_types.size(); i++)
+            m_ffi_type.elements[i] = m_element_types[i]->get_ffi_type();
+
+        // Initialize size and alignment fields.
+        ffi_get_struct_offsets(FFI_DEFAULT_ABI, &m_ffi_type, nullptr);
+    }
+
+    std::vector<std::unique_ptr<CType>> m_element_types;
 };

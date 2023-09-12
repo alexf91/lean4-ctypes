@@ -75,8 +75,8 @@ namespace Function
 
   /-- Call a function with integer arguments and return value. -/
   testcase callInt requires (libgen : SharedLibrary) := do
-    let lib ← libgen "int8_t add(int8_t a, int8_t b) {return a + b;}"
-    let add ← Function.mk (← lib["add"]) .int8 #[.int8, .int8]
+    let lib ← libgen "int64_t add(int64_t a, int64_t b) {return a + b;}"
+    let add ← Function.mk (← lib["add"]) .int64 #[.int64, .int64]
     let r ← add.call #[.int 41, .int 1]
     assertEqual r (.int 42) s!"result: {repr r}"
 
