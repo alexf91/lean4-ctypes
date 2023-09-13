@@ -82,9 +82,6 @@ class CType {
     // corresponding ffi_type.
     CType(ObjectTag tag);
 
-    // TODO: Make this virtual without destroying our assumptions about the layout.
-    //       Probably better to return a copy of the type as an ffi_type instead of
-    //       doing whatever we do now.
     virtual ~CType() {}
 
     /** Get the size of the basic type. */
@@ -93,24 +90,8 @@ class CType {
     /** Get alignment. */
     size_t get_alignment() const { return m_ffi_type.alignment; }
 
-    /** Get a string representation of the type. */
-    const char *to_string() const { return name_map[m_tag]; }
-
     /** Convert from Lean to this class. */
     static std::unique_ptr<CType> unbox(b_lean_obj_arg obj);
-
-    /** Check if the type is an integer type. */
-    bool is_integer() const { return FIRST_INT <= m_tag && m_tag <= LAST_INT; }
-    /** Check if the type is a signed integer. */
-    bool is_signed() const { return FIRST_SIGNED <= m_tag && m_tag <= LAST_SIGNED; }
-    /** Check if the type is an unsigned integer. */
-    bool is_unsigned() const {
-        return FIRST_UNSIGNED <= m_tag && m_tag <= LAST_UNSIGNED;
-    }
-    /** Check if the type is a floating point type. */
-    bool is_float() const { return FIRST_FLOAT <= m_tag && m_tag <= LAST_FLOAT; }
-    /** Check if the type is a complex floating point type. */
-    bool is_complex() const { return FIRST_COMPLEX <= m_tag && m_tag <= LAST_COMPLEX; }
 
     /** Get the object tag. */
     ObjectTag get_tag() const { return m_tag; }
@@ -129,7 +110,6 @@ class CType {
     ObjectTag m_tag;
 
     static const ffi_type *type_map[];
-    static const char *name_map[];
 
   protected:
     ffi_type m_ffi_type;
@@ -141,34 +121,10 @@ class CTypeVoid : public CType {
     CTypeVoid() : CType(VOID) {}
 };
 
-/** CType for integer types. */
-template <typename T> class CTypeInt : public CType {
+/** CType for non-composite types. */
+template <typename T> class CTypePrimitive : public CType {
   public:
-    CTypeInt(ObjectTag tag) : CType(tag) {
-        assert(FIRST_INT <= tag && tag <= LAST_INT);
-    }
-};
-
-/** CType for floating point types. */
-template <typename T> class CTypeFloat : public CType {
-  public:
-    CTypeFloat(ObjectTag tag) : CType(tag) {
-        assert(FIRST_FLOAT <= tag && tag <= LAST_FLOAT);
-    }
-};
-
-/** CType for complex floating point types. */
-template <typename T> class CTypeComplex : public CType {
-  public:
-    CTypeComplex(ObjectTag tag) : CType(tag) {
-        assert(FIRST_COMPLEX <= tag && tag <= LAST_COMPLEX);
-    }
-};
-
-/** CType for pointer types. */
-class CTypePointer : public CType {
-  public:
-    CTypePointer() : CType(POINTER) {}
+    CTypePrimitive(ObjectTag tag) : CType(tag) { assert(tag <= LAST_PRIMITIVE); }
 };
 
 /** CType for array types. */
