@@ -82,8 +82,7 @@ std::unique_ptr<LeanValue> Memory::read(const CType &ct, size_t offset) {
         throw "reading out of bounds";
 
     uint8_t *address = m_buffer + offset;
-    // TODO: Probably a memory leak.
-    return LeanValue::from_buffer(ct, address);
+    return ct.instance(address);
 }
 
 /** Dereference a pointer and create a new memory view. */

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "leanvalue.hpp"
 #include "utils.hpp"
 #include <complex>
 #include <cstdint>
@@ -93,9 +94,6 @@ class CType {
     /** Convert from Lean to this class. */
     static std::unique_ptr<CType> unbox(b_lean_obj_arg obj);
 
-    /** Get the object tag. */
-    ObjectTag get_tag() const { return m_tag; }
-
     /** Get the number of elements. */
     size_t get_nelements();
 
@@ -105,10 +103,17 @@ class CType {
     /** Get a pointer to the internal ffi_type. */
     ffi_type *get_ffi_type() { return &m_ffi_type; }
 
-  private:
-    // TODO: Remove this tag after implementing template classes.
-    ObjectTag m_tag;
+    /** Create the corresponding LeanValue instance from a buffer. */
+    virtual std::unique_ptr<LeanValue> instance(const uint8_t *buffer) const {
+        lean_internal_panic("CType::instance() not implemented");
+    }
 
+    /** Create a corresponding buffer from a LeanValue. */
+    virtual std::unique_ptr<uint8_t[]> buffer(const LeanValue &value) const {
+        lean_internal_panic("CType::buffer() not implemented");
+    }
+
+  private:
     static const ffi_type *type_map[];
 
   protected:
@@ -119,12 +124,112 @@ class CType {
 class CTypeVoid : public CType {
   public:
     CTypeVoid() : CType(VOID) {}
+    std::unique_ptr<LeanValue> instance(const uint8_t *buffer) const {
+        return std::make_unique<LeanValueUnit>();
+    }
+    std::unique_ptr<uint8_t[]> buffer(const LeanValue &value) const {
+        // TODO: This is a user error (void not allowed as argument), so it should
+        // be an exception.
+        lean_internal_panic("can't cast void to buffer");
+    }
 };
 
-/** CType for non-composite types. */
-template <typename T> class CTypePrimitive : public CType {
+/** CType for scalar types. */
+template <typename T> class CTypeScalar : public CType {
+    static_assert(std::is_scalar_v<T>);
+
   public:
-    CTypePrimitive(ObjectTag tag) : CType(tag) { assert(tag <= LAST_PRIMITIVE); }
+    // TODO: assertion is not correct.
+    CTypeScalar(ObjectTag tag) : CType(tag) {
+        assert((FIRST_INT <= tag && tag <= LAST_INT) ||
+               (FIRST_FLOAT <= tag && tag <= LAST_FLOAT) || tag == POINTER);
+    }
+
+    std::unique_ptr<LeanValue> instance(const uint8_t *buffer) const {
+        if (std::is_integral_v<T> && std::is_signed_v<T>) {
+            T value = *((T *)buffer);
+            return std::make_unique<LeanValueInt>(value);
+        } else if (std::is_integral_v<T> && std::is_unsigned_v<T>) {
+            T value = *((T *)buffer);
+            return std::make_unique<LeanValueNat>(value);
+        } else if (std::is_floating_point_v<T>) {
+            T value = *((T *)buffer);
+            return std::make_unique<LeanValueFloat>(value);
+        } else {
+            lean_internal_panic_unreachable();
+        }
+    }
+
+    std::unique_ptr<uint8_t[]> buffer(const LeanValue &value) const {
+        std::unique_ptr<uint8_t[]> buffer(new uint8_t[get_size()]);
+        switch (value.get_tag()) {
+        case LeanValue::NAT:
+            *((T *)buffer.get()) =
+                reinterpret_cast<const LeanValueNat &>(value).get_value();
+            break;
+        case LeanValue::INT:
+            *((T *)buffer.get()) =
+                reinterpret_cast<const LeanValueInt &>(value).get_value();
+            break;
+        case LeanValue::FLOAT:
+            *((T *)buffer.get()) =
+                reinterpret_cast<const LeanValueFloat &>(value).get_value();
+            break;
+        default:
+            // TODO: This is a user error (wrong argument type of value), so it should
+            // be an exception.
+            lean_internal_panic("cast not supported");
+        }
+        return buffer;
+    }
+};
+
+/** CType for complex types. */
+template <typename T> class CTypeComplex : public CType {
+    static_assert(!std::is_scalar_v<T>); // TODO: Improve assertion
+
+  public:
+    CTypeComplex(ObjectTag tag) : CType(tag) {
+        assert(FIRST_COMPLEX <= tag && tag <= LAST_COMPLEX);
+    }
+
+    std::unique_ptr<LeanValue> instance(const uint8_t *buffer) const {
+        T value = *((T *)buffer);
+        return std::make_unique<LeanValueComplex>(value);
+    }
+
+    std::unique_ptr<uint8_t[]> buffer(const LeanValue &value) const {
+        std::unique_ptr<uint8_t[]> buffer(new uint8_t[get_size()]);
+        switch (value.get_tag()) {
+        case LeanValue::NAT:
+            *((T *)buffer.get()) =
+                reinterpret_cast<const LeanValueNat &>(value).get_value();
+            break;
+        case LeanValue::INT:
+            *((T *)buffer.get()) =
+                reinterpret_cast<const LeanValueInt &>(value).get_value();
+            break;
+        case LeanValue::FLOAT:
+            *((T *)buffer.get()) =
+                reinterpret_cast<const LeanValueFloat &>(value).get_value();
+            break;
+        case LeanValue::COMPLEX:
+            *((T *)buffer.get()) =
+                reinterpret_cast<const LeanValueComplex &>(value).get_value();
+            break;
+        default:
+            // TODO: This is a user error (wrong argument type of value), so it should
+            // be an exception.
+            lean_internal_panic("cast not supported");
+        }
+        return buffer;
+    }
+};
+
+/** CType for pointer types. */
+class CTypePointer : public CType {
+  public:
+    CTypePointer() : CType(POINTER) {}
 };
 
 /** CType for array types. */
@@ -160,7 +265,6 @@ class CTypeStruct : public CType {
   public:
     CTypeStruct(std::vector<std::unique_ptr<CType>> members)
         : CType(STRUCT), m_element_types(std::move(members)) {
-        lean_internal_panic("there");
         init();
     }
 

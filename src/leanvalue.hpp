@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "ctype.hpp"
 #include "utils.hpp"
 #include <complex>
 #include <cstdint>
@@ -66,16 +65,6 @@ class LeanValue {
     /** Convert from Lean to this class. */
     static std::unique_ptr<LeanValue> unbox(b_lean_obj_arg obj);
 
-    /**
-     * Convert the type to a buffer for calling the function.
-     * The value is converted to the given CType first.
-     */
-    virtual std::unique_ptr<uint8_t[]> to_buffer(const CType &ct) = 0;
-
-    /** Convert from a buffer and a CType back to a LeanValue object.  */
-    static std::unique_ptr<LeanValue> from_buffer(const CType &ct,
-                                                  const uint8_t *buffer);
-
     /** Get the object tag. */
     ObjectTag get_tag() const { return m_tag; }
 
@@ -92,8 +81,6 @@ class LeanValueUnit : public LeanValue {
     ~LeanValueUnit() {}
 
     lean_obj_res box();
-
-    std::unique_ptr<uint8_t[]> to_buffer(const CType &ct);
 };
 
 /** LeanValue specialization for signed integer types. */
@@ -109,11 +96,11 @@ class LeanValueInt : public LeanValue {
 
     lean_obj_res box();
 
-    std::unique_ptr<uint8_t[]> to_buffer(const CType &ct);
+    // TODO: bad practice
+    int64_t get_value() const { return m_value; }
 
   private:
-    // The representation of the value as a 64 bit value.
-    int64_t m_value;
+    int64_t m_value; // Maximum size of values in C.
 };
 
 /** LeanValue specialization for unsigned integer types. */
@@ -129,11 +116,11 @@ class LeanValueNat : public LeanValue {
 
     lean_obj_res box();
 
-    std::unique_ptr<uint8_t[]> to_buffer(const CType &ct);
+    // TODO: bad practice
+    uint64_t get_value() const { return m_value; }
 
   private:
-    // The representation of the value as a 64 bit value.
-    uint64_t m_value;
+    uint64_t m_value; // Maximum size of values in C.
 };
 
 /**
@@ -143,7 +130,7 @@ class LeanValueNat : public LeanValue {
 class LeanValueFloat : public LeanValue {
   public:
     /** Constructor for floating point values. */
-    LeanValueFloat(double value);
+    LeanValueFloat(long double value);
 
     /** Constructor for LeanValue.float objects. */
     LeanValueFloat(b_lean_obj_arg obj);
@@ -152,10 +139,11 @@ class LeanValueFloat : public LeanValue {
 
     lean_obj_res box();
 
-    std::unique_ptr<uint8_t[]> to_buffer(const CType &ct);
+    // TODO: bad practice
+    double get_value() const { return m_value; }
 
   private:
-    double m_value;
+    double m_value; // Lean doesn't use higher precision.
 };
 
 /**
@@ -166,7 +154,7 @@ class LeanValueFloat : public LeanValue {
 class LeanValueComplex : public LeanValue {
   public:
     /** Constructor for complex floating point values. */
-    LeanValueComplex(std::complex<double> value);
+    LeanValueComplex(std::complex<long double> value);
 
     /** Constructor for LeanValue.complex objects. */
     LeanValueComplex(b_lean_obj_arg obj);
@@ -175,10 +163,11 @@ class LeanValueComplex : public LeanValue {
 
     lean_obj_res box();
 
-    std::unique_ptr<uint8_t[]> to_buffer(const CType &ct);
+    // TODO: bad practice
+    std::complex<double> get_value() const { return m_value; }
 
   private:
-    std::complex<double> m_value;
+    std::complex<double> m_value; // Lean doesn't use higher precision.
 };
 
 /**
@@ -195,8 +184,6 @@ class LeanValueStruct : public LeanValue {
     ~LeanValueStruct();
 
     lean_obj_res box();
-
-    std::unique_ptr<uint8_t[]> to_buffer(const CType &ct);
 
   private:
     std::vector<LeanValue *> m_values;

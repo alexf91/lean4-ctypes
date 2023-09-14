@@ -32,7 +32,7 @@ const ffi_type *CType::type_map[] = {
 };
 
 /** Constructor for primitive types. */
-CType::CType(ObjectTag tag) : m_tag(tag) {
+CType::CType(ObjectTag tag) {
     m_ffi_type = {0};
     if (tag <= LAST_PRIMITIVE) {
         const ffi_type *tp = type_map[tag];
@@ -50,35 +50,35 @@ std::unique_ptr<CType> CType::unbox(b_lean_obj_arg obj) {
     case VOID:
         return std::make_unique<CTypeVoid>();
     case INT8:
-        return std::make_unique<CTypePrimitive<int8_t>>(tag);
+        return std::make_unique<CTypeScalar<int8_t>>(tag);
     case INT16:
-        return std::make_unique<CTypePrimitive<int16_t>>(tag);
+        return std::make_unique<CTypeScalar<int16_t>>(tag);
     case INT32:
-        return std::make_unique<CTypePrimitive<int32_t>>(tag);
+        return std::make_unique<CTypeScalar<int32_t>>(tag);
     case INT64:
-        return std::make_unique<CTypePrimitive<int64_t>>(tag);
+        return std::make_unique<CTypeScalar<int64_t>>(tag);
     case UINT8:
-        return std::make_unique<CTypePrimitive<uint8_t>>(tag);
+        return std::make_unique<CTypeScalar<uint8_t>>(tag);
     case UINT16:
-        return std::make_unique<CTypePrimitive<uint16_t>>(tag);
+        return std::make_unique<CTypeScalar<uint16_t>>(tag);
     case UINT32:
-        return std::make_unique<CTypePrimitive<uint32_t>>(tag);
+        return std::make_unique<CTypeScalar<uint32_t>>(tag);
     case UINT64:
-        return std::make_unique<CTypePrimitive<uint64_t>>(tag);
+        return std::make_unique<CTypeScalar<uint64_t>>(tag);
     case FLOAT:
-        return std::make_unique<CTypePrimitive<float>>(tag);
+        return std::make_unique<CTypeScalar<float>>(tag);
     case DOUBLE:
-        return std::make_unique<CTypePrimitive<double>>(tag);
+        return std::make_unique<CTypeScalar<double>>(tag);
     case LONGDOUBLE:
-        return std::make_unique<CTypePrimitive<long double>>(tag);
+        return std::make_unique<CTypeScalar<long double>>(tag);
     case COMPLEX_FLOAT:
-        return std::make_unique<CTypePrimitive<std::complex<float>>>(tag);
+        return std::make_unique<CTypeComplex<std::complex<float>>>(tag);
     case COMPLEX_DOUBLE:
-        return std::make_unique<CTypePrimitive<std::complex<double>>>(tag);
+        return std::make_unique<CTypeComplex<std::complex<double>>>(tag);
     case COMPLEX_LONGDOUBLE:
-        return std::make_unique<CTypePrimitive<std::complex<long double>>>(tag);
+        return std::make_unique<CTypeComplex<std::complex<long double>>>(tag);
     case POINTER:
-        return std::make_unique<CTypePrimitive<void *>>(tag);
+        return std::make_unique<CTypePointer>();
     case ARRAY:
         return std::make_unique<CTypeArray>(lean_ctor_get(obj, 0),
                                             lean_ctor_get(obj, 1));

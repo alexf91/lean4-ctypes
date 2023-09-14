@@ -81,7 +81,7 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
     for (size_t i = 0; i < nargs; i++) {
         lean_object *arg = lean_array_get_core(argvals_object, i);
         auto v = LeanValue::unbox(arg);
-        argvals[i] = v->to_buffer(*m_argtypes[i]).release();
+        argvals[i] = m_argtypes[i]->buffer(*v).release();
     }
 
     // At least a buffer with the size of a register is required for the return buffer.
@@ -97,7 +97,7 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
     for (size_t i = 0; i < nargs; i++)
         delete[] (uint8_t *)argvals[i];
 
-    return LeanValue::from_buffer(*m_rtype, rvalue)->box();
+    return m_rtype->instance(rvalue)->box();
 }
 
 /** Create a new Function instance.  */
