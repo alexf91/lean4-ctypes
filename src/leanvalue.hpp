@@ -176,7 +176,7 @@ class LeanValueComplex : public LeanValue {
 class LeanValueStruct : public LeanValue {
   public:
     /** Constructor for struct values. */
-    LeanValueStruct(std::vector<LeanValue *> values);
+    LeanValueStruct(std::vector<std::unique_ptr<LeanValue>> values);
 
     /** Constructor for LeanValue.struct objects. */
     LeanValueStruct(b_lean_obj_arg obj);
@@ -185,6 +185,14 @@ class LeanValueStruct : public LeanValue {
 
     lean_obj_res box();
 
+    // TODO: Bad practice
+    const std::vector<const LeanValue *> get_values() const {
+        std::vector<const LeanValue *> values;
+        for (size_t i = 0; i < m_values.size(); i++)
+            values.push_back(m_values[i].get());
+        return values;
+    }
+
   private:
-    std::vector<LeanValue *> m_values;
+    std::vector<std::unique_ptr<LeanValue>> m_values;
 };

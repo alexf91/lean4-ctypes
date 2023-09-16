@@ -112,6 +112,26 @@ namespace Function
     assertEqual (.int (-128)) (← foo.call #[.int (-128)])
     assertEqual (.int 0) (← foo.call #[.int 256])
 
+  /-- Call a function with a struct argument. -/
+  testcase callStructArg requires (libgen : SharedLibrary) := do
+    let lib ← libgen $ "struct Foo { int8_t a; int16_t b; int32_t c; int64_t d; };\n" ++
+                       "int64_t foo(struct Foo f) { return f.a + f.b + f.c + f.d; }"
+    let foo ← Function.mk (← lib["foo"]) .int64 #[.struct #[.int8, .int16, .int32, .int64]]
+    let v := LeanValue.struct #[.int 8, .int 16, .int 32, .int 64]
+    assertEqual (.int 120) (← foo.call #[v])
+
+  /-- Call a function with a struct return value. -/
+  testcase callStructReturn requires (libgen : SharedLibrary) := do
+    let lib ← libgen $ "struct Foo { int8_t a; int16_t b; int32_t c; int64_t d; };\n" ++
+                       "struct Foo foo(int8_t a, int16_t b, int32_t c, int64_t d) {\n" ++
+                       "    struct Foo value = {a, b, c, d};\n" ++
+                       "    return value;" ++
+                       "}"
+    let foo ← Function.mk (← lib["foo"]) (.struct #[.int8, .int16, .int32, .int64]) #[.int8, .int16, .int32, .int64]
+    let values : Array LeanValue := #[.int 8, .int 16, .int 32, .int 64]
+    let result ← foo.call values
+    assertEqual (.struct values) result s!"value: {repr result}"
+
 end Function
 
 end Tests.Basic

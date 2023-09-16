@@ -92,7 +92,7 @@ std::unique_ptr<CType> CType::unbox(b_lean_obj_arg obj) {
 }
 
 /** Get the number of elements. */
-size_t CType::get_nelements() {
+size_t CType::get_nelements() const {
     if (m_ffi_type.elements) {
         size_t n = 0;
         while (m_ffi_type.elements[n])
@@ -103,12 +103,13 @@ size_t CType::get_nelements() {
 }
 
 /** Get the array of struct offsets. */
-std::vector<size_t> CType::get_offsets() {
+const std::vector<size_t> CType::get_offsets() const {
     size_t n = get_nelements();
     std::vector<size_t> offsets;
 
     size_t offs[n];
-    ffi_status status = ffi_get_struct_offsets(FFI_DEFAULT_ABI, &m_ffi_type, offs);
+    ffi_status status =
+        ffi_get_struct_offsets(FFI_DEFAULT_ABI, (ffi_type *)&m_ffi_type, offs);
 
     if (status == FFI_BAD_TYPEDEF)
         return offsets;

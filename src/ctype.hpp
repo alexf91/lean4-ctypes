@@ -19,11 +19,12 @@
 #include "leanvalue.hpp"
 #include "utils.hpp"
 #include <complex>
+#include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <ffi.h>
 #include <lean/lean.h>
 #include <memory>
-#include <stddef.h>
 #include <type_traits>
 #include <vector>
 
@@ -95,10 +96,10 @@ class CType {
     static std::unique_ptr<CType> unbox(b_lean_obj_arg obj);
 
     /** Get the number of elements. */
-    size_t get_nelements();
+    size_t get_nelements() const;
 
     /** Get the array of struct offsets. */
-    std::vector<size_t> get_offsets();
+    const std::vector<size_t> get_offsets() const;
 
     /** Get a pointer to the internal ffi_type. */
     ffi_type *get_ffi_type() { return &m_ffi_type; }
@@ -281,6 +282,33 @@ class CTypeStruct : public CType {
     ~CTypeStruct() {
         assert(m_ffi_type.elements);
         delete[] m_ffi_type.elements;
+    }
+
+    std::unique_ptr<LeanValue> instance(const uint8_t *buffer) const {
+        std::vector<std::unique_ptr<LeanValue>> values;
+        const std::vector<size_t> offsets = get_offsets();
+        for (size_t i = 0; i < get_nelements(); i++) {
+            size_t off = offsets[i];
+            values.push_back(std::move(m_element_types[i]->instance(buffer + off)));
+        }
+        return std::make_unique<LeanValueStruct>(std::move(values));
+    }
+
+    std::unique_ptr<uint8_t[]> buffer(const LeanValue &value) const {
+        assert(value.get_tag() == LeanValue::STRUCT);
+        auto values = reinterpret_cast<const LeanValueStruct &>(value).get_values();
+        assert(m_element_types.size() == values.size());
+
+        std::unique_ptr<uint8_t[]> buffer(new uint8_t[get_size()]);
+        const std::vector<size_t> offsets = get_offsets();
+
+        for (size_t i = 0; i < values.size(); i++) {
+            auto buf = m_element_types[i]->buffer(*values[i]);
+            size_t sz = m_element_types[i]->get_size();
+            size_t off = offsets[i];
+            memcpy(buffer.get() + off, buf.get(), sz);
+        }
+        return buffer;
     }
 
   private:
