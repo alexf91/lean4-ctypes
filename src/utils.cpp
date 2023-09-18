@@ -17,9 +17,9 @@
 #include "utils.hpp"
 #include "lean/lean.h"
 #include <cstdarg>
+#include <cstdint>
 #include <cstdio>
-#include <stdint.h>
-#include <stdlib.h>
+#include <cstdlib>
 
 extern "C" {
 

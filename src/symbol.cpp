@@ -17,10 +17,10 @@
 #include "symbol.hpp"
 #include "library.hpp"
 #include "utils.hpp"
+#include <cstdlib>
 #include <cstring>
 #include <dlfcn.h>
 #include <lean/lean.h>
-#include <stdlib.h>
 
 /**
  * Initialize the Symbol object by opening the symbol with dlsym().

@@ -132,6 +132,29 @@ namespace Function
     let result ← foo.call values
     assertEqual (.struct values) result s!"value: {repr result}"
 
+  /-- Call a function with a void value as an argument. -/
+  testcase callVoidArg requires (libgen : SharedLibrary) := do
+    let lib ← libgen $ "int8_t foo(int8_t a) {return a;}"
+    let foo ← Function.mk (← lib["foo"]) .int8 #[.void]
+    try
+      discard <| foo.call #[.nat 32]
+      assertTrue false "foo.call did not fail"
+    catch e =>
+      let msg := "invalid cast: can't cast value to void type"
+      assertEqual e.toString msg s!"invalid error message: {e}"
+
+  /-- Try to cast a complex value to a scalar. -/
+  testcase callCastComplex requires (libgen : SharedLibrary) := do
+    let lib ← libgen $ "int8_t foo(int8_t a) {return a;}"
+    let foo ← Function.mk (← lib["foo"]) .int8 #[.int8]
+    try
+      discard <| foo.call #[.complex 32 64]
+      assertTrue false "foo.call did not fail"
+    catch e =>
+      let msg := "invalid cast: can't cast non-scalar value to scalar"
+      assertEqual e.toString msg s!"invalid error message: {e}"
+
+
 end Function
 
 end Tests.Basic

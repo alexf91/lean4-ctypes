@@ -17,9 +17,11 @@
 import Lake
 open Lake DSL
 
-/- Control logging and build output. -/
--- TODO: This doesn't seem to work anymore since bumping the toolchain.
-meta if get_config? debug |>.isSome then do
+/-
+  Control logging and build output.
+  Note that changing this option requires building with `lake -R`.
+-/
+meta if get_config? debug |>.isSome then
   def debugFlags := #["-DDEBUG", "-ggdb"]
 else
   def debugFlags := #["-DNDEBUG"]
@@ -93,7 +95,7 @@ script valgrind (args : List String) do
   -- Build tests
   let p ← IO.Process.spawn {
     cmd := "lake",
-    args := #["build", "-Kdebug", "tests"]
+    args := #["build", "-R", "-Kdebug", "tests"]
   }
   let result ← p.wait
   unless result == 0 do return result

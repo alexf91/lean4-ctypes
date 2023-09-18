@@ -129,9 +129,7 @@ class CTypeVoid : public CType {
         return std::make_unique<LeanValueUnit>();
     }
     std::unique_ptr<uint8_t[]> buffer(const LeanValue &value) const {
-        // TODO: This is a user error (void not allowed as argument), so it should
-        // be an exception.
-        lean_internal_panic("can't cast void to buffer");
+        throw "invalid cast: can't cast value to void type";
     }
 };
 
@@ -140,7 +138,6 @@ template <typename T> class CTypeScalar : public CType {
     static_assert(std::is_scalar_v<T>);
 
   public:
-    // TODO: assertion is not correct.
     CTypeScalar(ObjectTag tag) : CType(tag) {
         assert((FIRST_INT <= tag && tag <= LAST_INT) ||
                (FIRST_FLOAT <= tag && tag <= LAST_FLOAT) || tag == POINTER);
@@ -177,9 +174,7 @@ template <typename T> class CTypeScalar : public CType {
                 reinterpret_cast<const LeanValueFloat &>(value).get_value();
             break;
         default:
-            // TODO: This is a user error (wrong argument type of value), so it should
-            // be an exception.
-            lean_internal_panic("cast not supported");
+            throw "invalid cast: can't cast non-scalar value to scalar";
         }
         return buffer;
     }
@@ -219,9 +214,7 @@ template <typename T> class CTypeComplex : public CType {
                 reinterpret_cast<const LeanValueComplex &>(value).get_value();
             break;
         default:
-            // TODO: This is a user error (wrong argument type of value), so it should
-            // be an exception.
-            lean_internal_panic("cast not supported");
+            throw "invalid cast: can't cast non-scalar or complex value to complex";
         }
         return buffer;
     }
@@ -295,9 +288,12 @@ class CTypeStruct : public CType {
     }
 
     std::unique_ptr<uint8_t[]> buffer(const LeanValue &value) const {
-        assert(value.get_tag() == LeanValue::STRUCT);
+        if (value.get_tag() != LeanValue::STRUCT)
+            throw "invalid cast: can't cast non-struct to struct";
+
         auto values = reinterpret_cast<const LeanValueStruct &>(value).get_values();
-        assert(m_element_types.size() == values.size());
+        if (m_element_types.size() != values.size())
+            throw "invalid cast: wrong number of values";
 
         std::unique_ptr<uint8_t[]> buffer(new uint8_t[get_size()]);
         const std::vector<size_t> offsets = get_offsets();
