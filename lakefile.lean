@@ -18,7 +18,8 @@ import Lake
 open Lake DSL
 
 /- Control logging and build output. -/
-meta if get_config? debug |>.isSome then
+-- TODO: This doesn't seem to work anymore since bumping the toolchain.
+meta if get_config? debug |>.isSome then do
   def debugFlags := #["-DDEBUG", "-ggdb"]
 else
   def debugFlags := #["-DNDEBUG"]
@@ -42,13 +43,15 @@ require LTest from git "git@github.com:alexf91/LTest.git" @ "main"
 def createTarget (pkg : Package) (cfile : FilePath) := do
   let oFile := pkg.buildDir / cfile.withExtension "o"
   let srcJob ← inputFile <| pkg.dir / cfile
-  let flags := #[
-    "-I", (← getLeanIncludeDir).toString,
+  let weakArgs := #[
+    "-I", (← getLeanIncludeDir).toString
+  ]
+  let traceArgs := #[
     "-fPIC",
     "-Wall",
     "-std=c++20"
   ] ++ debugFlags
-  buildO cfile.toString oFile srcJob flags "g++"
+  buildO cfile.toString oFile srcJob weakArgs traceArgs "g++"
 
 target ctype.o pkg : FilePath := createTarget pkg $ "src" / "ctype.cpp"
 target function.o pkg : FilePath := createTarget pkg $ "src" / "function.cpp"
