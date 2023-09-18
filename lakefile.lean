@@ -26,6 +26,9 @@ meta if get_config? debug |>.isSome then
 else
   def debugFlags := #["-DNDEBUG"]
 
+/-- Compiler for C++ files. -/
+def CXX := "g++"
+
 package ctypes {
   precompileModules := true
   -- TODO: Don't hardcode libraries and library paths. This currently fixes some
@@ -42,6 +45,26 @@ package ctypes {
 
 require LTest from git "git@github.com:alexf91/LTest.git" @ "main"
 
+/--
+  Calculate a trace for files included by a target file.
+  TODO: This is probably not very robust.
+-/
+def extraDepTrace (cfile : FilePath) : BuildM BuildTrace := do
+  -- Get the list of local file dependencies.
+  let deps := (← IO.Process.run {cmd := CXX, args := #["-MM", cfile.toString]})
+    |>.replace " \\\n" "" |>.dropWhile (· != ' ') |>.trim |>.splitOn
+    |>.map System.FilePath.mk
+
+  -- Create hashes and MTimes.
+  let hashes ← deps.mapM fun p => computeFileHash p
+  let mtimes ← deps.mapM fun p => getMTime p
+
+  -- Combine traces.
+  let traces := (List.zip hashes mtimes).map fun (h, m) => BuildTrace.mk h m
+  return traces.foldr .mix .nil
+
+
+/-- Create a target from a C++ file. -/
 def createTarget (pkg : Package) (cfile : FilePath) := do
   let oFile := pkg.buildDir / cfile.withExtension "o"
   let srcJob ← inputFile <| pkg.dir / cfile
@@ -53,7 +76,7 @@ def createTarget (pkg : Package) (cfile : FilePath) := do
     "-Wall",
     "-std=c++20"
   ] ++ debugFlags
-  buildO cfile.toString oFile srcJob weakArgs traceArgs "g++"
+  buildO cfile.toString oFile srcJob weakArgs traceArgs CXX (extraDepTrace cfile)
 
 target ctype.o pkg : FilePath := createTarget pkg $ "src" / "ctype.cpp"
 target function.o pkg : FilePath := createTarget pkg $ "src" / "function.cpp"
