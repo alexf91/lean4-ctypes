@@ -285,7 +285,7 @@ class CTypeStruct : public CType {
         const std::vector<size_t> offsets = get_offsets();
         for (size_t i = 0; i < get_nelements(); i++) {
             size_t off = offsets[i];
-            values.push_back(std::move(m_element_types[i]->instance(buffer + off)));
+            values.push_back(m_element_types[i]->instance(buffer + off));
         }
         return std::make_unique<LeanValueStruct>(std::move(values));
     }

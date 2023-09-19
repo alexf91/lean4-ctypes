@@ -45,7 +45,7 @@ Function::Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
     m_ffi_argtypes = new ffi_type *[nargs];
     for (size_t i = 0; i < nargs; i++) {
         lean_object *o = lean_array_get_core(argtypes_object, i);
-        m_argtypes.push_back(std::move(CType::unbox(o)));
+        m_argtypes.push_back(CType::unbox(o));
         m_ffi_argtypes[i] = m_argtypes[i]->get_ffi_type();
     }
 
@@ -85,7 +85,7 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
     for (size_t i = 0; i < nargs; i++) {
         lean_object *arg = lean_array_get_core(argvals_object, i);
         auto v = LeanValue::unbox(arg);
-        argbufs.push_back(std::move(m_argtypes[i]->buffer(*v)));
+        argbufs.push_back(m_argtypes[i]->buffer(*v));
         argvals[i] = argbufs[i].get();
     }
 

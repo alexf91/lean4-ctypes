@@ -27,7 +27,7 @@ else
   def debugFlags := #["-DNDEBUG"]
 
 /-- Compiler for C++ files. -/
-def CXX := "g++"
+def CXX := "clang++"
 
 package ctypes {
   precompileModules := true
@@ -51,7 +51,7 @@ require LTest from git "git@github.com:alexf91/LTest.git" @ "main"
 -/
 def extraDepTrace (cfile : FilePath) : BuildM BuildTrace := do
   -- Get the list of local file dependencies.
-  let deps := (← IO.Process.run {cmd := CXX, args := #["-MM", cfile.toString]})
+  let deps := (← IO.Process.run {cmd := "g++", args := #["-MM", cfile.toString]})
     |>.replace " \\\n" "" |>.dropWhile (· != ' ') |>.trim |>.splitOn
     |>.map System.FilePath.mk
 

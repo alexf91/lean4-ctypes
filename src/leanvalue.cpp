@@ -126,7 +126,7 @@ LeanValueStruct::LeanValueStruct(b_lean_obj_arg obj) : LeanValue(STRUCT) {
     lean_object *values = lean_ctor_get(obj, 0);
     for (size_t i = 0; i < lean_array_size(values); i++) {
         lean_object *o = lean_array_get_core(values, i);
-        m_values.push_back(std::move(LeanValue::unbox(o)));
+        m_values.push_back(LeanValue::unbox(o));
     }
 }
 
