@@ -123,14 +123,19 @@ script valgrind (args : List String) do
   let result ← p.wait
   unless result == 0 do return result
 
+  -- Get the library path we need for valgrind. This should be the same as in the
+  -- Lake environment when tests are run with `lake exe`.
+  let libs ← Lake.getEnvSharedLibPath
+
   -- Run valgrind
   let p ← IO.Process.spawn {
-    cmd := "valgrind",
+    cmd := "valgrind"
     args := #[
       "--leak-check=yes",
       "--track-origins=yes",
       "build/bin/tests"
     ]
+    env := #[(sharedLibPathEnvVar, libs.toString)]
   }
   let result ← p.wait
 
