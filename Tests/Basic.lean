@@ -134,10 +134,10 @@ namespace Function
 
   /-- Call a function with a void value as an argument. -/
   testcase callVoidArg requires (libgen : SharedLibrary) := do
-    let lib ← libgen $ "int8_t foo(int8_t a) {return a;}"
-    let foo ← Function.mk (← lib["foo"]) .int8 #[.void]
+    let lib ← libgen $ "int8_t foo(int8_t a, int8_t b) {return a + b;}"
+    let foo ← Function.mk (← lib["foo"]) .int8 #[.int8, .void]
     try
-      discard <| foo.call #[.nat 32]
+      discard <| foo.call #[.nat 32, .nat 64]
       assertTrue false "foo.call did not fail"
     catch e =>
       let msg := "invalid cast: can't cast value to void type"

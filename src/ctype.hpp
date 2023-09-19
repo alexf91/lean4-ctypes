@@ -25,6 +25,7 @@
 #include <ffi.h>
 #include <lean/lean.h>
 #include <memory>
+#include <stdexcept>
 #include <type_traits>
 #include <vector>
 
@@ -129,7 +130,7 @@ class CTypeVoid : public CType {
         return std::make_unique<LeanValueUnit>();
     }
     std::unique_ptr<uint8_t[]> buffer(const LeanValue &value) const {
-        throw "invalid cast: can't cast value to void type";
+        throw std::runtime_error("invalid cast: can't cast value to void type");
     }
 };
 
@@ -174,7 +175,8 @@ template <typename T> class CTypeScalar : public CType {
                 reinterpret_cast<const LeanValueFloat &>(value).get_value();
             break;
         default:
-            throw "invalid cast: can't cast non-scalar value to scalar";
+            throw std::runtime_error(
+                "invalid cast: can't cast non-scalar value to scalar");
         }
         return buffer;
     }
@@ -214,7 +216,8 @@ template <typename T> class CTypeComplex : public CType {
                 reinterpret_cast<const LeanValueComplex &>(value).get_value();
             break;
         default:
-            throw "invalid cast: can't cast non-scalar or complex value to complex";
+            throw std::runtime_error(
+                "invalid cast: can't cast non-scalar or complex value to complex");
         }
         return buffer;
     }
@@ -289,11 +292,11 @@ class CTypeStruct : public CType {
 
     std::unique_ptr<uint8_t[]> buffer(const LeanValue &value) const {
         if (value.get_tag() != LeanValue::STRUCT)
-            throw "invalid cast: can't cast non-struct to struct";
+            throw std::runtime_error("invalid cast: can't cast non-struct to struct");
 
         auto values = reinterpret_cast<const LeanValueStruct &>(value).get_values();
         if (m_element_types.size() != values.size())
-            throw "invalid cast: wrong number of values";
+            throw std::runtime_error("invalid cast: wrong number of values");
 
         std::unique_ptr<uint8_t[]> buffer(new uint8_t[get_size()]);
         const std::vector<size_t> offsets = get_offsets();

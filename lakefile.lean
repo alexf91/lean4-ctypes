@@ -126,7 +126,11 @@ script valgrind (args : List String) do
   -- Run valgrind
   let p ← IO.Process.spawn {
     cmd := "valgrind",
-    args := #["--leak-check=yes", "build/bin/tests"]
+    args := #[
+      "--leak-check=yes",
+      "--track-origins=yes",
+      "build/bin/tests"
+    ]
   }
   let result ← p.wait
 

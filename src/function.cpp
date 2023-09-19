@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <lean/lean.h>
+#include <stdexcept>
 
 /***************************************************************************************
  * Function functions
@@ -52,7 +53,7 @@ Function::Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
     ffi_status stat =
         ffi_prep_cif(&m_cif, FFI_DEFAULT_ABI, nargs, m_ffi_rtype, m_ffi_argtypes);
     if (stat != FFI_OK)
-        throw "creating CIF failed";
+        throw std::runtime_error("creating CIF failed");
 
     // Convert arguments into owned objects.
     lean_inc(m_symbol);
@@ -72,30 +73,30 @@ Function::~Function() {
 lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
     size_t nargs = lean_array_size(argvals_object);
     if (nargs < get_nargs())
-        throw "not enough arguments";
+        throw std::runtime_error("not enough arguments");
     else if (nargs > get_nargs())
-        throw "variadic arguments not supported";
+        throw std::runtime_error("variadic arguments not supported");
 
-    // Construct the argument buffer.
+    // Construct the argument buffer. Using a vector automates cleanup after an
+    // exception.
+    // TODO: Valgrind reports a possible memory leak during exceptions.
+    std::vector<std::unique_ptr<uint8_t[]>> argbufs;
     void *argvals[nargs];
     for (size_t i = 0; i < nargs; i++) {
         lean_object *arg = lean_array_get_core(argvals_object, i);
         auto v = LeanValue::unbox(arg);
-        argvals[i] = m_argtypes[i]->buffer(*v).release();
+        argbufs.push_back(std::move(m_argtypes[i]->buffer(*v)));
+        argvals[i] = argbufs[i].get();
     }
 
-    // At least a buffer with the size of a register is required for the return buffer.
+    // At least a buffer with the size of a register is required for the return
+    // buffer.
     size_t rsize = std::max((size_t)FFI_SIZEOF_ARG, m_rtype->get_size());
     uint8_t rvalue[rsize];
 
     // Call the symbol handle.
     auto handle = (void (*)())Symbol::unbox(m_symbol)->get_handle();
     ffi_call(&m_cif, handle, rvalue, argvals);
-
-    // Cleanup the argument values and the return value. We have released the pointer
-    // already.
-    for (size_t i = 0; i < nargs; i++)
-        delete[] (uint8_t *)argvals[i];
 
     return m_rtype->instance(rvalue)->box();
 }
@@ -108,8 +109,8 @@ extern "C" lean_obj_res Function_mk(b_lean_obj_arg symbol, b_lean_obj_arg rtype_
     try {
         Function *f = new Function(symbol, rtype_object, argtypes_object);
         return lean_io_result_mk_ok(f->box());
-    } catch (const char *msg) {
-        lean_object *err = lean_mk_io_user_error(lean_mk_string(msg));
+    } catch (const std::runtime_error &error) {
+        lean_object *err = lean_mk_io_user_error(lean_mk_string(error.what()));
         return lean_io_result_mk_error(err);
     }
 }
@@ -122,8 +123,8 @@ extern "C" lean_obj_res Function_call(b_lean_obj_arg function,
         Function *f = Function::unbox(function);
         lean_object *result = f->call(argvals_obj);
         return lean_io_result_mk_ok(result);
-    } catch (const char *msg) {
-        lean_object *err = lean_mk_io_user_error(lean_mk_string(msg));
+    } catch (const std::runtime_error &error) {
+        lean_object *err = lean_mk_io_user_error(lean_mk_string(error.what()));
         return lean_io_result_mk_error(err);
     }
 }

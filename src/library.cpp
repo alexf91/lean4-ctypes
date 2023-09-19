@@ -21,6 +21,7 @@
 #include <cstring>
 #include <dlfcn.h>
 #include <lean/lean.h>
+#include <stdexcept>
 
 /** Unbox the Flag enum. */
 static inline int Flag_unbox(b_lean_obj_arg flag) {
@@ -59,7 +60,7 @@ Library::Library(b_lean_obj_arg path, b_lean_obj_arg flags) {
     utils_log("opening %s with flags %08x", p, openflags);
     void *handle = dlopen(p, openflags);
     if (handle == NULL)
-        throw dlerror();
+        throw std::runtime_error(std::string(dlerror()));
 
     m_path = strdup(p);
     m_handle = handle;
@@ -88,8 +89,8 @@ extern "C" lean_obj_res Library_mk(b_lean_obj_arg path, b_lean_obj_arg flags,
     try {
         Library *lib = new Library(path, flags);
         return lean_io_result_mk_ok(lib->box());
-    } catch (const char *msg) {
-        lean_object *err = lean_mk_io_user_error(lean_mk_string(msg));
+    } catch (const std::runtime_error &error) {
+        lean_object *err = lean_mk_io_user_error(lean_mk_string(error.what()));
         return lean_io_result_mk_error(err);
     }
 }

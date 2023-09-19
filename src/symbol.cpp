@@ -21,6 +21,7 @@
 #include <cstring>
 #include <dlfcn.h>
 #include <lean/lean.h>
+#include <stdexcept>
 
 /**
  * Initialize the Symbol object by opening the symbol with dlsym().
@@ -38,7 +39,7 @@ Symbol::Symbol(b_lean_obj_arg lib, b_lean_obj_arg sym) {
     if (m_handle == nullptr) {
         char *msg = dlerror();
         if (msg != nullptr)
-            throw msg;
+            throw std::runtime_error(std::string(msg));
     }
     // Make the library an owned object.
     lean_inc(lib);
@@ -71,8 +72,8 @@ extern "C" lean_obj_res Symbol_mk(b_lean_obj_arg lib, b_lean_obj_arg sym,
     try {
         Symbol *s = new Symbol(lib, sym);
         return lean_io_result_mk_ok(s->box());
-    } catch (const char *msg) {
-        lean_object *err = lean_mk_io_user_error(lean_mk_string(msg));
+    } catch (const std::runtime_error &error) {
+        lean_object *err = lean_mk_io_user_error(lean_mk_string(error.what()));
         return lean_io_result_mk_error(err);
     }
 }

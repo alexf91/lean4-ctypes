@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <complex>
 #include <cstdint>
+#include <stdexcept>
 
 /** Create a new memory. */
 Memory::Memory(lean_obj_arg parent, void *buffer, size_t size, bool allocated)
@@ -67,9 +68,9 @@ lean_obj_res Memory::toByteArray() {
 Memory *Memory::extract(size_t begin, size_t end) {
     // Check if we are out of bounds.
     if (begin >= get_size())
-        throw "begin index out of bounds";
+        throw std::runtime_error("begin index out of bounds");
     if (end >= get_size())
-        throw "end index out of bounds";
+        throw std::runtime_error("end index out of bounds");
 
     void *new_buffer = m_buffer + begin;
     return new Memory(m_parent, new_buffer, std::max(0L, (ssize_t)end - (ssize_t)begin),
@@ -79,7 +80,7 @@ Memory *Memory::extract(size_t begin, size_t end) {
 /** Read a CType from the memory and create a LeanValue. */
 std::unique_ptr<LeanValue> Memory::read(const CType &ct, size_t offset) {
     if (offset + ct.get_size() > get_size())
-        throw "reading out of bounds";
+        throw std::runtime_error("reading out of bounds");
 
     uint8_t *address = m_buffer + offset;
     return ct.instance(address);
@@ -88,7 +89,7 @@ std::unique_ptr<LeanValue> Memory::read(const CType &ct, size_t offset) {
 /** Dereference a pointer and create a new memory view. */
 Memory *Memory::dereference(size_t offset, size_t size) {
     if (offset + sizeof(void *) > get_size())
-        throw "reading out of bounds";
+        throw std::runtime_error("reading out of bounds");
 
     void *address = m_buffer + offset;
 
@@ -102,8 +103,8 @@ extern "C" lean_obj_res Memory_fromByteArray(b_lean_obj_arg array,
     try {
         Memory *m = Memory::fromByteArray(array);
         return lean_io_result_mk_ok(m->box());
-    } catch (const char *msg) {
-        lean_object *err = lean_mk_io_user_error(lean_mk_string(msg));
+    } catch (const std::runtime_error &error) {
+        lean_object *err = lean_mk_io_user_error(lean_mk_string(error.what()));
         return lean_io_result_mk_error(err);
     }
 }
@@ -114,8 +115,8 @@ extern "C" lean_obj_res Memory_toByteArray(b_lean_obj_arg memory, lean_object *u
     try {
         lean_object *array = m->toByteArray();
         return lean_io_result_mk_ok(array);
-    } catch (const char *msg) {
-        lean_object *err = lean_mk_io_user_error(lean_mk_string(msg));
+    } catch (const std::runtime_error &error) {
+        lean_object *err = lean_mk_io_user_error(lean_mk_string(error.what()));
         return lean_io_result_mk_error(err);
     }
 }
@@ -142,8 +143,8 @@ extern "C" lean_obj_res Memory_extract(lean_obj_arg memory, b_lean_obj_arg begin
     try {
         Memory *nm = m->extract(b, e);
         return lean_io_result_mk_ok(nm->box());
-    } catch (const char *msg) {
-        lean_object *err = lean_mk_io_user_error(lean_mk_string(msg));
+    } catch (const std::runtime_error &error) {
+        lean_object *err = lean_mk_io_user_error(lean_mk_string(error.what()));
         return lean_io_result_mk_error(err);
     }
 }
@@ -159,8 +160,8 @@ extern "C" lean_obj_res Memory_read(b_lean_obj_arg memory, b_lean_obj_arg offset
 
     try {
         return lean_io_result_mk_ok(m->read(*ct, o)->box());
-    } catch (const char *msg) {
-        lean_object *err = lean_mk_io_user_error(lean_mk_string(msg));
+    } catch (const std::runtime_error &error) {
+        lean_object *err = lean_mk_io_user_error(lean_mk_string(error.what()));
         return lean_io_result_mk_error(err);
     }
 }
@@ -177,8 +178,8 @@ extern "C" lean_obj_res Memory_dereference(b_lean_obj_arg memory, b_lean_obj_arg
     try {
         auto nm = m->dereference(o, size);
         return lean_io_result_mk_ok(nm->box());
-    } catch (const char *msg) {
-        lean_object *err = lean_mk_io_user_error(lean_mk_string(msg));
+    } catch (const std::runtime_error &error) {
+        lean_object *err = lean_mk_io_user_error(lean_mk_string(error.what()));
         return lean_io_result_mk_error(err);
     }
 }
