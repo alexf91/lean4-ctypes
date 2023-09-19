@@ -63,33 +63,38 @@ inductive LeanValue where
   | nat (a : Nat)
   | float (a : Float)
   | complex (a b : Float)
+  | array (values : Array LeanValue)
   | struct (values : Array LeanValue)
 deriving Repr, BEq
 
 
 namespace LeanValue
 
-  /-- Create a LeanValue.unit object. -/
+  /-- Create a `LeanValue.unit` object. -/
   @[export LeanValue_mkUnit]
   private def mkUnit (_ : @&Unit) : LeanValue := .unit
 
-  /-- Create a LeanValue.int object. -/
+  /-- Create a `LeanValue.int` object. -/
   @[export LeanValue_mkInt]
   private def mkInt (a : @&Int) : LeanValue := .int a
 
-  /-- Create a LeanValue.nat object. -/
+  /-- Create a `LeanValue.nat` object. -/
   @[export LeanValue_mkNat]
   private def mkNat (a : @&Nat) : LeanValue := .nat a
 
-  /-- Create a LeanValue.float object. -/
+  /-- Create a `LeanValue.float` object. -/
   @[export LeanValue_mkFloat]
   private def mkFloat (a : @&Float) : LeanValue := .float a
 
-  /-- Create a LeanValue.complex object. -/
+  /-- Create a `LeanValue.complex` object. -/
   @[export LeanValue_mkComplex]
   private def mkComplex (a b : @&Float) : LeanValue := .complex a b
 
-  /-- Create a LeanValue.struct object. -/
+  /-- Create a `LeanValue.array` object. -/
+  @[export LeanValue_mkArray]
+  private def mkArray (values : @&Array LeanValue) : LeanValue := .array values
+
+  /-- Create a `LeanValue.struct` object. -/
   @[export LeanValue_mkStruct]
   private def mkStruct (values : @&Array LeanValue) : LeanValue := .struct values
 

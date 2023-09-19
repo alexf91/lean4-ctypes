@@ -34,10 +34,10 @@ LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkNat(b_lean_obj_arg obj);
 LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkFloat(double obj);
 /** Create a LeanValue.complex object. */
 LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkComplex(double a, double b);
+/** Create a LeanValue.array object. */
+LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkArray(b_lean_obj_arg values);
 /** Create a LeanValue.struct object. */
 LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkStruct(b_lean_obj_arg values);
-/** Check if a CType is compatible with a LeanValue. */
-LEAN_EXPORT_WEAK uint8_t Types_compatible(b_lean_obj_arg ct, b_lean_obj_arg lv);
 }
 
 /**
@@ -52,6 +52,7 @@ class LeanValue {
         NAT,
         FLOAT,
         COMPLEX,
+        ARRAY,
         STRUCT,
         LENGTH,
     };
@@ -168,6 +169,33 @@ class LeanValueComplex : public LeanValue {
 
   private:
     std::complex<double> m_value; // Lean doesn't use higher precision.
+};
+
+/**
+ * LeanValue specialization for fixed size array types.
+ */
+class LeanValueArray : public LeanValue {
+  public:
+    /** Constructor for struct values. */
+    LeanValueArray(std::vector<std::unique_ptr<LeanValue>> values);
+
+    /** Constructor for LeanValue.struct objects. */
+    LeanValueArray(b_lean_obj_arg obj);
+
+    ~LeanValueArray();
+
+    lean_obj_res box();
+
+    // TODO: Bad practice
+    const std::vector<const LeanValue *> get_values() const {
+        std::vector<const LeanValue *> values;
+        for (size_t i = 0; i < m_values.size(); i++)
+            values.push_back(m_values[i].get());
+        return values;
+    }
+
+  private:
+    std::vector<std::unique_ptr<LeanValue>> m_values;
 };
 
 /**

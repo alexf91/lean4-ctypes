@@ -73,4 +73,9 @@ namespace Tests.CType
     assertEqual type.size 64 s!"wrong size: {type.size}"
     assertEqual type.offsets #[0, 8, 16, 24, 32, 40, 48, 56] s!"offsets: {type.offsets}"
 
+  testcase testStructArray := do
+    let type := CType.struct #[.array .uint8 32, .array .uint32 32]
+    assertEqual type.size (32 + 4 * 32) s!"wrong size: {type.size}"
+    assertEqual type.offsets #[0, 32] s!"offsets: {type.offsets}"
+
 end Tests.CType

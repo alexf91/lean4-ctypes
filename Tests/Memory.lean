@@ -52,6 +52,11 @@ namespace Tests.Memory
     let m ← Memory.fromValue tp (.struct #[.int 42, .int 43, .int 44])
     assertEqual (← m.read 0 tp) (.struct #[.int 42, .int 43, .int 44])
 
+  /-- Create a memory from a struct with an array. -/
+  testcase testFromStruct_array := do
+    let tp := CType.struct #[.int8, .array .uint8 4]
+    let m ← Memory.fromValue tp (.struct #[.int 42, .array #[.nat 0, .nat 1, .nat 2, .nat 3]])
+
   /-- Read all integer types. -/
   testcase testRead_int8 := do
     let m ← Memory.fromByteArray $ .mk (#[(0xFF : UInt8)] * 8)
@@ -140,6 +145,13 @@ namespace Tests.Memory
     let v ← m.read 0 tp
     -- Assume little endian order
     assertEqual v (.struct #[.nat 0, .nat 770, .nat 117835012, .nat 1084818905618843912])
+
+  /-- Read a struct with an array. -/
+  testcase testRead_structArray := do
+    let m ← Memory.fromByteArray $ .mk #[0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07]
+    let tp := CType.struct #[.uint32, .array .uint8 4]
+    let v ← m.read 0 tp
+    assertEqual v (.struct #[.nat 50462976, .array #[.nat 4, .nat 5, .nat 6, .nat 7]])
 
   /-- Dereference a pointer. -/
   testcase testDereferenceEmpty := do

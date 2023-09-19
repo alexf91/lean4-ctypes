@@ -31,6 +31,8 @@ std::unique_ptr<LeanValue> LeanValue::unbox(b_lean_obj_arg obj) {
         return std::make_unique<LeanValueFloat>(obj);
     case COMPLEX:
         return std::make_unique<LeanValueComplex>(obj);
+    case ARRAY:
+        return std::make_unique<LeanValueArray>(obj);
     case STRUCT:
         return std::make_unique<LeanValueStruct>(obj);
     default:
@@ -111,6 +113,32 @@ LeanValueComplex::LeanValueComplex(b_lean_obj_arg obj) : LeanValue(COMPLEX) {
 /** Convert the type to a Lean object. */
 lean_obj_res LeanValueComplex::box() {
     return LeanValue_mkComplex(std::real(m_value), std::imag(m_value));
+}
+
+/******************************************************************************
+ * ARRAY TYPE
+ ******************************************************************************/
+
+/** Constructor for array values. */
+LeanValueArray::LeanValueArray(std::vector<std::unique_ptr<LeanValue>> values)
+    : LeanValue(ARRAY), m_values(std::move(values)) {}
+
+/** Constructor for array objects. */
+LeanValueArray::LeanValueArray(b_lean_obj_arg obj) : LeanValue(ARRAY) {
+    lean_object *values = lean_ctor_get(obj, 0);
+    for (size_t i = 0; i < lean_array_size(values); i++) {
+        lean_object *o = lean_array_get_core(values, i);
+        m_values.push_back(LeanValue::unbox(o));
+    }
+}
+
+LeanValueArray::~LeanValueArray() {}
+
+lean_obj_res LeanValueArray::box() {
+    lean_object *values = lean_alloc_array(m_values.size(), m_values.size());
+    for (size_t i = 0; i < m_values.size(); i++)
+        lean_array_set_core(values, i, m_values[i]->box());
+    return LeanValue_mkArray(values);
 }
 
 /******************************************************************************
