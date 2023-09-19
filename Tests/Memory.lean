@@ -40,6 +40,18 @@ namespace Tests.Memory
     assertFalse nm.allocated s!"allocated: {nm.allocated}"
     assertEqual ba.data na.data s!"data: {ba}"
 
+  /-- Create a memory from a value and read it back. -/
+  testcase testFromValue := do
+    let m ← Memory.fromValue .int64 (.int 42)
+    assertEqual m.size 8 s!"invalid size: {m.size}"
+    assertEqual (← m.read 0 .int64) (.int 42)
+
+  /-- Create a memory from a struct and read it back. -/
+  testcase testFromStruct := do
+    let tp := CType.struct #[.int8, .int8, .int8]
+    let m ← Memory.fromValue tp (.struct #[.int 42, .int 43, .int 44])
+    assertEqual (← m.read 0 tp) (.struct #[.int 42, .int 43, .int 44])
+
   /-- Read all integer types. -/
   testcase testRead_int8 := do
     let m ← Memory.fromByteArray $ .mk (#[(0xFF : UInt8)] * 8)
@@ -118,17 +130,16 @@ namespace Tests.Memory
     let v ← m.read 0 .complex_longdouble
     assertEqual s!"{repr v}" s!"{repr (LeanValue.complex 3.141593 (-3.141593))}"
 
-  --testcase testRead_struct := do
-  --  let m ← Memory.fromByteArray $ .mk #[0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-  --                                       0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f]
-  --  let tp := CType.struct #[.uint8, .uint16, .uint32, .uint64]
-  --  -- Prerequisites for the type
-  --  assertEqual tp.offsets #[0, 2, 4, 8] "wrong assumption about alignment"
-  --  assertEqual tp.size 16 "wrong assumption about size"
-  --  let v ← m.read 0 tp
-  --  IO.println s!"{repr v}"
-  --  assertTrue false
-
+  testcase testRead_struct := do
+    let m ← Memory.fromByteArray $ .mk #[0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+                                         0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f]
+    let tp := CType.struct #[.uint8, .uint16, .uint32, .uint64]
+    -- Prerequisites for the type
+    assertEqual tp.offsets #[0, 2, 4, 8] "wrong assumption about alignment"
+    assertEqual tp.size 16 "wrong assumption about size"
+    let v ← m.read 0 tp
+    -- Assume little endian order
+    assertEqual v (.struct #[.nat 0, .nat 770, .nat 117835012, .nat 1084818905618843912])
 
   /-- Dereference a pointer. -/
   testcase testDereferenceEmpty := do

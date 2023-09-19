@@ -34,6 +34,10 @@ namespace Memory
   @[extern "Memory_toByteArray"]
   opaque toByteArray (m : @&Memory) : IO ByteArray
 
+  /-- Create a Memory from a type and a value. -/
+  @[extern "Memory_fromValue"]
+  opaque fromValue (type : @&CType) (value : @&LeanValue) : IO Memory
+
   /-- Allocate a new memory and initialize it to 0. -/
   def allocate (size : Nat) : IO Memory := fromByteArray $ size.repeat (· ++ .mk #[(0 : UInt8)]) .empty
 

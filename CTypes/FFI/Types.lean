@@ -67,37 +67,6 @@ inductive LeanValue where
 deriving Repr, BEq
 
 
-/--
-  Check if a `CType` and a `LeanValue` have a compatible layout.
-  TODO: Prove termination.
--/
-@[export Types_compatible]
-private unsafe def compatible : CType → LeanValue → Bool
-  | .void,               .unit    ..
-  | .int8,               .int     ..
-  | .int16,              .int     ..
-  | .int32,              .int     ..
-  | .int64,              .int     ..
-  | .uint8,              .nat     ..
-  | .uint16,             .nat     ..
-  | .uint32,             .nat     ..
-  | .uint64,             .nat     ..
-  | .float,              .float   ..
-  | .double,             .float   ..
-  | .longdouble,         .float   ..
-  | .complex_float,      .complex ..
-  | .complex_double,     .complex ..
-  | .complex_longdouble, .complex .. => true
-  | .struct es,          .struct  vs => compatibleElements es.toList vs.toList
-  | _, _ => false
-where
-  compatibleElements : List CType → List LeanValue → Bool
-  |    [],    [] => true
-  |     _,    [] => false
-  |    [],     _ => false
-  | e::es, v::vs => compatible e v && compatibleElements es vs
-
-
 namespace LeanValue
 
   /-- Create a LeanValue.unit object. -/

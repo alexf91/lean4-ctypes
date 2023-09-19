@@ -154,7 +154,6 @@ namespace Function
       let msg := "invalid cast: can't cast non-scalar value to scalar"
       assertEqual e.toString msg s!"invalid error message: {e}"
 
-
 end Function
 
 end Tests.Basic

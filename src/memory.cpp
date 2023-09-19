@@ -64,6 +64,12 @@ lean_obj_res Memory::toByteArray() {
     return array;
 }
 
+/** Create a memory from a type and a value. */
+Memory *Memory::fromValue(const CType &type, const LeanValue &value) {
+    auto buffer = type.buffer(value);
+    return new Memory(nullptr, buffer.release(), type.get_size(), true);
+}
+
 /** Extract part of a memory view and create a new one. */
 Memory *Memory::extract(size_t begin, size_t end) {
     // Check if we are out of bounds.
@@ -115,6 +121,18 @@ extern "C" lean_obj_res Memory_toByteArray(b_lean_obj_arg memory, lean_object *u
     try {
         lean_object *array = m->toByteArray();
         return lean_io_result_mk_ok(array);
+    } catch (const std::runtime_error &error) {
+        lean_object *err = lean_mk_io_user_error(lean_mk_string(error.what()));
+        return lean_io_result_mk_error(err);
+    }
+}
+
+/** Create a memory from a value. */
+extern "C" lean_obj_res Memory_fromValue(b_lean_obj_arg type, b_lean_obj_arg value,
+                                         lean_object *unused) {
+    try {
+        Memory *m = Memory::fromValue(*CType::unbox(type), *LeanValue::unbox(value));
+        return lean_io_result_mk_ok(m->box());
     } catch (const std::runtime_error &error) {
         lean_object *err = lean_mk_io_user_error(lean_mk_string(error.what()));
         return lean_io_result_mk_error(err);

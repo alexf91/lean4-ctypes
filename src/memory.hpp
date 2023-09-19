@@ -34,6 +34,9 @@ class Memory final : public ExternalType<Memory> {
     /** Create a Lean ByteArray from the memory view. */
     lean_obj_res toByteArray();
 
+    /** Create a memory from a type and a value. */
+    static Memory *fromValue(const CType &type, const LeanValue &value);
+
     /** Extract part of a memory view and create a new one. */
     Memory *extract(size_t begin, size_t end);
 
