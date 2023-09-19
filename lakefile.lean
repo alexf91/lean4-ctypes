@@ -137,6 +137,16 @@ script valgrind (args : List String) do
     ]
     env := #[(sharedLibPathEnvVar, libs.toString)]
   }
-  let result ← p.wait
+  p.wait
 
-  return result
+-- Run cppcheck
+script cppcheck (args : List String) do
+  if args.length != 0 then
+    IO.eprintln "usage: lake run cppcheck"
+    return 1
+
+  let p ← IO.Process.spawn {
+    cmd := "cppcheck"
+    args := #["src"]
+  }
+  p.wait

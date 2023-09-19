@@ -46,6 +46,7 @@ static inline void lean_vfprintf(lean_print_t fn, const char *fmt, va_list ap) {
     vsprintf(buffer, fmt, apcopy);
     fn(lean_mk_string(buffer), nullptr);
     free(buffer);
+    va_end(apcopy);
 }
 
 /** Regular printf(), but redirected through Lean's stdout. */
@@ -53,6 +54,7 @@ void lean_printf(const char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     lean_vfprintf(lean_print, fmt, ap);
+    va_end(ap);
 }
 
 /** Regular printf(), but redirected through Lean's stderr. */
@@ -60,5 +62,6 @@ void lean_eprintf(const char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     lean_vfprintf(lean_eprint, fmt, ap);
+    va_end(ap);
 }
 }
