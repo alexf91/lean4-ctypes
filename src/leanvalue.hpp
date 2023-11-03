@@ -38,6 +38,8 @@ LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkComplex(double a, double b);
 LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkArray(b_lean_obj_arg values);
 /** Create a LeanValue.struct object. */
 LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkStruct(b_lean_obj_arg values);
+/** Create a LeanValue.pointer object. */
+LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkPointer(b_lean_obj_arg memory);
 }
 
 /**
@@ -54,6 +56,7 @@ class LeanValue {
         COMPLEX,
         ARRAY,
         STRUCT,
+        POINTER,
         LENGTH,
     };
 
@@ -223,4 +226,28 @@ class LeanValueStruct : public LeanValue {
 
   private:
     std::vector<std::unique_ptr<LeanValue>> m_values;
+};
+
+// Avoid include cycle...
+class Memory;
+
+/**
+ * LeanValue specialization for pointer types.
+ */
+class LeanValuePointer : public LeanValue {
+  public:
+    /** Constructor for pointer values. */
+    LeanValuePointer(std::unique_ptr<Memory> memory);
+
+    /** Constructor for LeanValue.pointer objects. */
+    LeanValuePointer(b_lean_obj_arg obj);
+
+    ~LeanValuePointer();
+
+    lean_obj_res box();
+
+    const Memory *get_memory() const { return m_memory.get(); }
+
+  private:
+    std::unique_ptr<Memory> m_memory;
 };

@@ -20,11 +20,6 @@ set_option relaxedAutoImplicit false
 
 namespace CTypes.FFI
 
-/-- Access to raw memory in C. -/
-opaque Memory.Nonempty : NonemptyType
-def Memory : Type := Memory.Nonempty.type
-instance : Nonempty Memory := Memory.Nonempty.property
-
 namespace Memory
   /-- Create a Memory from a byte array. -/
   @[extern "Memory_fromByteArray"]

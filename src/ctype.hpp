@@ -226,7 +226,12 @@ template <typename T> class CTypeComplex : public CType {
 /** CType for pointer types. */
 class CTypePointer : public CType {
   public:
+    // TODO: Check casts of nested types?
     CTypePointer() : CType(POINTER) {}
+
+    ~CTypePointer() {}
+
+    std::unique_ptr<uint8_t[]> buffer(const LeanValue &value) const;
 };
 
 /** CType for array types. */

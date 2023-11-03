@@ -52,6 +52,9 @@ class Memory final : public ExternalType<Memory> {
     /** Check if the memory is allocated. */
     bool is_allocated() { return m_allocated; }
 
+    /** Get the address of the buffer. */
+    const void *get_address() const { return m_buffer; }
+
   private:
     lean_object *m_parent;
     uint8_t *m_buffer;

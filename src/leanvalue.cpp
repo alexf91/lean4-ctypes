@@ -16,6 +16,7 @@
 
 #include "leanvalue.hpp"
 #include "ctype.hpp"
+#include "memory.hpp"
 #include <lean/lean.h>
 
 std::unique_ptr<LeanValue> LeanValue::unbox(b_lean_obj_arg obj) {
@@ -35,6 +36,8 @@ std::unique_ptr<LeanValue> LeanValue::unbox(b_lean_obj_arg obj) {
         return std::make_unique<LeanValueArray>(obj);
     case STRUCT:
         return std::make_unique<LeanValueStruct>(obj);
+    case POINTER:
+        return std::make_unique<LeanValuePointer>(obj);
     default:
         lean_internal_panic_unreachable();
     }
@@ -166,3 +169,20 @@ lean_obj_res LeanValueStruct::box() {
         lean_array_set_core(values, i, m_values[i]->box());
     return LeanValue_mkStruct(values);
 }
+
+/******************************************************************************
+ * POINTER TYPE
+ ******************************************************************************/
+
+/** Constructor for pointer values. */
+LeanValuePointer::LeanValuePointer(std::unique_ptr<Memory> memory)
+    : LeanValue(POINTER), m_memory(std::move(memory)) {}
+
+/** Constructor for pointer objects. */
+LeanValuePointer::LeanValuePointer(b_lean_obj_arg obj) : LeanValue(POINTER) {
+    lean_internal_panic("LeanValuePointer() not implemented");
+}
+
+LeanValuePointer::~LeanValuePointer() {}
+
+lean_obj_res LeanValuePointer::box() { return LeanValue_mkStruct(m_memory->box()); }

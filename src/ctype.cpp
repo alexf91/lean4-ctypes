@@ -15,6 +15,7 @@
  */
 
 #include "ctype.hpp"
+#include "memory.hpp"
 #include <lean/lean.h>
 #include <stdexcept>
 
@@ -146,4 +147,18 @@ extern "C" lean_obj_res CType_offsets(b_lean_obj_arg type) {
         lean_array_set_core(array, i, lean_box(offsets[i]));
 
     return array;
+}
+
+std::unique_ptr<uint8_t[]> CTypePointer::buffer(const LeanValue &value) const {
+    if (value.get_tag() != LeanValue::POINTER)
+        throw std::runtime_error(
+            "invalid cast: can't cast non-pointer type to pointer");
+
+    std::unique_ptr<uint8_t[]> buffer(new uint8_t[sizeof(void *)]);
+    // TODO: This is a forward declared type...
+    auto m = reinterpret_cast<const LeanValuePointer &>(value).get_memory();
+
+    *((const void **)buffer.get()) = m->get_address();
+
+    return buffer;
 }
