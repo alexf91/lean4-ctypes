@@ -154,6 +154,14 @@ namespace Function
       let msg := "invalid cast: can't cast non-scalar value to scalar"
       assertEqual e.toString msg s!"invalid error message: {e}"
 
+  /-- Call a function with a pointer argument. --/
+  testcase callPointerIntArg requires (libgen : SharedLibrary) := do
+    let lib ← libgen $ "void foo(int32_t *a) {*a = 42;}"
+    let foo ← Function.mk (← lib["foo"]) .void #[.pointer .int32]
+    let m ← Memory.fromValue .int32 (.int 0)
+    discard <| foo.call #[.pointer m]
+    assertEqual (.int 42) (← m.read 0 .int32)
+
 end Function
 
 end Tests.Basic

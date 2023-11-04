@@ -23,6 +23,9 @@
 #include <memory>
 #include <vector>
 
+// Avoid include cycle.
+class Memory;
+
 extern "C" {
 /** Create a LeanValue.unit object. */
 LEAN_EXPORT_WEAK lean_obj_res LeanValue_mkUnit(b_lean_obj_arg obj);
@@ -228,16 +231,13 @@ class LeanValueStruct : public LeanValue {
     std::vector<std::unique_ptr<LeanValue>> m_values;
 };
 
-// Avoid include cycle...
-class Memory;
-
 /**
  * LeanValue specialization for pointer types.
  */
 class LeanValuePointer : public LeanValue {
   public:
     /** Constructor for pointer values. */
-    LeanValuePointer(std::unique_ptr<Memory> memory);
+    // LeanValuePointer(std::unique_ptr<Memory> memory);
 
     /** Constructor for LeanValue.pointer objects. */
     LeanValuePointer(b_lean_obj_arg obj);
@@ -246,8 +246,8 @@ class LeanValuePointer : public LeanValue {
 
     lean_obj_res box();
 
-    const Memory *get_memory() const { return m_memory.get(); }
+    const Memory *get_memory() const;
 
   private:
-    std::unique_ptr<Memory> m_memory;
+    lean_object *m_memory;
 };

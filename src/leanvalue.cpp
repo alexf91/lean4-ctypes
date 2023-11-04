@@ -175,14 +175,18 @@ lean_obj_res LeanValueStruct::box() {
  ******************************************************************************/
 
 /** Constructor for pointer values. */
-LeanValuePointer::LeanValuePointer(std::unique_ptr<Memory> memory)
-    : LeanValue(POINTER), m_memory(std::move(memory)) {}
+// LeanValuePointer::LeanValuePointer(std::unique_ptr<Memory> memory)
+//     : LeanValue(POINTER), m_memory(std::move(memory)) {}
 
 /** Constructor for pointer objects. */
 LeanValuePointer::LeanValuePointer(b_lean_obj_arg obj) : LeanValue(POINTER) {
-    lean_internal_panic("LeanValuePointer() not implemented");
+    lean_object *mobj = lean_ctor_get(obj, 0);
+    lean_inc(mobj);
+    m_memory = mobj;
 }
 
-LeanValuePointer::~LeanValuePointer() {}
+LeanValuePointer::~LeanValuePointer() { lean_dec(m_memory); }
 
-lean_obj_res LeanValuePointer::box() { return LeanValue_mkStruct(m_memory->box()); }
+lean_obj_res LeanValuePointer::box() { return LeanValue_mkPointer(m_memory); }
+
+const Memory *LeanValuePointer::get_memory() const { return Memory::unbox(m_memory); }
