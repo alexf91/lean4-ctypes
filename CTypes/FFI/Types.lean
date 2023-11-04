@@ -57,15 +57,15 @@ end CType
 
 
 /-- Access to raw memory in C. -/
-opaque Memory.Nonempty : NonemptyType
-def Memory : Type := Memory.Nonempty.type
-instance : Nonempty Memory := Memory.Nonempty.property
+opaque Pointer.Nonempty : NonemptyType
+def Pointer : Type := Pointer.Nonempty.type
+instance : Nonempty Pointer := Pointer.Nonempty.property
 
 -- TODO: Show address in type representation.
-instance : Repr Memory := ⟨fun _ _ => "Memory<TODO>"⟩
+instance : Repr Pointer := ⟨fun _ _ => "Pointer<TODO>"⟩
 
 -- TODO: Compare if possible.
-instance : BEq Memory := ⟨fun _ _ => false⟩
+instance : BEq Pointer := ⟨fun _ _ => false⟩
 
 
 /-- Values in Lean. -/
@@ -77,7 +77,7 @@ inductive LeanValue where
   | complex (a b : Float)
   | array (values : Array LeanValue)
   | struct (values : Array LeanValue)
-  | pointer (memory : Memory)
+  | pointer (ptr : Pointer)
 deriving Repr, BEq
 
 
@@ -113,7 +113,7 @@ namespace LeanValue
 
   /-- Create a `LeanValue.pointer` object. -/
   @[export LeanValue_mkPointer]
-  private def mkPointer (memory : @&Memory) : LeanValue := .pointer memory
+  private def mkPointer (ptr : @&Pointer) : LeanValue := .pointer ptr
 
 end LeanValue
 

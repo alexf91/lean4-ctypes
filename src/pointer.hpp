@@ -23,28 +23,28 @@
 #include <cstdlib>
 #include <lean/lean.h>
 
-class Memory final : public ExternalType<Memory> {
+class Pointer final : public ExternalType<Pointer> {
   public:
-    Memory(lean_obj_arg parent, void *buffer, size_t size, bool allocated);
-    ~Memory();
+    Pointer(lean_obj_arg parent, void *buffer, size_t size, bool allocated);
+    ~Pointer();
 
     /** Create a memory view and initialize it from the byte array. */
-    static Memory *fromByteArray(b_lean_obj_arg array);
+    static Pointer *fromByteArray(b_lean_obj_arg array);
 
     /** Create a Lean ByteArray from the memory view. */
     lean_obj_res toByteArray();
 
     /** Create a memory from a type and a value. */
-    static Memory *fromValue(const CType &type, const LeanValue &value);
+    static Pointer *fromValue(const CType &type, const LeanValue &value);
 
     /** Extract part of a memory view and create a new one. */
-    Memory *extract(size_t begin, size_t end);
+    Pointer *extract(size_t begin, size_t end);
 
     /** Read a CType from the memory, creating a LeanValue. */
     std::unique_ptr<LeanValue> read(const CType &type, size_t offset);
 
     /** Dereference a pointer and create a new memory view. */
-    Memory *dereference(size_t offset, size_t size);
+    Pointer *dereference(size_t offset, size_t size);
 
     /** Get the size of the memory. */
     size_t get_size() { return m_size; }

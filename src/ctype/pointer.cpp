@@ -16,7 +16,7 @@
 
 #include "pointer.hpp"
 #include "../leanvalue.hpp"
-#include "../memory.hpp"
+#include "../pointer.hpp"
 
 #include <cstdint>
 #include <memory>

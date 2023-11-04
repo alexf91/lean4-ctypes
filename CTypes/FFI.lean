@@ -15,6 +15,6 @@
 --
 
 import CTypes.FFI.Basic
-import CTypes.FFI.Memory
-import CTypes.FFI.Utils
+import CTypes.FFI.Pointer
 import CTypes.FFI.Types
+import CTypes.FFI.Utils

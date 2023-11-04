@@ -158,7 +158,7 @@ namespace Function
   testcase callPointerIntArg requires (libgen : SharedLibrary) := do
     let lib ← libgen $ "void foo(int32_t *a) {*a = 42;}"
     let foo ← Function.mk (← lib["foo"]) .void #[.pointer .int32]
-    let m ← Memory.fromValue .int32 (.int 0)
+    let m ← Pointer.fromValue .int32 (.int 0)
     discard <| foo.call #[.pointer m]
     assertEqual (.int 42) (← m.read 0 .int32)
 

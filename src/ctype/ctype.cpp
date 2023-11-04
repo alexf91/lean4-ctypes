@@ -15,7 +15,7 @@
  */
 
 #include "ctype.hpp"
-#include "../memory.hpp"
+#include "../pointer.hpp"
 #include "array.hpp"
 #include "complex.hpp"
 #include "pointer.hpp"

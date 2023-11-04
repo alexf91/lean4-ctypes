@@ -16,7 +16,7 @@
 
 #include "leanvalue.hpp"
 #include "ctype.hpp"
-#include "memory.hpp"
+#include "pointer.hpp"
 #include <lean/lean.h>
 
 std::unique_ptr<LeanValue> LeanValue::unbox(b_lean_obj_arg obj) {
@@ -175,18 +175,18 @@ lean_obj_res LeanValueStruct::box() {
  ******************************************************************************/
 
 /** Constructor for pointer values. */
-// LeanValuePointer::LeanValuePointer(std::unique_ptr<Memory> memory)
+// LeanValuePointer::LeanValuePointer(std::unique_ptr<Pointer> memory)
 //     : LeanValue(POINTER), m_memory(std::move(memory)) {}
 
 /** Constructor for pointer objects. */
 LeanValuePointer::LeanValuePointer(b_lean_obj_arg obj) : LeanValue(POINTER) {
     lean_object *mobj = lean_ctor_get(obj, 0);
     lean_inc(mobj);
-    m_memory = mobj;
+    m_ptr = mobj;
 }
 
-LeanValuePointer::~LeanValuePointer() { lean_dec(m_memory); }
+LeanValuePointer::~LeanValuePointer() { lean_dec(m_ptr); }
 
-lean_obj_res LeanValuePointer::box() { return LeanValue_mkPointer(m_memory); }
+lean_obj_res LeanValuePointer::box() { return LeanValue_mkPointer(m_ptr); }
 
-const Memory *LeanValuePointer::get_memory() const { return Memory::unbox(m_memory); }
+const Pointer *LeanValuePointer::get_memory() const { return Pointer::unbox(m_ptr); }

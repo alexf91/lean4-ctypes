@@ -15,8 +15,8 @@
 --
 
 import LTest
-import Tests.Memory
 import Tests.Basic
+import Tests.Pointer
 import Tests.Types
 
 #LTestMain

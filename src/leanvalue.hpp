@@ -23,8 +23,7 @@
 #include <memory>
 #include <vector>
 
-// Avoid include cycle.
-class Memory;
+class Pointer;
 
 extern "C" {
 /** Create a LeanValue.unit object. */
@@ -237,7 +236,7 @@ class LeanValueStruct : public LeanValue {
 class LeanValuePointer : public LeanValue {
   public:
     /** Constructor for pointer values. */
-    // LeanValuePointer(std::unique_ptr<Memory> memory);
+    // LeanValuePointer(std::unique_ptr<Pointer> memory);
 
     /** Constructor for LeanValue.pointer objects. */
     LeanValuePointer(b_lean_obj_arg obj);
@@ -246,8 +245,8 @@ class LeanValuePointer : public LeanValue {
 
     lean_obj_res box();
 
-    const Memory *get_memory() const;
+    const Pointer *get_memory() const;
 
   private:
-    lean_object *m_memory;
+    lean_object *m_ptr;
 };

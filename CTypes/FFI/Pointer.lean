@@ -20,42 +20,42 @@ set_option relaxedAutoImplicit false
 
 namespace CTypes.FFI
 
-namespace Memory
-  /-- Create a Memory from a byte array. -/
-  @[extern "Memory_fromByteArray"]
-  opaque fromByteArray (buffer : @&ByteArray) : IO Memory
+namespace Pointer
+  /-- Create a Pointer from a byte array. -/
+  @[extern "Pointer_fromByteArray"]
+  opaque fromByteArray (buffer : @&ByteArray) : IO Pointer
 
-  /-- Convert a Memory back to a byte array. -/
-  @[extern "Memory_toByteArray"]
-  opaque toByteArray (m : @&Memory) : IO ByteArray
+  /-- Convert a Pointer back to a byte array. -/
+  @[extern "Pointer_toByteArray"]
+  opaque toByteArray (m : @&Pointer) : IO ByteArray
 
-  /-- Create a Memory from a type and a value. -/
-  @[extern "Memory_fromValue"]
-  opaque fromValue (type : @&CType) (value : @&LeanValue) : IO Memory
+  /-- Create a Pointer from a type and a value. -/
+  @[extern "Pointer_fromValue"]
+  opaque fromValue (type : @&CType) (value : @&LeanValue) : IO Pointer
 
   /-- Allocate a new memory and initialize it to 0. -/
-  def allocate (size : Nat) : IO Memory := fromByteArray $ size.repeat (· ++ .mk #[(0 : UInt8)]) .empty
+  def allocate (size : Nat) : IO Pointer := fromByteArray $ size.repeat (· ++ .mk #[(0 : UInt8)]) .empty
 
   /-- Get the size of the memory view. -/
-  @[extern "Memory_size"]
-  opaque size (m : @&Memory) : Nat
+  @[extern "Pointer_size"]
+  opaque size (m : @&Pointer) : Nat
 
   /-- Check if the memory is allocated. -/
-  @[extern "Memory_allocated"]
-  opaque allocated (m : @&Memory) : Bool
+  @[extern "Pointer_allocated"]
+  opaque allocated (m : @&Pointer) : Bool
 
   /-- Extract a slice from the memory view and return a new slice. -/
-  @[extern "Memory_extract"]
-  opaque extract (m : @&Memory) (b e : @&Nat) : IO Memory
+  @[extern "Pointer_extract"]
+  opaque extract (m : @&Pointer) (b e : @&Nat) : IO Pointer
 
   /-- Dereference a pointer and create a new memory view with the given size. -/
-  @[extern "Memory_dereference"]
-  opaque dereference (m : @&Memory) (offset : @&Nat) (size : @&Nat) : IO Memory
+  @[extern "Pointer_dereference"]
+  opaque dereference (m : @&Pointer) (offset : @&Nat) (size : @&Nat) : IO Pointer
 
   /-- Read an arbitrary value from the memory view. -/
-  @[extern "Memory_read"]
-  opaque read (m : @&Memory) (offset : @&Nat) (type : @&CType) : IO LeanValue
+  @[extern "Pointer_read"]
+  opaque read (m : @&Pointer) (offset : @&Nat) (type : @&CType) : IO LeanValue
 
-end Memory
+end Pointer
 
 end CTypes.FFI
