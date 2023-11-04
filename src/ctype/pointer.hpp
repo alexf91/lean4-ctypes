@@ -16,10 +16,19 @@
 
 #pragma once
 
-#include "ctype/array.hpp"
-#include "ctype/complex.hpp"
-#include "ctype/ctype.hpp"
-#include "ctype/pointer.hpp"
-#include "ctype/scalar.hpp"
-#include "ctype/struct.hpp"
-#include "ctype/void.hpp"
+#include "../leanvalue.hpp"
+#include "ctype.hpp"
+
+#include <cstdint>
+#include <memory>
+
+/** CType for pointer types. */
+class CTypePointer : public CType {
+  public:
+    // TODO: Check casts of nested types?
+    CTypePointer() : CType(POINTER) {}
+
+    ~CTypePointer() {}
+
+    std::unique_ptr<uint8_t[]> buffer(const LeanValue &value) const;
+};

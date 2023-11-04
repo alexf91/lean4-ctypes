@@ -16,10 +16,20 @@
 
 #pragma once
 
-#include "ctype/array.hpp"
-#include "ctype/complex.hpp"
-#include "ctype/ctype.hpp"
-#include "ctype/pointer.hpp"
-#include "ctype/scalar.hpp"
-#include "ctype/struct.hpp"
-#include "ctype/void.hpp"
+#include "../leanvalue.hpp"
+#include "ctype.hpp"
+
+#include <cstdint>
+#include <lean/lean.h>
+
+/** CType for void types. */
+class CTypeVoid : public CType {
+  public:
+    CTypeVoid() : CType(VOID) {}
+    std::unique_ptr<LeanValue> instance(const uint8_t *buffer) const {
+        return std::make_unique<LeanValueUnit>();
+    }
+    std::unique_ptr<uint8_t[]> buffer(const LeanValue &value) const {
+        throw std::runtime_error("invalid cast: can't cast value to void type");
+    }
+};
