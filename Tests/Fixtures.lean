@@ -77,3 +77,10 @@ private def generateLibrary (path : FilePath) (code : String) : IO Library := do
 -/
 fixture SharedLibrary FilePath (String → IO Library) requires (td : TemporaryDirectory) where
   setup := do return generateLibrary td
+
+
+/--
+  Fixture for access to `libc`.
+ -/
+fixture LibC Unit Library where
+  setup := Library.mk "/usr/lib/libc.so.6" #[.RTLD_NOW]

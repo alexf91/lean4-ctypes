@@ -236,7 +236,7 @@ class LeanValueStruct : public LeanValue {
 class LeanValuePointer : public LeanValue {
   public:
     /** Constructor for pointer values. */
-    // LeanValuePointer(std::unique_ptr<Pointer> memory);
+    LeanValuePointer(Pointer &pointer);
 
     /** Constructor for LeanValue.pointer objects. */
     LeanValuePointer(b_lean_obj_arg obj);

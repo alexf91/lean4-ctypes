@@ -78,4 +78,20 @@ namespace Tests.CType
     assertEqual type.size (32 + 4 * 32) s!"wrong size: {type.size}"
     assertEqual type.offsets #[0, 32] s!"offsets: {type.offsets}"
 
+  testcase testPointerMk := do
+    let p := Pointer.mk 0
+    assertEqual p.address 0 s!"wrong address: {p.address}"
+
+  testcase testPointerMkMax := do
+    let p := Pointer.mk 0xFFFFFFFFFFFFFFFF
+    assertEqual s!"{p.address}" "18446744073709551615" s!"wrong address: {p.address}"
+
+  testcase testPointerAdd := do
+    let p := (Pointer.mk 128) + (32 : USize)
+    assertEqual p.address 160 s!"wrong address: {p.address}"
+
+  testcase testPointerSub := do
+    let p := (Pointer.mk 128) - (32 : USize)
+    assertEqual p.address 96 s!"wrong address: {p.address}"
+
 end Tests.CType

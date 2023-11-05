@@ -35,7 +35,7 @@ inductive CType where
   | complex_float
   | complex_double
   | complex_longdouble
-  | pointer (type : CType)
+  | pointer
   | array (type : CType) (size : Nat)
   | struct (elements : Array CType)
   | union (elements : Array CType)
@@ -56,16 +56,10 @@ namespace CType
 end CType
 
 
-/-- Access to raw memory in C. -/
+/-- Wrapper around a raw `void` pointer in C. -/
 opaque Pointer.Nonempty : NonemptyType
 def Pointer : Type := Pointer.Nonempty.type
 instance : Nonempty Pointer := Pointer.Nonempty.property
-
--- TODO: Show address in type representation.
-instance : Repr Pointer := ⟨fun _ _ => "Pointer<TODO>"⟩
-
--- TODO: Compare if possible.
-instance : BEq Pointer := ⟨fun _ _ => false⟩
 
 
 /-- Values in Lean. -/
@@ -78,7 +72,6 @@ inductive LeanValue where
   | array (values : Array LeanValue)
   | struct (values : Array LeanValue)
   | pointer (ptr : Pointer)
-deriving Repr, BEq
 
 
 namespace LeanValue
@@ -114,6 +107,86 @@ namespace LeanValue
   /-- Create a `LeanValue.pointer` object. -/
   @[export LeanValue_mkPointer]
   private def mkPointer (ptr : @&Pointer) : LeanValue := .pointer ptr
+
+end LeanValue
+
+
+namespace Pointer
+  /-- Create a pointer from an integer value. -/
+  @[extern "Pointer_mk"]
+  opaque mk (p : @&USize) : Pointer
+
+  /-- Get the address as an integer. -/
+  @[extern "Pointer_address"]
+  opaque address (p : @&Pointer) : USize
+
+  /--
+    Dereference the pointer and cast it to the given `CType`.
+    This then creates a `LeanValue` value.
+  -/
+  @[extern "Pointer_read"]
+  opaque read (p : @&Pointer) (type : @&CType) : IO LeanValue
+
+  /--
+    Assign a value to the address the pointer points to.
+    The given `LeanValue` value is cast to the given `CType` first and
+    then copied to the memory location.
+  -/
+  @[extern "Pointer_write"]
+  opaque write (p : @&Pointer) (type : @&CType) (value : @&LeanValue) : IO Unit
+
+end Pointer
+
+instance : Inhabited Pointer := ⟨Pointer.mk 0⟩
+instance : Repr Pointer := ⟨fun p _ => s!"Pointer<{p.address}>"⟩
+instance : BEq Pointer := ⟨fun a b => a.address == b.address⟩
+
+@[default_instance high]
+instance : HAdd Pointer USize Pointer := ⟨fun p n => .mk (p.address + n)⟩
+@[default_instance high]
+instance : HSub Pointer USize Pointer := ⟨fun p n => .mk (p.address - n)⟩
+
+deriving instance Repr for LeanValue
+deriving instance BEq for LeanValue
+
+
+namespace LeanValue
+  /- Getter functions for all value types. -/
+  def int? : LeanValue → Option Int
+  | .int a => some a
+  | _      => none
+
+  def nat? : LeanValue → Option Nat
+  | .nat a => some a
+  | _      => none
+
+  def float? : LeanValue → Option Float
+  | .float a => some a
+  | _        => none
+
+  def complex? : LeanValue → Option (Float × Float)
+  | .complex a b => some (a, b)
+  | _            => none
+
+  def array? : LeanValue → Option (Array LeanValue)
+  | .array a => some a
+  | _        => none
+
+  def struct? : LeanValue → Option (Array LeanValue)
+  | .struct a => some a
+  | _         => none
+
+  def pointer? : LeanValue → Option Pointer
+  | .pointer a => some a
+  | _          => none
+
+  def int!     := fun a => (int? a).get!
+  def nat!     := fun a => (nat? a).get!
+  def float!   := fun a => (float? a).get!
+  def complex! := fun a => (complex? a).get!
+  def array!   := fun a => (array? a).get!
+  def struct!  := fun a => (struct? a).get!
+  def pointer! := fun a => (pointer? a).get!
 
 end LeanValue
 

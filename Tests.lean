@@ -16,7 +16,6 @@
 
 import LTest
 import Tests.Basic
-import Tests.Pointer
 import Tests.Types
 
 #LTestMain

@@ -175,8 +175,11 @@ lean_obj_res LeanValueStruct::box() {
  ******************************************************************************/
 
 /** Constructor for pointer values. */
-// LeanValuePointer::LeanValuePointer(std::unique_ptr<Pointer> memory)
-//     : LeanValue(POINTER), m_memory(std::move(memory)) {}
+LeanValuePointer::LeanValuePointer(Pointer &pointer)
+    : LeanValue(POINTER), m_ptr(pointer.box()) {
+    // The pointer oject is owned by the value.
+    lean_inc(m_ptr);
+}
 
 /** Constructor for pointer objects. */
 LeanValuePointer::LeanValuePointer(b_lean_obj_arg obj) : LeanValue(POINTER) {

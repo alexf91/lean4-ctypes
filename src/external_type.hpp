@@ -44,9 +44,7 @@ template <class T> class ExternalType {
   private:
     // Deletes the object when it is garbage collected.
     static void finalize(void *p) { delete (T *)p; }
-    static void foreach (void *mod, b_lean_obj_arg fn) {
-        lean_internal_panic("not implemented");
-    }
+    static void foreach (void *mod, b_lean_obj_arg fn) {}
 
     // Registered class in Lean.
     inline static lean_external_class *m_class = nullptr;

@@ -155,12 +155,18 @@ namespace Function
       assertEqual e.toString msg s!"invalid error message: {e}"
 
   /-- Call a function with a pointer argument. --/
-  testcase callPointerIntArg requires (libgen : SharedLibrary) := do
+  testcase callPointerIntArg requires (libgen : SharedLibrary) (libc : LibC) := do
     let lib ← libgen $ "void foo(int32_t *a) {*a = 42;}"
-    let foo ← Function.mk (← lib["foo"]) .void #[.pointer .int32]
-    let m ← Pointer.fromValue .int32 (.int 0)
-    discard <| foo.call #[.pointer m]
-    assertEqual (.int 42) (← m.read 0 .int32)
+    let foo ← Function.mk (← lib["foo"]) .void #[.pointer]
+    let malloc ← Function.mk (← libc["malloc"]) (.pointer) #[.uint64]
+    let free ← Function.mk (← libc["free"]) (.void) #[.pointer]
+
+    let p ← malloc.call #[.nat CType.int32.size]
+    discard <| foo.call #[p]
+    try
+      assertEqual (.int 42) (← p.pointer!.read .int32)
+    finally
+      discard <| free.call #[p]
 
 end Function
 

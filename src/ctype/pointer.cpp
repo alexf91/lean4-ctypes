@@ -21,6 +21,11 @@
 #include <cstdint>
 #include <memory>
 
+std::unique_ptr<LeanValue> CTypePointer::instance(const uint8_t *buffer) const {
+    auto p = new Pointer(*((uint8_t **)buffer));
+    return std::make_unique<LeanValuePointer>(*p);
+}
+
 std::unique_ptr<uint8_t[]> CTypePointer::buffer(const LeanValue &value) const {
     if (value.get_tag() != LeanValue::POINTER)
         throw std::runtime_error(
