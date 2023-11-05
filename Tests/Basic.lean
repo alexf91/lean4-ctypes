@@ -18,7 +18,7 @@ import LTest
 import CTypes
 import Tests.Fixtures
 open LTest
-open CTypes.FFI
+open CTypes
 
 namespace Tests.Basic
 

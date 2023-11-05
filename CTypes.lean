@@ -15,4 +15,4 @@
 --
 
 import CTypes.Basic
-import CTypes.FFI
+import CTypes.Types

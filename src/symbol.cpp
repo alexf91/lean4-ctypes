@@ -16,7 +16,6 @@
 
 #include "symbol.hpp"
 #include "library.hpp"
-#include "utils.hpp"
 #include <cstdlib>
 #include <cstring>
 #include <dlfcn.h>
@@ -31,7 +30,6 @@
 Symbol::Symbol(b_lean_obj_arg lib, b_lean_obj_arg sym) {
     const char *name = lean_string_cstr(sym);
     Library *l = Library::unbox(lib);
-    utils_log("opening '%s' in %s", name, l->get_path());
 
     // Clear dlerror() to distinguish between errors and NULL.
     dlerror();

@@ -84,7 +84,6 @@ target leanvalue.o pkg : FilePath := createTarget pkg $ "src" / "leanvalue.cpp"
 target library.o pkg : FilePath := createTarget pkg $ "src" / "library.cpp"
 target pointer.o pkg : FilePath := createTarget pkg $ "src" / "pointer.cpp"
 target symbol.o pkg : FilePath := createTarget pkg $ "src" / "symbol.cpp"
-target utils.o pkg : FilePath := createTarget pkg $ "src" / "utils.cpp"
 
 target ctype_ctype.o pkg : FilePath := createTarget pkg $ "src" / "ctype" / "ctype.cpp"
 target ctype_pointer.o pkg : FilePath := createTarget pkg $ "src" / "ctype" / "pointer.cpp"
@@ -98,7 +97,6 @@ extern_lib libctypes pkg := do
     (← fetch <| pkg.target ``library.o),
     (← fetch <| pkg.target ``pointer.o),
     (← fetch <| pkg.target ``symbol.o),
-    (← fetch <| pkg.target ``utils.o),
     (← fetch <| pkg.target ``ctype_ctype.o),
     (← fetch <| pkg.target ``ctype_pointer.o)
   ]

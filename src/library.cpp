@@ -15,7 +15,6 @@
  */
 
 #include "library.hpp"
-#include "utils.hpp"
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -57,7 +56,6 @@ Library::Library(b_lean_obj_arg path, b_lean_obj_arg flags) {
         lean_object *o = lean_array_get_core(flags, i);
         openflags |= Flag_unbox(o);
     }
-    utils_log("opening %s with flags %08x", p, openflags);
     void *handle = dlopen(p, openflags);
     if (handle == NULL)
         throw std::runtime_error(std::string(dlerror()));

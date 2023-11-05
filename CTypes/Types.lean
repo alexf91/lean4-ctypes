@@ -16,7 +16,7 @@
 
 set_option relaxedAutoImplicit false
 
-namespace CTypes.FFI
+namespace CTypes
 
 /-- Types in C. -/
 inductive CType where
@@ -138,7 +138,7 @@ namespace Pointer
 end Pointer
 
 instance : Inhabited Pointer := ⟨Pointer.mk 0⟩
-instance : Repr Pointer := ⟨fun p _ => s!"Pointer<{p.address}>"⟩
+instance : Repr Pointer := ⟨fun p _ => s!"CTypes.Pointer<{p.address}>"⟩
 instance : BEq Pointer := ⟨fun a b => a.address == b.address⟩
 
 @[default_instance high]
@@ -191,4 +191,4 @@ namespace LeanValue
 end LeanValue
 
 
-end CTypes.FFI
+end CTypes
