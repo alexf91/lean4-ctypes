@@ -157,7 +157,7 @@ namespace Function
       let msg := "invalid cast: can't cast non-scalar value to scalar"
       assertEqual e.toString msg s!"invalid error message: {e}"
 
-  /-- Call a function with a pointer argument. --/
+  /-- Call a function with a pointer argument. -/
   testcase callPointerIntArg requires (libgen : SharedLibrary) (libc : LibC) := do
     let lib ← libgen $ "void foo(int32_t *a) {*a = 42;}"
     let foo ← Function.mk (← lib["foo"]) .void #[.pointer]
@@ -170,6 +170,16 @@ namespace Function
       assertEqual (.int 42) (← p.pointer!.read .int32)
     finally
       discard <| free.call #[p]
+
+  /-- Call a function with an array argument. -/
+  testcase callArrayArg requires (libgen : SharedLibrary) := do
+    let lib ← libgen $ "void foo(int a[32]) {for (size_t i = 0; i < 32; i++) a[i] = i;}"
+    let foo ← Function.mk (← lib["foo"]) .void #[.array .int 32]
+
+    let original := List.range 32 |>.map (fun n => LeanValue.int (.ofNat n)) |>.toArray
+    let argument := List.range 32 |>.map (fun n => LeanValue.int (.ofNat n)) |>.toArray
+    discard <| foo.call #[.array argument]
+    assertEqual original argument
 
 end Function
 

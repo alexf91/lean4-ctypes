@@ -74,3 +74,53 @@ def main (_ : List String) : IO UInt32 := do
 
   return 0
 ```
+
+### Structs and arrays
+
+Structs are described as an array of types and instantiated as an array of values.
+The data type description doesn't contain names of the fields.
+This has to be handled by the user and the code that wraps the low-level function interface (e.g. conversion to structures).
+
+(Fixed-length) arrays are described by their data type and their length.
+Their Lean representation is immutable.
+If a `LeanValue.array` is passed to a function, then a temporary copy is created and freed after the call.
+Changes to the array are never observed in Lean.
+If this is necessary or the callee might take ownership of the array, then a buffer has to be allocated with `malloc()`, like in the pointer example.
+The main purpose of the `CType.array` and `LeanValue.array` types is as a member of a struct or for read-only buffer arguments.
+
+```Lean
+import CTypes
+open CTypes
+
+def main (_ : List String) : IO UInt32 := do
+  let lib ← Library.mk "libc.so.6" #[.RTLD_NOW]
+  let malloc ← Function.mk (← lib["malloc"]) .pointer #[.size_t]
+  let free   ← Function.mk (← lib["free"])   .void    #[.pointer]
+  let memset ← Function.mk (← lib["memset"]) .pointer #[.pointer, .int, .size_t]
+
+  -- Create a struct with an integer and a fixed-length array.
+  let type := CType.struct #[.int, .array .int 8]
+  let p ← malloc.call #[.nat type.size]
+
+  -- Set all values to 0xFF, resulting in -1 for all fields.
+  discard <| memset.call #[p, .int 0xFF, .nat type.size]
+
+  -- Read back the value.
+  let value ← p.pointer!.read type
+  IO.println s!"value: {repr value}"
+
+  -- Free the allocated buffer.
+  discard <| free.call #[p]
+
+  return 0
+```
+
+The result is a nested `LeanValue`.
+
+```
+CTypes.LeanValue.struct
+  #[CTypes.LeanValue.int -1,
+    CTypes.LeanValue.array
+      #[CTypes.LeanValue.int -1, CTypes.LeanValue.int -1, CTypes.LeanValue.int -1, CTypes.LeanValue.int -1,
+        CTypes.LeanValue.int -1, CTypes.LeanValue.int -1, CTypes.LeanValue.int -1, CTypes.LeanValue.int -1]]
+```

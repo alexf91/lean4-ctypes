@@ -16,6 +16,7 @@
 
 import LTest
 import CTypes
+import Tests.Fixtures
 open LTest
 open CTypes
 
@@ -93,5 +94,20 @@ namespace Tests.CType
   testcase testPointerSub := do
     let p := (Pointer.mk 128) - (32 : USize)
     assertEqual p.address 96 s!"wrong address: {p.address}"
+
+  testcase testPointerArray requires (libc : LibC) := do
+    let malloc ← Function.mk (← libc["malloc"]) (.pointer) #[.uint64]
+    let free ← Function.mk (← libc["free"]) (.void) #[.pointer]
+
+    let type := CType.array .uint 8096
+    let values := List.range 8096 |>.map LeanValue.nat |>.toArray
+    let p ← malloc.call #[.int type.size]
+
+    try
+      p.pointer!.write type (.array values)
+      let result ← p.pointer!.read type
+      assertEqual values result.array! s!"wrong result"
+    finally
+      discard <| free.call #[p]
 
 end Tests.CType
