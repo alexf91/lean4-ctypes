@@ -45,10 +45,7 @@ package ctypes {
 
 require LTest from git "git@github.com:alexf91/LTest.git" @ "main"
 
-/--
-  Calculate a trace for files included by a target file.
-  TODO: This is probably not very robust.
--/
+/-- Compute a trace for files included by a target file. -/
 def extraDepTrace (cfile : FilePath) : BuildM BuildTrace := do
   -- Get the list of local file dependencies.
   let deps := (← IO.Process.run {cmd := "g++", args := #["-MM", cfile.toString]})
@@ -76,7 +73,8 @@ def createTarget (pkg : Package) (cfile : FilePath) := do
     "-Wall",
     "-std=c++20"
   ] ++ debugFlags
-  buildO cfile.toString oFile srcJob weakArgs traceArgs CXX (extraDepTrace cfile)
+  let cFile := pkg.dir / cfile
+  buildO cFile.toString oFile srcJob weakArgs traceArgs CXX (extraDepTrace cFile)
 
 target ctype.o pkg : FilePath := createTarget pkg $ "src" / "ctype.cpp"
 target function.o pkg : FilePath := createTarget pkg $ "src" / "function.cpp"
