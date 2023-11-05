@@ -97,6 +97,48 @@ std::unique_ptr<CType> CType::unbox(b_lean_obj_arg obj) {
         return std::make_unique<CTypeStruct>(lean_ctor_get(obj, 0));
     case UNION:
         lean_internal_panic("UNION not supported");
+
+    // Aliased types
+    // TODO: Support different sizes.
+    case CHAR:
+        static_assert(sizeof(char) == sizeof(int8_t));
+        return std::make_unique<CTypeScalar<int8_t>>(INT8);
+    case SHORT:
+        static_assert(sizeof(short) == sizeof(int16_t));
+        return std::make_unique<CTypeScalar<int16_t>>(INT16);
+    case INT:
+        static_assert(sizeof(int) == sizeof(int32_t));
+        return std::make_unique<CTypeScalar<int32_t>>(INT32);
+    case LONG:
+        static_assert(sizeof(long) == sizeof(int64_t));
+        return std::make_unique<CTypeScalar<int64_t>>(INT64);
+    case LONGLONG:
+        static_assert(sizeof(long long) == sizeof(int64_t));
+        return std::make_unique<CTypeScalar<int64_t>>(INT64);
+    case SSIZE_T:
+        static_assert(sizeof(size_t) == sizeof(int64_t));
+        return std::make_unique<CTypeScalar<int64_t>>(INT64);
+    case UCHAR:
+        static_assert(sizeof(unsigned char) == sizeof(uint8_t));
+        return std::make_unique<CTypeScalar<uint8_t>>(UINT8);
+    case USHORT:
+        static_assert(sizeof(unsigned short) == sizeof(uint16_t));
+        return std::make_unique<CTypeScalar<uint8_t>>(UINT16);
+    case UINT:
+        static_assert(sizeof(unsigned int) == sizeof(uint32_t));
+        return std::make_unique<CTypeScalar<uint32_t>>(UINT32);
+    case ULONG:
+        static_assert(sizeof(unsigned long) == sizeof(uint64_t));
+        return std::make_unique<CTypeScalar<uint64_t>>(UINT64);
+    case ULONGLONG:
+        static_assert(sizeof(unsigned long long) == sizeof(uint64_t));
+        return std::make_unique<CTypeScalar<uint64_t>>(UINT64);
+    case SIZE_T:
+        static_assert(sizeof(size_t) == sizeof(uint64_t));
+        return std::make_unique<CTypeScalar<uint64_t>>(UINT64);
+    case TIME_T:
+        static_assert(sizeof(time_t) == sizeof(int64_t));
+        return std::make_unique<CTypeScalar<int64_t>>(INT64);
     default:
         lean_internal_panic_unreachable();
     }

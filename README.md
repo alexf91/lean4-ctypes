@@ -59,11 +59,11 @@ open CTypes
 
 def main (_ : List String) : IO UInt32 := do
   let lib ← Library.mk "libc.so.6" #[.RTLD_NOW]
-  let malloc ← Function.mk (← lib["malloc"]) .pointer #[.uint64]
+  let malloc ← Function.mk (← lib["malloc"]) .pointer #[.size_t]
   let free   ← Function.mk (← lib["free"])   .void    #[.pointer]
 
   -- Allocate a `int16_t` buffer.
-  let p ← malloc.call #[.nat (CType.int16.size)]
+  let p ← malloc.call #[.nat CType.int16.size]
   -- Write the value.
   p.pointer!.write .int16 (.int 42)
   -- Read back the value.

@@ -73,6 +73,23 @@ class CType {
         STRUCT,
         UNION,
 
+        // Aliased types
+        FIRST_ALIASED,
+        CHAR = FIRST_ALIASED,
+        SHORT,
+        INT,
+        LONG,
+        LONGLONG,
+        SSIZE_T,
+        UCHAR,
+        USHORT,
+        UINT,
+        ULONG,
+        ULONGLONG,
+        SIZE_T,
+        TIME_T,
+        LAST_ALIASED = TIME_T,
+
         LENGTH
     };
 

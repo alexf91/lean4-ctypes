@@ -39,6 +39,22 @@ inductive CType where
   | array (type : CType) (size : Nat)
   | struct (elements : Array CType)
   | union (elements : Array CType)
+
+  -- Aliased types depending on size.
+  | char
+  | short
+  | int
+  | long
+  | longlong
+  | ssize_t
+  | uchar
+  | ushort
+  | uint
+  | ulong
+  | ulonglong
+  | size_t
+  | time_t
+
 deriving Repr, BEq
 
 namespace CType
@@ -115,6 +131,9 @@ namespace Pointer
   /-- Create a pointer from an integer value. -/
   @[extern "Pointer_mk"]
   opaque mk (p : @&USize) : Pointer
+
+  /-- NULL pointer. -/
+  def null : Pointer := Pointer.mk 0
 
   /-- Get the address as an integer. -/
   @[extern "Pointer_address"]
