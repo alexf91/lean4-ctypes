@@ -44,38 +44,20 @@ namespace Library
   /-- Get the path the library for which the library was created. -/
   @[extern "Library_path"]
   opaque path (library : @&Library) : String
+
+  /--
+    Get a pointer to a symbol in the library.
+    Raises an `IO.Error` exception if the lookup fails.
+  -/
+  @[extern "Library_symbol"]
+  opaque symbol (library : @&Library) (name : @&String) : IO Pointer
 end Library
 
 instance : Repr     Library := ⟨fun lib _ => s!"CTypes.Library<{lib.path}>"⟩
 instance : ToString Library := ⟨fun lib   => s!"{repr lib}"⟩
 
-
-/-- Symbol handle returned by `dlsym()`. -/
-opaque Symbol.Nonempty : NonemptyType
-def Symbol : Type := Symbol.Nonempty.type
-instance : Nonempty Symbol := Symbol.Nonempty.property
-
-namespace Symbol
-  /-- Thin wrapper around `dlsym()`. -/
-  @[extern "Symbol_mk"]
-  opaque mk (library : @&Library) (symbol : @&String) : IO Symbol
-
-  /-- Get the name of the symbol. -/
-  @[extern "Symbol_name"]
-  opaque name (symbol : @&Symbol) : String
-
-  /-- Get the library of the symbol. -/
-  @[extern "Symbol_library"]
-  opaque library (symbol : @&Symbol) : Library
-
-end Symbol
-
-instance : Repr     Symbol := ⟨fun s _ => s!"CTypes.Symbol<{s.library.path}:{s.name}>"⟩
-instance : ToString Symbol := ⟨fun s   => s!"{repr s}"⟩
-
 /-- Get a symbol from the library. -/
-def Library.get (lib : Library) (sym : String) : IO Symbol := Symbol.mk lib sym
-instance : GetElem Library String (IO Symbol) (fun _ _ => True) := ⟨fun l s _ => l.get s⟩
+instance : GetElem Library String (IO Pointer) (fun _ _ => True) := ⟨fun l s _ => l.symbol s⟩
 
 
 /-- A symbol with a return type and argument types. -/
@@ -86,7 +68,7 @@ instance : Nonempty Function := Function.Nonempty.property
 namespace Function
   /-- Create a new function instance from a symbol. -/
   @[extern "Function_mk"]
-  opaque mk (s : @&Symbol) (returnType : @&CType) (argTypes : @&Array CType) : IO Function
+  opaque mk (s : @&Pointer) (returnType : @&CType) (argTypes : @&Array CType) : IO Function
 
   /-- Call a function with the given arguments. -/
   @[extern "Function_call"]

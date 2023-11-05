@@ -35,7 +35,7 @@ std::unique_ptr<uint8_t[]> CTypePointer::buffer(const LeanValue &value) const {
     // TODO: This is a forward declared type...
     auto m = reinterpret_cast<const LeanValuePointer &>(value).get_memory();
 
-    *((void **)buffer.get()) = m->get_address();
+    *((void **)buffer.get()) = m->get_pointer();
 
     return buffer;
 }

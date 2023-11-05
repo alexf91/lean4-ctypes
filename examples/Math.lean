@@ -21,9 +21,9 @@ def main (_ : List String) : IO UInt32 := do
   -- Open the library. See man page for dlopen() for flags.
   let lib ← Library.mk "libm.so.6" #[.RTLD_NOW]
 
-  -- Create the symbol for the function `pow`.
+  -- Lookup the symbol `pow`.
   -- As an alternative `libm["pow"]` can be used.
-  let sym ← Symbol.mk lib "pow"
+  let sym ← lib.symbol "pow"
 
   -- Annotate the function with `CType` types. `pow()` returns a double value
   -- and takes two double values as arguments.

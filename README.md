@@ -5,11 +5,10 @@ It provides C compatible data types, and allows calling functions in shared libr
 
 ## Usage
 
-Access to library functions is structured in three types:
+Access to library functions is structured in two types:
 
 * Library: Shared library opened with `dlopen()`
-* Symbol: Symbol in a library, opened with `dlsym()`
-* Function: Symbol annotated with data types
+* Function: Function pointer annotated with data types
 
 The `CType` inductive represents types available in C.
 It contains definitions for signed and unsigned integers, floating point types, complex types, arrays, structs and pointers.
@@ -27,9 +26,9 @@ def main (_ : List String) : IO UInt32 := do
   -- Open the library. See man page for dlopen() for flags.
   let lib ← Library.mk "libm.so.6" #[.RTLD_NOW]
 
-  -- Create the symbol for the function `pow`.
+  -- Lookup the symbol `pow`.
   -- As an alternative `libm["pow"]` can be used.
-  let sym ← Symbol.mk lib "pow"
+  let sym ← lib.symbol "pow"
 
   -- Annotate the function with `CType` types. `pow()` returns a double value
   -- and takes two double values as arguments.

@@ -25,7 +25,7 @@
 
 class Function final : public ExternalType<Function> {
   public:
-    Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
+    Function(b_lean_obj_arg pointer, b_lean_obj_arg rtype_object,
              b_lean_obj_arg argtypes_object);
     ~Function();
 
@@ -40,8 +40,8 @@ class Function final : public ExternalType<Function> {
     size_t get_nargs() { return m_argtypes.size(); }
 
   private:
-    // Symbol assocated with the function.
-    lean_object *m_symbol;
+    // Pointer assocated with the function.
+    lean_object *m_pointer;
 
     // Unboxed CType for the return type.
     std::unique_ptr<CType> m_rtype;

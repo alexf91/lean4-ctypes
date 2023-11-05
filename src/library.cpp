@@ -72,6 +72,20 @@ Library::~Library() {
     dlclose(m_handle);
 }
 
+/** Lookup a symbol in the library. */
+Pointer *Library::symbol(const char *name) {
+    // Clear dlerror() to distinguish between errors and NULL.
+    dlerror();
+    void *p = dlsym(m_handle, name);
+    if (p == nullptr) {
+        char *msg = dlerror();
+        if (msg != nullptr)
+            throw std::runtime_error(std::string(msg));
+    }
+    auto deps = std::vector<lean_object *>({box()});
+    return new Pointer((uint8_t *)p, deps);
+}
+
 /**
  * Create a new Library instance.
  *
@@ -98,4 +112,27 @@ extern "C" lean_obj_res Library_mk(b_lean_obj_arg path, b_lean_obj_arg flags,
  */
 extern "C" lean_obj_res Library_path(b_lean_obj_arg obj) {
     return lean_mk_string(Library::unbox(obj)->get_path());
+}
+
+/**
+ * Lookup a symbol in the library.
+ *
+ * On success, the library is owned and remains in memory at least until the
+ * pointer is finalized. All other arguments are borrowed.
+ *
+ * @param lib Library object in which the symbol is opened.
+ * @param name Name of the symbol as a Lean string.
+ *
+ * @return Pointer to the symbol or an exception.
+ */
+extern "C" lean_obj_res Library_symbol(b_lean_obj_arg lib, b_lean_obj_arg name,
+                                       lean_object *unused) {
+
+    try {
+        Pointer *p = Library::unbox(lib)->symbol(lean_string_cstr(name));
+        return lean_io_result_mk_ok(p->box());
+    } catch (const std::runtime_error &error) {
+        lean_object *err = lean_mk_io_user_error(lean_mk_string(error.what()));
+        return lean_io_result_mk_error(err);
+    }
 }

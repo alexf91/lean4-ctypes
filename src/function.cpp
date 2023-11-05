@@ -17,7 +17,7 @@
 #include "function.hpp"
 #include "ctype.hpp"
 #include "leanvalue.hpp"
-#include "symbol.hpp"
+#include "pointer.hpp"
 #include "utils.hpp"
 #include <algorithm>
 #include <cstdlib>
@@ -34,7 +34,7 @@
  */
 Function::Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
                    b_lean_obj_arg argtypes_object)
-    : m_symbol(symbol) {
+    : m_pointer(symbol) {
 
     size_t nargs = lean_array_size(argtypes_object);
 
@@ -56,7 +56,7 @@ Function::Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
         throw std::runtime_error("creating CIF failed");
 
     // Convert arguments into owned objects.
-    lean_inc(m_symbol);
+    lean_inc(m_pointer);
 }
 
 /**
@@ -64,7 +64,7 @@ Function::Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
  */
 Function::~Function() {
     delete[] m_ffi_argtypes;
-    lean_dec(m_symbol);
+    lean_dec(m_pointer);
 }
 
 /**
@@ -79,7 +79,6 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
 
     // Construct the argument buffer. Using a vector automates cleanup after an
     // exception.
-    // TODO: Valgrind reports a possible memory leak during exceptions.
     std::vector<std::unique_ptr<uint8_t[]>> argbufs;
     void *argvals[nargs];
     for (size_t i = 0; i < nargs; i++) {
@@ -95,7 +94,7 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
     uint8_t rvalue[rsize];
 
     // Call the symbol handle.
-    auto handle = (void (*)())Symbol::unbox(m_symbol)->get_handle();
+    auto handle = (void (*)())Pointer::unbox(m_pointer)->get_pointer();
     ffi_call(&m_cif, handle, rvalue, argvals);
 
     return m_rtype->instance(rvalue)->box();

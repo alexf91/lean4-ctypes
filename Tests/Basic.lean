@@ -37,26 +37,29 @@ namespace Library
       let msg := "/does/not/exist.so: cannot open shared object file: No such file or directory"
       assertTrue (e.toString == msg) s!"invalid error message: {e}"
 
-end Library
-
-namespace Symbol
-
-  /-- Successfully get a symbol. -/
-  testcase mkSuccess requires (libgen : SharedLibrary) := do
+  /-- Lookup a symbol in a library. --/
+  testcase lookupSymbol requires (libgen : SharedLibrary) := do
     let lib ← libgen "int foo(void) { return 0; }"
-    discard <| Symbol.mk lib "foo"
+    discard <| lib.symbol "foo"
 
-  /-- Fail to get a symbol. -/
-  testcase mkFailure requires (libgen : SharedLibrary) := do
+  /-- Lookup a non-existing symbol in a library. --/
+  testcase lookupSymbolError requires (libgen : SharedLibrary) := do
     let lib ← libgen "int foo(void) { return 0; }"
     try
-      discard <| Symbol.mk lib "doesnotexist"
-      assertTrue false "Symbol.mk did not fail"
+      discard <| lib.symbol "bar"
+      assertTrue false "symbol lookup did not fail"
     catch e =>
-      let msg := "undefined symbol: doesnotexist"
+      let msg := "undefined symbol: bar"
       assertTrue (e.toString.endsWith msg) s!"invalid error message: {e}"
 
-end Symbol
+  /-- Lookup a constant in a library. --/
+  testcase lookupConstant requires (libgen : SharedLibrary) := do
+    let lib ← libgen "int foo = 42;"
+    let p ← lib.symbol "foo"
+    let value ← p.read .int
+    assertEqual value.int! 42 s!"wrong value: {value.int!}"
+
+end Library
 
 
 namespace Function

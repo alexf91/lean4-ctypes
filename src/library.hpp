@@ -17,6 +17,7 @@
 #pragma once
 
 #include "external_type.hpp"
+#include "pointer.hpp"
 #include <lean/lean.h>
 
 class Library final : public ExternalType<Library> {
@@ -29,6 +30,9 @@ class Library final : public ExternalType<Library> {
 
     /** Get the handle of the library. */
     void *get_handle(void) { return m_handle; }
+
+    /** Lookup a symbol in the library. */
+    Pointer *symbol(const char *name);
 
   private:
     // Path of the library for debugging.
