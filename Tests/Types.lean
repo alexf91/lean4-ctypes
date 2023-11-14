@@ -96,7 +96,7 @@ namespace Tests.CType
     assertEqual p.address 96 s!"wrong address: {p.address}"
 
   testcase testPointerArray requires (libc : LibC) := do
-    let malloc ← Function.mk (← libc["malloc"]) (.pointer) #[.uint64]
+    let malloc ← Function.mk (← libc["malloc"]) (.pointer) #[.size_t]
     let free ← Function.mk (← libc["free"]) (.void) #[.pointer]
 
     let type := CType.array .uint 8096

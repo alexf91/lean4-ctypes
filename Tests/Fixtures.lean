@@ -46,7 +46,8 @@ private def generateLibrary (path : FilePath) (code : String) : IO Library := do
     "#include <stdio.h>",
     "#include <stdint.h>",
     "#include <stdlib.h>",
-    "#include <complex.h>"
+    "#include <complex.h>",
+    "#include <assert.h>"
   ].foldr (· ++ "\n" ++ ·) ""
 
   let cfile := path / "library.c"  |>.toString

@@ -132,7 +132,8 @@ script valgrind (args : List String) do
     args := #[
       "--leak-check=yes",
       "--track-origins=yes",
-      "build/bin/tests"
+      "build/bin/tests",
+      "-v"
     ]
     env := #[(sharedLibPathEnvVar, libs.toString)]
   }

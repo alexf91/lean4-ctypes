@@ -70,6 +70,31 @@ namespace Function
     let s ← lib["foo"]
     discard <| Function.mk s .uint32 #[.uint32, .uint32]
 
+  /--
+    Create a function with an array argument.
+    This should fail because "phony" array arguments are not allowed.
+    See https://github.com/alexf91/lean4-ctypes/issues/9#issuecomment-1809914700 for details.
+  -/
+  testcase mkArrayArgFail requires (libgen : SharedLibrary) := do
+    let lib ← libgen $ "void foo(int a[32]) {for (size_t i = 0; i < 32; i++) assert(a[i] == i);}"
+    try
+      discard <| Function.mk (← lib["foo"]) .void #[.array .int 32]
+    catch e =>
+      let msg := "invalid argument: array arguments not allowed"
+      assertEqual e.toString msg s!"invalid error message: {e}"
+    assertTrue false "Function.mk did not fail"
+
+  /-- Create a function with a void argument. -/
+  testcase mkVoidArgFail requires (libgen : SharedLibrary) := do
+    let lib ← libgen $ "void foo(void) {}"
+    try
+      discard <| Function.mk (← lib["foo"]) .void #[.void]
+    catch e =>
+      let msg := "invalid argument: void arguments not allowed"
+      assertEqual e.toString msg s!"invalid error message: {e}"
+      return
+    assertTrue false "Function.mk did not fail"
+
   /-- Return void from a function. -/
   testcase callVoid requires (libgen : SharedLibrary) := do
     let lib ← libgen "void foo(void) {}"
@@ -141,10 +166,11 @@ namespace Function
     let foo ← Function.mk (← lib["foo"]) .int8 #[.int8, .void]
     try
       discard <| foo.call #[.nat 32, .nat 64]
-      assertTrue false "foo.call did not fail"
     catch e =>
       let msg := "invalid cast: can't cast value to void type"
       assertEqual e.toString msg s!"invalid error message: {e}"
+      return
+    assertTrue false "foo.call did not fail"
 
   /-- Try to cast a complex value to a scalar. -/
   testcase callCastComplex requires (libgen : SharedLibrary) := do
@@ -152,16 +178,17 @@ namespace Function
     let foo ← Function.mk (← lib["foo"]) .int8 #[.int8]
     try
       discard <| foo.call #[.complex 32 64]
-      assertTrue false "foo.call did not fail"
     catch e =>
       let msg := "invalid cast: can't cast non-scalar value to scalar"
       assertEqual e.toString msg s!"invalid error message: {e}"
+      return
+    assertTrue false "foo.call did not fail"
 
   /-- Call a function with a pointer argument. -/
   testcase callPointerIntArg requires (libgen : SharedLibrary) (libc : LibC) := do
     let lib ← libgen $ "void foo(int32_t *a) {*a = 42;}"
     let foo ← Function.mk (← lib["foo"]) .void #[.pointer]
-    let malloc ← Function.mk (← libc["malloc"]) (.pointer) #[.uint64]
+    let malloc ← Function.mk (← libc["malloc"]) (.pointer) #[.size_t]
     let free ← Function.mk (← libc["free"]) (.void) #[.pointer]
 
     let p ← malloc.call #[.nat CType.int32.size]
@@ -170,16 +197,6 @@ namespace Function
       assertEqual (.int 42) (← p.pointer!.read .int32)
     finally
       discard <| free.call #[p]
-
-  /-- Call a function with an array argument. -/
-  testcase callArrayArg requires (libgen : SharedLibrary) := do
-    let lib ← libgen $ "void foo(int a[32]) {for (size_t i = 0; i < 32; i++) a[i] = i;}"
-    let foo ← Function.mk (← lib["foo"]) .void #[.array .int 32]
-
-    let original := List.range 32 |>.map (fun n => LeanValue.int (.ofNat n)) |>.toArray
-    let argument := List.range 32 |>.map (fun n => LeanValue.int (.ofNat n)) |>.toArray
-    discard <| foo.call #[.array argument]
-    assertEqual original argument
 
 end Function
 
