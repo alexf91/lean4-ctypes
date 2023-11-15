@@ -36,24 +36,37 @@ Function::Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
                    b_lean_obj_arg argtypes_object)
     : m_pointer(symbol) {
 
-    size_t nargs = lean_array_size(argtypes_object);
-
-    // Unbox the return type and the arguments.
+    // Unbox the return type. We don't allow arrays as arguments.
     m_rtype = CType::unbox(rtype_object);
     m_ffi_rtype = m_rtype->get_ffi_type();
+    if (m_rtype->get_tag() == CType::ARRAY)
+        throw std::runtime_error("invalid return type: array not allowed");
 
+    // Unbox argument types. We don't allow void or arrays.
+    size_t nargs = lean_array_size(argtypes_object);
     m_ffi_argtypes = new ffi_type *[nargs];
     for (size_t i = 0; i < nargs; i++) {
-        lean_object *o = lean_array_get_core(argtypes_object, i);
-        m_argtypes.push_back(CType::unbox(o));
-        m_ffi_argtypes[i] = m_argtypes[i]->get_ffi_type();
+        auto ct = CType::unbox(lean_array_get_core(argtypes_object, i));
+
+        if (ct->get_tag() == CType::VOID) {
+            delete[] m_ffi_argtypes;
+            throw std::runtime_error("invalid argument type: void not allowed");
+        } else if (ct->get_tag() == CType::ARRAY) {
+            delete[] m_ffi_argtypes;
+            throw std::runtime_error("invalid argument type: array not allowed");
+        }
+
+        m_ffi_argtypes[i] = ct->get_ffi_type();
+        m_argtypes.push_back(std::move(ct));
     }
 
     // Create the call interface for the function.
     ffi_status stat =
         ffi_prep_cif(&m_cif, FFI_DEFAULT_ABI, nargs, m_ffi_rtype, m_ffi_argtypes);
-    if (stat != FFI_OK)
+    if (stat != FFI_OK) {
+        delete[] m_ffi_argtypes;
         throw std::runtime_error("creating CIF failed");
+    }
 
     // Convert arguments into owned objects.
     lean_inc(m_pointer);

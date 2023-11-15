@@ -43,7 +43,7 @@ const ffi_type *CType::type_map[] = {
 };
 
 /** Constructor for primitive types. */
-CType::CType(ObjectTag tag) {
+CType::CType(ObjectTag tag) : m_tag(tag) {
     m_ffi_type = {0};
     if (tag <= LAST_PRIMITIVE) {
         const ffi_type *tp = type_map[tag];

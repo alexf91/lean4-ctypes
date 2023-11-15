@@ -76,12 +76,13 @@ namespace Function
     See https://github.com/alexf91/lean4-ctypes/issues/9#issuecomment-1809914700 for details.
   -/
   testcase mkArrayArgFail requires (libgen : SharedLibrary) := do
-    let lib ← libgen $ "void foo(int a[32]) {for (size_t i = 0; i < 32; i++) assert(a[i] == i);}"
+    let lib ← libgen $ "void foo(void) {}"
     try
       discard <| Function.mk (← lib["foo"]) .void #[.array .int 32]
     catch e =>
-      let msg := "invalid argument: array arguments not allowed"
+      let msg := "invalid argument type: array not allowed"
       assertEqual e.toString msg s!"invalid error message: {e}"
+      return
     assertTrue false "Function.mk did not fail"
 
   /-- Create a function with a void argument. -/
@@ -90,7 +91,18 @@ namespace Function
     try
       discard <| Function.mk (← lib["foo"]) .void #[.void]
     catch e =>
-      let msg := "invalid argument: void arguments not allowed"
+      let msg := "invalid argument type: void not allowed"
+      assertEqual e.toString msg s!"invalid error message: {e}"
+      return
+    assertTrue false "Function.mk did not fail"
+
+  /-- Create a function with an array as return type. -/
+  testcase mkArrayReturnFail requires (libgen : SharedLibrary) := do
+    let lib ← libgen $ "void foo(void) {}"
+    try
+      discard <| Function.mk (← lib["foo"]) (.array .int 32) #[]
+    catch e =>
+      let msg := "invalid return type: array not allowed"
       assertEqual e.toString msg s!"invalid error message: {e}"
       return
     assertTrue false "Function.mk did not fail"
@@ -159,18 +171,6 @@ namespace Function
     let values : Array LeanValue := #[.int 8, .int 16, .int 32, .int 64]
     let result ← foo.call values
     assertEqual (.struct values) result s!"value: {repr result}"
-
-  /-- Call a function with a void value as an argument. -/
-  testcase callVoidArg requires (libgen : SharedLibrary) := do
-    let lib ← libgen $ "int8_t foo(int8_t a, int8_t b) {return a + b;}"
-    let foo ← Function.mk (← lib["foo"]) .int8 #[.int8, .void]
-    try
-      discard <| foo.call #[.nat 32, .nat 64]
-    catch e =>
-      let msg := "invalid cast: can't cast value to void type"
-      assertEqual e.toString msg s!"invalid error message: {e}"
-      return
-    assertTrue false "foo.call did not fail"
 
   /-- Try to cast a complex value to a scalar. -/
   testcase callCastComplex requires (libgen : SharedLibrary) := do

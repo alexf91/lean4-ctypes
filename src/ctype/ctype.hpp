@@ -128,9 +128,15 @@ class CType {
         lean_internal_panic("CType::buffer() not implemented");
     }
 
+    /** Get the tag of the CType. */
+    ObjectTag get_tag() const { return m_tag; }
+
   private:
     static const ffi_type *type_map[];
 
   protected:
     ffi_type m_ffi_type;
+
+  private:
+    ObjectTag m_tag;
 };
