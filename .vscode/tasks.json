@@ -1,0 +1,47 @@
+{
+    "version": "2.0.0",
+    "options": {
+        "env": {
+            "LEAN_CC": "clang++"
+        }
+    },
+    "tasks": [
+        {
+            "label": "Lake: build tests",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "command": "lake",
+            "args": [
+                "build",
+                "-R",
+                "tests"
+            ]
+        },
+        {
+            "label": "Lake: run tests",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "command": "lake",
+            "args": [
+                "exe",
+                "-R",
+                "tests"
+            ]
+        },
+        {
+            "label": "Lake: clean build directory",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "command": "lake",
+            "args": [
+                "clean"
+            ]
+        }
+    ]
+}

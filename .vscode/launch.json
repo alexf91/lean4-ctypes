@@ -3,6 +3,7 @@
     "configurations": [
         {
             "name": "(gdb) Launch",
+            "preLaunchTask": "Lake: build tests",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/bin/tests",
