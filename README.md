@@ -124,3 +124,14 @@ CTypes.LeanValue.struct
       #[CTypes.LeanValue.int -1, CTypes.LeanValue.int -1, CTypes.LeanValue.int -1, CTypes.LeanValue.int -1,
         CTypes.LeanValue.int -1, CTypes.LeanValue.int -1, CTypes.LeanValue.int -1, CTypes.LeanValue.int -1]]
 ```
+
+## Building
+
+Building is currently problematic, because Lean distributions bundle their own `clang` compiler, but without `clang++`.
+Setting `LEAN_CC=clang++` currently appears to work.
+
+```
+LEAN_CC=clang++ lake build tests
+```
+
+The same applies for examples.

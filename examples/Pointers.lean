@@ -15,7 +15,7 @@
 --
 
 import CTypes
-open CTypes
+open CTypes.Core
 
 def main (_ : List String) : IO UInt32 := do
   let lib ← Library.mk "libc.so.6" #[.RTLD_NOW]

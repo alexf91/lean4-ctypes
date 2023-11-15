@@ -15,7 +15,7 @@
 --
 
 import CTypes
-open CTypes
+open CTypes.Core
 
 def main (_ : List String) : IO UInt32 := do
   -- Open the library. See man page for dlopen() for flags.

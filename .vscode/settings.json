@@ -1,0 +1,5 @@
+{
+    "lean4.serverEnv": {
+        "LEAN_CC": "clang++"
+    }
+}

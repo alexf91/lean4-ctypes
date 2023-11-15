@@ -25,16 +25,16 @@ package Example {
   --       dependencies.
   moreLinkArgs := #[
     "-lffi",
-    "-lstdc++",
-    "-L/usr/lib",
-    "/usr/lib/libc.so.6",
-    "/usr/lib/libstdc++.so.6",
-    "/usr/lib/libunwind.so.8"
+    "-ldl"
   ]
 }
 
 require ctypes from ".."
 
+
+@[default_target]
 lean_exe Math
+@[default_target]
 lean_exe Pointers
+@[default_target]
 lean_exe StructsArrays

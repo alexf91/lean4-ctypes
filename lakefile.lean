@@ -31,15 +31,9 @@ def CXX := "clang++"
 
 package ctypes {
   precompileModules := true
-  -- TODO: Don't hardcode libraries and library paths. This currently fixes some
-  --       link errors with conflicting libraries provided by the Lean environment.
   moreLinkArgs := #[
     "-lffi",
-    "-lstdc++",
-    "-L/usr/lib",
-    "/usr/lib/libc.so.6",
-    "/usr/lib/libstdc++.so.6",
-    "/usr/lib/libunwind.so.8"
+    "-ldl"
   ] ++ debugFlags
 }
 
