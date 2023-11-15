@@ -25,18 +25,9 @@
 
 class Pointer final : public ExternalType<Pointer> {
   public:
-    Pointer(uint8_t *pointer, std::vector<lean_object *> &deps)
-        : m_pointer(pointer), m_deps(deps) {
-        for (auto obj : m_deps)
-            lean_inc(obj);
-    }
-
     Pointer(uint8_t *pointer) : m_pointer(pointer) {}
 
-    ~Pointer() {
-        for (auto obj : m_deps)
-            lean_dec(obj);
-    }
+    ~Pointer() {}
 
     /** Read a CType from the memory, creating a LeanValue. */
     std::unique_ptr<LeanValue> read(const CType &type) {
@@ -54,8 +45,4 @@ class Pointer final : public ExternalType<Pointer> {
   private:
     // Address of the pointer.
     uint8_t *m_pointer;
-
-    // Objects this pointer depends on to avoid garbage collecting
-    // them while it is still valid.
-    std::vector<lean_object *> m_deps;
 };

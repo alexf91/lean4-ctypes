@@ -75,6 +75,8 @@ private def generateLibrary (path : FilePath) (code : String) : IO Library := do
   Fixture for generating a temporary shared library.
   The setup function returns a function that takes C code and compiles it
   to a library. It then returns the path of the library.
+
+  TODO: Close library in teardown.
 -/
 fixture SharedLibrary FilePath (String → IO Library) requires (td : TemporaryDirectory) where
   setup := do return generateLibrary td

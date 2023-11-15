@@ -34,9 +34,14 @@ class Library final : public ExternalType<Library> {
     /** Lookup a symbol in the library. */
     Pointer *symbol(const char *name);
 
+    /** Close the library. */
+    void close();
+
   private:
     // Path of the library for debugging.
     char *m_path;
     // Handle returned by dlopen().
     void *m_handle;
+    // Check if already closed.
+    bool m_closed;
 };

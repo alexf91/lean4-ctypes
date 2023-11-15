@@ -41,6 +41,18 @@ namespace Library
   @[extern "Library_mk"]
   opaque mk (path : @&String) (flags : @&Array Flag) : IO Library
 
+  /--
+    Thin wrapper around `dlclose()`.
+
+    This should be used carefully and is usually not necessary.
+    Functions or pointers might still depend on the library and get
+    invalidated if it is unloaded. Note that this function can only
+    be called once for each library and no new symbols can be created
+    afterwards.
+  -/
+  @[extern "Library_close"]
+  opaque close (library : @&Library) : IO Unit
+
   /-- Get the path the library for which the library was created. -/
   @[extern "Library_path"]
   opaque path (library : @&Library) : String

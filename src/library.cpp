@@ -49,7 +49,7 @@ static inline int Flag_unbox(b_lean_obj_arg flag) {
  *
  * Raises an exception with an error message on error.
  */
-Library::Library(b_lean_obj_arg path, b_lean_obj_arg flags) {
+Library::Library(b_lean_obj_arg path, b_lean_obj_arg flags) : m_closed(false) {
     const char *p = lean_string_cstr(path);
     uint64_t openflags = 0;
     for (size_t i = 0; i < lean_array_size(flags); i++) {
@@ -65,15 +65,19 @@ Library::Library(b_lean_obj_arg path, b_lean_obj_arg flags) {
 }
 
 /**
- * Close the library handle and free the path.
+ * Free the path.
+ *
+ * We don't close the handle here, because another symbol might still
+ * depend on it even if the library is already out of scope.
+ * Reference counting has to be handled by the user.
  */
-Library::~Library() {
-    free(m_path);
-    dlclose(m_handle);
-}
+Library::~Library() { free(m_path); }
 
 /** Lookup a symbol in the library. */
 Pointer *Library::symbol(const char *name) {
+    if (m_closed)
+        throw std::runtime_error("library already closed");
+
     // Clear dlerror() to distinguish between errors and NULL.
     dlerror();
     void *p = dlsym(m_handle, name);
@@ -82,8 +86,20 @@ Pointer *Library::symbol(const char *name) {
         if (msg != nullptr)
             throw std::runtime_error(std::string(msg));
     }
-    auto deps = std::vector<lean_object *>({box()});
-    return new Pointer((uint8_t *)p, deps);
+    return new Pointer((uint8_t *)p);
+}
+
+/** Close the library. */
+void Library::close() {
+    if (m_closed)
+        throw std::runtime_error("library already closed");
+
+    m_closed = true;
+    int result = dlclose(m_handle);
+    if (result != 0) {
+        char *msg = dlerror();
+        throw std::runtime_error(std::string(msg));
+    }
 }
 
 /**
@@ -131,6 +147,17 @@ extern "C" lean_obj_res Library_symbol(b_lean_obj_arg lib, b_lean_obj_arg name,
     try {
         Pointer *p = Library::unbox(lib)->symbol(lean_string_cstr(name));
         return lean_io_result_mk_ok(p->box());
+    } catch (const std::runtime_error &error) {
+        lean_object *err = lean_mk_io_user_error(lean_mk_string(error.what()));
+        return lean_io_result_mk_error(err);
+    }
+}
+
+/** Close the library. */
+extern "C" lean_obj_res Library_close(b_lean_obj_arg lib, lean_object *unused) {
+    try {
+        Library::unbox(lib)->close();
+        return lean_io_result_mk_ok(lean_box(0));
     } catch (const std::runtime_error &error) {
         lean_object *err = lean_mk_io_user_error(lean_mk_string(error.what()));
         return lean_io_result_mk_error(err);
