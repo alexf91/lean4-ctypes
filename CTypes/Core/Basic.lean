@@ -14,11 +14,11 @@
 -- limitations under the License.
 --
 
-import CTypes.Types
+import CTypes.Core.Types
 
 set_option relaxedAutoImplicit false
 
-namespace CTypes
+namespace CTypes.Core
 
 /-- Flags for opening a shared library. -/
 inductive Flag where
@@ -76,4 +76,4 @@ namespace Function
 end Function
 
 
-end CTypes
+end CTypes.Core

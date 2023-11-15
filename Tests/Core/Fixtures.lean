@@ -17,7 +17,7 @@
 import LTest
 import CTypes
 open LTest
-open CTypes
+open CTypes.Core
 open System
 
 /--

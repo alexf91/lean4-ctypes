@@ -15,7 +15,6 @@
 --
 
 import LTest
-import Tests.Basic
-import Tests.Types
+import Tests.Core
 
 #LTestMain

@@ -16,7 +16,7 @@
 
 set_option relaxedAutoImplicit false
 
-namespace CTypes
+namespace CTypes.Core
 
 /-- Types in C. -/
 inductive CType where
@@ -210,4 +210,4 @@ namespace LeanValue
 end LeanValue
 
 
-end CTypes
+end CTypes.Core

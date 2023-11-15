@@ -14,4 +14,5 @@
 -- limitations under the License.
 --
 
-import CTypes.Core
+import Tests.Core.Basic
+import Tests.Core.Types
