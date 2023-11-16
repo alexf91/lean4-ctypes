@@ -21,6 +21,7 @@
 #include "leanvalue.hpp"
 #include <cassert>
 #include <cstdlib>
+#include <cstring>
 #include <lean/lean.h>
 
 class Pointer final : public ExternalType<Pointer> {

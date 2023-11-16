@@ -84,7 +84,7 @@ namespace Function
 
   /-- Call a function with the given arguments. -/
   @[extern "Function_call"]
-  opaque call (function : @&Function) (args : @&Array LeanValue) : IO LeanValue
+  opaque call (function : @&Function) (args : @&Array CValue) : IO CValue
 end Function
 
 

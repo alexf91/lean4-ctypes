@@ -63,8 +63,19 @@ extern "C" lean_obj_res Pointer_mk(size_t value) {
 }
 
 /**
- * Create a pointer from an address.
+ * Get the address of a pointer.
  */
 extern "C" size_t Pointer_address(b_lean_obj_arg obj) {
     return (size_t)Pointer::unbox(obj)->get_pointer();
+}
+
+/**
+ * Call a pointer with CValue arguments.
+ */
+extern "C" lean_obj_res Pointer_call(b_lean_obj_arg ptr_obj, b_lean_obj_arg rt_obj,
+                                     b_lean_obj_arg args_obj, b_lean_obj_arg vargs_obj,
+                                     lean_object *unused) {
+
+    lean_object *err = lean_mk_io_user_error(lean_mk_string("not implemented"));
+    return lean_io_result_mk_error(err);
 }

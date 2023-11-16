@@ -31,7 +31,7 @@ class Function final : public ExternalType<Function> {
 
     /**
      * Call the function with the given arguments.
-     * The result is a boxed LeanValue object. Note that the result is not yet
+     * The result is a boxed CValue object. Note that the result is not yet
      * in the IO monad.
      */
     lean_obj_res call(b_lean_obj_arg argvals_object);

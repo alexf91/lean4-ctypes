@@ -16,7 +16,6 @@
 
 #include "function.hpp"
 #include "ctype.hpp"
-#include "leanvalue.hpp"
 #include "pointer.hpp"
 #include "utils.hpp"
 #include <algorithm>
@@ -39,8 +38,8 @@ Function::Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
     // Unbox the return type. We don't allow arrays as arguments.
     m_rtype = CType::unbox(rtype_object);
     m_ffi_rtype = m_rtype->get_ffi_type();
-    if (m_rtype->get_tag() == CType::ARRAY)
-        throw std::runtime_error("invalid return type: array not allowed");
+    // if (m_rtype->get_tag() == CType::ARRAY)
+    //     throw std::runtime_error("invalid return type: array not allowed");
 
     // Unbox argument types. We don't allow void or arrays.
     size_t nargs = lean_array_size(argtypes_object);
@@ -48,13 +47,13 @@ Function::Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
     for (size_t i = 0; i < nargs; i++) {
         auto ct = CType::unbox(lean_array_get_core(argtypes_object, i));
 
-        if (ct->get_tag() == CType::VOID) {
-            delete[] m_ffi_argtypes;
-            throw std::runtime_error("invalid argument type: void not allowed");
-        } else if (ct->get_tag() == CType::ARRAY) {
-            delete[] m_ffi_argtypes;
-            throw std::runtime_error("invalid argument type: array not allowed");
-        }
+        // if (ct->get_tag() == CType::VOID) {
+        //     delete[] m_ffi_argtypes;
+        //     throw std::runtime_error("invalid argument type: void not allowed");
+        // } else if (ct->get_tag() == CType::ARRAY) {
+        //     delete[] m_ffi_argtypes;
+        //     throw std::runtime_error("invalid argument type: array not allowed");
+        // }
 
         m_ffi_argtypes[i] = ct->get_ffi_type();
         m_argtypes.push_back(std::move(ct));
@@ -96,7 +95,7 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
     void *argvals[nargs];
     for (size_t i = 0; i < nargs; i++) {
         lean_object *arg = lean_array_get_core(argvals_object, i);
-        auto v = LeanValue::unbox(arg);
+        auto v = CValue::unbox(arg);
         argbufs.push_back(m_argtypes[i]->buffer(*v));
         argvals[i] = argbufs[i].get();
     }

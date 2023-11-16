@@ -16,8 +16,6 @@
 
 #include "ctype.hpp"
 #include "../pointer.hpp"
-#include "array.hpp"
-#include "complex.hpp"
 #include "pointer.hpp"
 #include "scalar.hpp"
 #include "struct.hpp"
@@ -83,62 +81,15 @@ std::unique_ptr<CType> CType::unbox(b_lean_obj_arg obj) {
     case LONGDOUBLE:
         return std::make_unique<CTypeScalar<long double>>(tag);
     case COMPLEX_FLOAT:
-        return std::make_unique<CTypeComplex<std::complex<float>>>(tag);
+        return std::make_unique<CTypeScalar<std::complex<float>>>(tag);
     case COMPLEX_DOUBLE:
-        return std::make_unique<CTypeComplex<std::complex<double>>>(tag);
+        return std::make_unique<CTypeScalar<std::complex<double>>>(tag);
     case COMPLEX_LONGDOUBLE:
-        return std::make_unique<CTypeComplex<std::complex<long double>>>(tag);
+        return std::make_unique<CTypeScalar<std::complex<long double>>>(tag);
     case POINTER:
         return std::make_unique<CTypePointer>();
-    case ARRAY:
-        return std::make_unique<CTypeArray>(lean_ctor_get(obj, 0),
-                                            lean_ctor_get(obj, 1));
     case STRUCT:
         return std::make_unique<CTypeStruct>(lean_ctor_get(obj, 0));
-    case UNION:
-        lean_internal_panic("UNION not supported");
-
-    // Aliased types
-    // TODO: Support different sizes.
-    case CHAR:
-        static_assert(sizeof(char) == sizeof(int8_t));
-        return std::make_unique<CTypeScalar<int8_t>>(INT8);
-    case SHORT:
-        static_assert(sizeof(short) == sizeof(int16_t));
-        return std::make_unique<CTypeScalar<int16_t>>(INT16);
-    case INT:
-        static_assert(sizeof(int) == sizeof(int32_t));
-        return std::make_unique<CTypeScalar<int32_t>>(INT32);
-    case LONG:
-        static_assert(sizeof(long) == sizeof(int64_t));
-        return std::make_unique<CTypeScalar<int64_t>>(INT64);
-    case LONGLONG:
-        static_assert(sizeof(long long) == sizeof(int64_t));
-        return std::make_unique<CTypeScalar<int64_t>>(INT64);
-    case SSIZE_T:
-        static_assert(sizeof(size_t) == sizeof(int64_t));
-        return std::make_unique<CTypeScalar<int64_t>>(INT64);
-    case UCHAR:
-        static_assert(sizeof(unsigned char) == sizeof(uint8_t));
-        return std::make_unique<CTypeScalar<uint8_t>>(UINT8);
-    case USHORT:
-        static_assert(sizeof(unsigned short) == sizeof(uint16_t));
-        return std::make_unique<CTypeScalar<uint8_t>>(UINT16);
-    case UINT:
-        static_assert(sizeof(unsigned int) == sizeof(uint32_t));
-        return std::make_unique<CTypeScalar<uint32_t>>(UINT32);
-    case ULONG:
-        static_assert(sizeof(unsigned long) == sizeof(uint64_t));
-        return std::make_unique<CTypeScalar<uint64_t>>(UINT64);
-    case ULONGLONG:
-        static_assert(sizeof(unsigned long long) == sizeof(uint64_t));
-        return std::make_unique<CTypeScalar<uint64_t>>(UINT64);
-    case SIZE_T:
-        static_assert(sizeof(size_t) == sizeof(uint64_t));
-        return std::make_unique<CTypeScalar<uint64_t>>(UINT64);
-    case TIME_T:
-        static_assert(sizeof(time_t) == sizeof(int64_t));
-        return std::make_unique<CTypeScalar<int64_t>>(INT64);
     default:
         lean_internal_panic_unreachable();
     }

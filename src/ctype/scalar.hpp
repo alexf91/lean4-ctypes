@@ -28,7 +28,7 @@
 
 /** CType for scalar types. */
 template <typename T> class CTypeScalar : public CType {
-    static_assert(std::is_scalar_v<T>);
+    // static_assert(std::is_scalar_v<T>);
 
   public:
     CTypeScalar(ObjectTag tag) : CType(tag) {

@@ -16,10 +16,34 @@
 
 #pragma once
 
-#include "ctype/array.hpp"
-#include "ctype/complex.hpp"
-#include "ctype/ctype.hpp"
-#include "ctype/pointer.hpp"
-#include "ctype/scalar.hpp"
-#include "ctype/struct.hpp"
-#include "ctype/void.hpp"
+// #include "ctype/ctype.hpp"
+// #include "ctype/pointer.hpp"
+// #include "ctype/scalar.hpp"
+// #include "ctype/struct.hpp"
+// #include "ctype/void.hpp"
+
+#include <lean/lean.h>
+
+struct CType {
+    static CType *unbox(...) { return nullptr; }
+    lean_obj_res box() { return nullptr; }
+};
+
+struct CTypeScalar : CType {};
+
+struct CTypePointer : CType {};
+
+struct CTypeStruct : CType {};
+
+struct CValue {
+    static CValue *unbox(...) { return nullptr; }
+    static CValue *from_buffer(...) { return nullptr; }
+    lean_obj_res box() { return nullptr; }
+    void *to_buffer() { return nullptr; }
+};
+
+template <typename T> struct CValueScalar : CValue {};
+
+struct CValuePointer : CValue {};
+
+struct CValueStruct : CValue {};
