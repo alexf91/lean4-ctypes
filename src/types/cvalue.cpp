@@ -24,9 +24,8 @@ std::unique_ptr<CValue> CValue::unbox(b_lean_obj_arg obj) {
     // TODO: Reference counting?
     auto type = CType::unbox(CValue_type(obj));
 
-// This is not necessarily true in case we don't keep the CValue and CType enum
-// in sync. But it is for now and will probably stay this way.
-#pragma GCC diagnostic ignored "-Wdeprecated-enum-compare"
+    // This is not necessarily true in case we don't keep the CValue and CType enum
+    // in sync. But it is for now and will probably stay this way.
     assert(type->get_tag() == tag);
 
     switch (tag) {
@@ -74,39 +73,39 @@ std::unique_ptr<CValue> CValue::unbox(b_lean_obj_arg obj) {
 std::unique_ptr<CValue> CValue::from_buffer(std::unique_ptr<CType> &type,
                                             const uint8_t *buffer) {
     switch (type->get_tag()) {
-    case CType::VOID:
+    case VOID:
         return std::make_unique<CValueVoid>(type);
-    case CType::INT8:
+    case INT8:
         break;
-    case CType::INT16:
+    case INT16:
         break;
-    case CType::INT32:
+    case INT32:
         break;
-    case CType::INT64:
+    case INT64:
         break;
-    case CType::UINT8:
+    case UINT8:
         break;
-    case CType::UINT16:
+    case UINT16:
         break;
-    case CType::UINT32:
+    case UINT32:
         break;
-    case CType::UINT64:
+    case UINT64:
         break;
-    case CType::FLOAT:
+    case FLOAT:
         break;
-    case CType::DOUBLE:
+    case DOUBLE:
         break;
-    case CType::LONGDOUBLE:
+    case LONGDOUBLE:
         break;
-    case CType::COMPLEX_FLOAT:
+    case COMPLEX_FLOAT:
         break;
-    case CType::COMPLEX_DOUBLE:
+    case COMPLEX_DOUBLE:
         break;
-    case CType::COMPLEX_LONGDOUBLE:
+    case COMPLEX_LONGDOUBLE:
         break;
-    case CType::POINTER:
+    case POINTER:
         break;
-    case CType::STRUCT:
+    case STRUCT:
         break;
     default:
         lean_internal_panic_unreachable();

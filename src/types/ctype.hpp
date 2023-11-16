@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "common.hpp"
 #include <ffi.h>
 #include <lean/lean.h>
 #include <memory>
@@ -23,27 +24,6 @@
 
 class CType {
   public:
-    enum ObjectTag {
-        VOID,
-        INT8,
-        INT16,
-        INT32,
-        INT64,
-        UINT8,
-        UINT16,
-        UINT32,
-        UINT64,
-        FLOAT,
-        DOUBLE,
-        LONGDOUBLE,
-        COMPLEX_FLOAT,
-        COMPLEX_DOUBLE,
-        COMPLEX_LONGDOUBLE,
-        POINTER,
-        STRUCT,
-        LENGTH
-    };
-
     /** Basic constructor for the base type. */
     CType(ObjectTag tag);
 
@@ -69,9 +49,6 @@ class CType {
 
     /** Get the tag of the CType. */
     ObjectTag get_tag() const { return m_tag; }
-
-  private:
-    static const ffi_type *type_map[];
 
   protected:
     ffi_type m_ffi_type;

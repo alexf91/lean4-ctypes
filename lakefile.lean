@@ -77,6 +77,7 @@ target types.o pkg : FilePath := createTarget pkg $ "src" / "types.cpp"
 
 target types_ctype.o pkg : FilePath := createTarget pkg $ "src" / "types" / "ctype.cpp"
 target types_cvalue.o pkg : FilePath := createTarget pkg $ "src" / "types" / "cvalue.cpp"
+target types_common.o pkg : FilePath := createTarget pkg $ "src" / "types" / "common.cpp"
 
 extern_lib libctypes pkg := do
   let name := nameToStaticLib "ctypes"
@@ -86,7 +87,8 @@ extern_lib libctypes pkg := do
     (← fetch <| pkg.target ``pointer.o),
     (← fetch <| pkg.target ``types.o),
     (← fetch <| pkg.target ``types_ctype.o),
-    (← fetch <| pkg.target ``types_cvalue.o)
+    (← fetch <| pkg.target ``types_cvalue.o),
+    (← fetch <| pkg.target ``types_common.o)
   ]
   buildStaticLib (pkg.nativeLibDir / name) targets
 

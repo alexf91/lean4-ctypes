@@ -17,6 +17,7 @@
 #pragma once
 
 #include "../utils.hpp"
+#include "common.hpp"
 #include "ctype.hpp"
 #include <ffi.h>
 #include <lean/lean.h>
@@ -58,27 +59,6 @@ LEAN_EXPORT_WEAK lean_object *CValue_get_int(lean_object *);
  */
 class CValue {
   public:
-    enum ObjectTag {
-        VOID,
-        INT8,
-        INT16,
-        INT32,
-        INT64,
-        UINT8,
-        UINT16,
-        UINT32,
-        UINT64,
-        FLOAT,
-        DOUBLE,
-        LONGDOUBLE,
-        COMPLEX_FLOAT,
-        COMPLEX_DOUBLE,
-        COMPLEX_LONGDOUBLE,
-        POINTER,
-        STRUCT,
-        LENGTH
-    };
-
     CValue(std::unique_ptr<CType> &type) : m_type(std::move(type)) {}
 
     virtual ~CValue() {}

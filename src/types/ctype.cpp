@@ -15,21 +15,9 @@
  */
 
 #include "ctype.hpp"
+#include "common.hpp"
 #include <ffi.h>
 #include <memory>
-
-/**
- * Primitive types defined in libffi. They are in the same order as the CType
- * enum. They are statically allocated.
- */
-const ffi_type *CType::type_map[] = {
-    &ffi_type_void,          &ffi_type_sint8,          &ffi_type_sint16,
-    &ffi_type_sint32,        &ffi_type_sint64,         &ffi_type_uint8,
-    &ffi_type_uint16,        &ffi_type_uint32,         &ffi_type_uint64,
-    &ffi_type_float,         &ffi_type_double,         &ffi_type_longdouble,
-    &ffi_type_complex_float, &ffi_type_complex_double, &ffi_type_complex_longdouble,
-    &ffi_type_pointer,
-};
 
 /******************************************************************************
  * Shared methods for the base class and primitive types.
@@ -39,7 +27,7 @@ const ffi_type *CType::type_map[] = {
 CType::CType(ObjectTag tag) : m_tag(tag) {
     m_ffi_type = {0};
     if (tag < STRUCT) {
-        const ffi_type *tp = type_map[tag];
+        const ffi_type *tp = ffi_type_map[tag];
         m_ffi_type.size = tp->size;
         m_ffi_type.alignment = tp->alignment;
         m_ffi_type.type = tp->type;
