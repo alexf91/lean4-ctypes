@@ -94,9 +94,11 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
     std::vector<std::unique_ptr<uint8_t[]>> argbufs;
     void *argvals[nargs];
     for (size_t i = 0; i < nargs; i++) {
-        lean_object *arg = lean_array_get_core(argvals_object, i);
-        auto v = CValue::unbox(arg);
-        argbufs.push_back(m_argtypes[i]->buffer(*v));
+        // lean_object *arg = lean_array_get_core(argvals_object, i);
+        //  DELETED
+        // auto v = CValue::unbox(arg);
+        // argbufs.push_back(m_argtypes[i]->buffer(*v));
+
         argvals[i] = argbufs[i].get();
     }
 
@@ -109,7 +111,7 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
     auto handle = (void (*)())Pointer::unbox(m_pointer)->get_pointer();
     ffi_call(&m_cif, handle, rvalue, argvals);
 
-    return m_rtype->instance(rvalue)->box();
+    return CValue::from_buffer(*m_rtype.get(), rvalue)->box();
 }
 
 /** Create a new Function instance.  */

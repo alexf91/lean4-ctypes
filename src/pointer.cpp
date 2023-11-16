@@ -17,7 +17,6 @@
 #include "pointer.hpp"
 #include "ctype.hpp"
 #include "lean/lean.h"
-#include "leanvalue.hpp"
 #include "utils.hpp"
 #include <algorithm>
 #include <complex>
@@ -43,11 +42,11 @@ extern "C" lean_obj_res Pointer_read(b_lean_obj_arg ptr, b_lean_obj_arg type,
 /**
  * Write to the pointer address.
  */
-extern "C" lean_obj_res Pointer_write(b_lean_obj_arg ptr, b_lean_obj_arg type,
-                                      b_lean_obj_arg value, lean_object *unused) {
+extern "C" lean_obj_res Pointer_write(b_lean_obj_arg ptr, b_lean_obj_arg value,
+                                      lean_object *unused) {
     auto p = Pointer::unbox(ptr);
     try {
-        p->write(*CType::unbox(type), *LeanValue::unbox(value));
+        p->write(*CValue::unbox(value));
         return lean_io_result_mk_ok(lean_box(0));
     } catch (const std::runtime_error &error) {
         lean_object *err = lean_mk_io_user_error(lean_mk_string(error.what()));

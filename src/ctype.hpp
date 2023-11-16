@@ -16,17 +16,29 @@
 
 #pragma once
 
-// #include "ctype/ctype.hpp"
-// #include "ctype/pointer.hpp"
-// #include "ctype/scalar.hpp"
-// #include "ctype/struct.hpp"
-// #include "ctype/void.hpp"
-
+#include <ffi.h>
 #include <lean/lean.h>
+#include <memory>
+#include <vector>
 
 struct CType {
-    static CType *unbox(...) { return nullptr; }
-    lean_obj_res box() { return nullptr; }
+    /** Convert from Lean to this class. */
+    static std::unique_ptr<CType> unbox(b_lean_obj_arg obj);
+
+    /** Get the size of the basic type. */
+    size_t get_size() const { return 0; }
+
+    /** Get alignment. */
+    size_t get_alignment() const { return 0; }
+
+    /** Get the number of elements. */
+    size_t get_nelements() const { return 0; }
+
+    /** Get the array of struct offsets. */
+    const std::vector<size_t> get_offsets() const;
+
+    /** Get a pointer to the internal ffi_type. */
+    ffi_type *get_ffi_type() { return nullptr; }
 };
 
 struct CTypeScalar : CType {};
@@ -37,9 +49,10 @@ struct CTypeStruct : CType {};
 
 struct CValue {
     static CValue *unbox(...) { return nullptr; }
-    static CValue *from_buffer(...) { return nullptr; }
+    static std::unique_ptr<CValue> from_buffer(...) { return nullptr; }
     lean_obj_res box() { return nullptr; }
-    void *to_buffer() { return nullptr; }
+    std::unique_ptr<uint8_t *> to_buffer() const { return nullptr; }
+    const CType *get_type() const { return nullptr; }
 };
 
 template <typename T> struct CValueScalar : CValue {};

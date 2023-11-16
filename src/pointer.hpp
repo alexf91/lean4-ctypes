@@ -18,11 +18,11 @@
 
 #include "ctype.hpp"
 #include "external_type.hpp"
-#include "leanvalue.hpp"
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
 #include <lean/lean.h>
+#include <memory>
 
 class Pointer final : public ExternalType<Pointer> {
   public:
@@ -30,14 +30,14 @@ class Pointer final : public ExternalType<Pointer> {
 
     ~Pointer() {}
 
-    /** Read a CType from the memory, creating a LeanValue. */
-    std::unique_ptr<LeanValue> read(const CType &type) {
-        return type.instance(m_pointer);
+    /** Read a CType from the memory, creating a CValue. */
+    std::unique_ptr<CValue> read(const CType &type) {
+        return CValue::from_buffer(type, m_pointer);
     }
 
     /** Write a value to the memory location. */
-    void write(const CType &type, const LeanValue &value) {
-        memcpy(m_pointer, type.buffer(value).get(), type.get_size());
+    void write(const CValue &value) {
+        memcpy(m_pointer, value.to_buffer().get(), value.get_type()->get_size());
     }
 
     /** Get the address of the buffer. */

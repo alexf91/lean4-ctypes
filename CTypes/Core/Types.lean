@@ -129,7 +129,7 @@ namespace Pointer
     then copied to the memory location.
   -/
   @[extern "Pointer_write"]
-  opaque write (p : @&Pointer) (type : @&CType) (value : @&CValue) : IO Unit
+  opaque write (p : @&Pointer) (value : @&CValue) : IO Unit
 
   /--
     Call a pointer as a function.
