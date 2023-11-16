@@ -18,47 +18,68 @@
 #include <ffi.h>
 #include <memory>
 
+using namespace std::complex_literals;
+
 /** Unbox the type into a CType class. */
 std::unique_ptr<CValue> CValue::unbox(b_lean_obj_arg obj) {
     ObjectTag tag = (ObjectTag)lean_obj_tag(obj);
     // TODO: Reference counting?
     auto type = CType::unbox(CValue_type(obj));
 
-    // This is not necessarily true in case we don't keep the CValue and CType enum
-    // in sync. But it is for now and will probably stay this way.
     assert(type->get_tag() == tag);
 
+    // TODO: Get rid of this mess, or at least simplify it.
     switch (tag) {
     case VOID:
         return std::make_unique<CValueVoid>(type);
     case INT8:
-        break;
+        return std::make_unique<CValueScalar<INT8>>(
+            type, lean_uint64_of_nat(lean_ctor_get(obj, 0)));
     case INT16:
-        break;
+        return std::make_unique<CValueScalar<INT16>>(
+            type, lean_uint64_of_nat(lean_ctor_get(obj, 0)));
     case INT32:
-        break;
+        return std::make_unique<CValueScalar<INT32>>(
+            type, lean_uint64_of_nat(lean_ctor_get(obj, 0)));
     case INT64:
-        break;
+        return std::make_unique<CValueScalar<INT64>>(
+            type, lean_uint64_of_nat(lean_ctor_get(obj, 0)));
     case UINT8:
-        break;
+        return std::make_unique<CValueScalar<UINT8>>(
+            type, lean_uint64_of_nat(lean_ctor_get(obj, 0)));
     case UINT16:
-        break;
+        return std::make_unique<CValueScalar<UINT16>>(
+            type, lean_uint64_of_nat(lean_ctor_get(obj, 0)));
     case UINT32:
-        break;
+        return std::make_unique<CValueScalar<UINT32>>(
+            type, lean_uint64_of_nat(lean_ctor_get(obj, 0)));
     case UINT64:
-        break;
+        return std::make_unique<CValueScalar<UINT64>>(
+            type, lean_uint64_of_nat(lean_ctor_get(obj, 0)));
     case FLOAT:
-        break;
+        return std::make_unique<CValueScalar<FLOAT>>(type, lean_unbox_float(obj));
     case DOUBLE:
-        break;
+        return std::make_unique<CValueScalar<DOUBLE>>(type, lean_unbox_float(obj));
     case LONGDOUBLE:
-        break;
-    case COMPLEX_FLOAT:
-        break;
-    case COMPLEX_DOUBLE:
-        break;
-    case COMPLEX_LONGDOUBLE:
-        break;
+        return std::make_unique<CValueScalar<LONGDOUBLE>>(type, lean_unbox_float(obj));
+    case COMPLEX_FLOAT: {
+        auto real = lean_ctor_get_float(obj, 0);
+        auto imag = lean_ctor_get_float(obj, sizeof(double));
+        return std::make_unique<CValueScalar<COMPLEX_FLOAT>>(
+            type, (std::complex<float>)(real + imag * 1i));
+    }
+    case COMPLEX_DOUBLE: {
+        auto real = lean_ctor_get_float(obj, 0);
+        auto imag = lean_ctor_get_float(obj, sizeof(double));
+        return std::make_unique<CValueScalar<COMPLEX_DOUBLE>>(
+            type, (std::complex<double>)(real + imag * 1i));
+    }
+    case COMPLEX_LONGDOUBLE: {
+        auto real = lean_ctor_get_float(obj, 0);
+        auto imag = lean_ctor_get_float(obj, sizeof(double));
+        return std::make_unique<CValueScalar<COMPLEX_LONGDOUBLE>>(
+            type, (std::complex<long double>)(real + imag * 1i));
+    }
     case POINTER:
         break;
     case STRUCT:

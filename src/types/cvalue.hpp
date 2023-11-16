@@ -76,10 +76,13 @@ class CValue {
     /** Create a buffer for the value. */
     virtual std::unique_ptr<uint8_t[]> to_buffer() const = 0;
 
-    /** Get the type of the value. */
+    /** Get the type of the value.
+     *
+     * TODO: Remove this. It leaks the address of the unique pointer.
+     */
     const CType *get_type() const { return m_type.get(); }
 
-  private:
+  protected:
     std::unique_ptr<CType> m_type;
 };
 
@@ -96,17 +99,27 @@ class CValueVoid : public CValue {
 };
 
 /** CValue for integers and floats. */
-template <typename T> class CValueScalar : public CValue {
+template <ObjectTag Tag> class CValueScalar : public CValue {
+    using T = TagToType<Tag>::type;
+
   public:
+    CValueScalar(std::unique_ptr<CType> &type, T value) : CValue(type), m_value(value) {
+        assert(Tag == type->get_tag());
+    }
+
     std::unique_ptr<uint8_t[]> to_buffer() const {
-        // TODO: Implement
-        return nullptr;
+        std::unique_ptr<uint8_t[]> buffer(new uint8_t[m_type->get_size()]);
+        *((T *)buffer.get()) = m_value;
+        return buffer;
     }
 
     lean_obj_res box() {
-        // TODO: Implement
+        // TODO: implement
         return nullptr;
     }
+
+  private:
+    T m_value;
 };
 
 /** CValue for pointers. */

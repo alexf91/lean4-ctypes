@@ -37,6 +37,7 @@ class Pointer final : public ExternalType<Pointer> {
 
     /** Write a value to the memory location. */
     void write(const CValue &value) {
+        // TODO: Use std::copy() and value.to_buffer() to avoid accessing the type.
         memcpy(m_pointer, value.to_buffer().get(), value.get_type()->get_size());
     }
 

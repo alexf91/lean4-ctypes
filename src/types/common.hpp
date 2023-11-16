@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <complex>
+#include <cstdint>
 #include <ffi.h>
 
 /** Map from ObjectTag to primitive FFI type. */
@@ -44,4 +46,53 @@ enum ObjectTag {
     POINTER,
     STRUCT,
     LENGTH
+};
+
+/**
+ * Type trait for scalar values.
+ * This way we can bundle a few things together if needed.
+ */
+template <ObjectTag T> struct TagToType;
+
+template <> struct TagToType<INT8> {
+    using type = int8_t;
+};
+template <> struct TagToType<INT16> {
+    using type = int16_t;
+};
+template <> struct TagToType<INT32> {
+    using type = int32_t;
+};
+template <> struct TagToType<INT64> {
+    using type = int64_t;
+};
+template <> struct TagToType<UINT8> {
+    using type = uint8_t;
+};
+template <> struct TagToType<UINT16> {
+    using type = uint16_t;
+};
+template <> struct TagToType<UINT32> {
+    using type = uint32_t;
+};
+template <> struct TagToType<UINT64> {
+    using type = uint64_t;
+};
+template <> struct TagToType<FLOAT> {
+    using type = float;
+};
+template <> struct TagToType<DOUBLE> {
+    using type = double;
+};
+template <> struct TagToType<LONGDOUBLE> {
+    using type = long double;
+};
+template <> struct TagToType<COMPLEX_FLOAT> {
+    using type = std::complex<float>;
+};
+template <> struct TagToType<COMPLEX_DOUBLE> {
+    using type = std::complex<double>;
+};
+template <> struct TagToType<COMPLEX_LONGDOUBLE> {
+    using type = std::complex<long double>;
 };
