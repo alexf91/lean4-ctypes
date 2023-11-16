@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "ctype.hpp"
 #include "external_type.hpp"
+#include "types.hpp"
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
@@ -31,7 +31,7 @@ class Pointer final : public ExternalType<Pointer> {
     ~Pointer() {}
 
     /** Read a CType from the memory, creating a CValue. */
-    std::unique_ptr<CValue> read(const CType &type) {
+    std::unique_ptr<CValue> read(std::unique_ptr<CType> &type) {
         return CValue::from_buffer(type, m_pointer);
     }
 

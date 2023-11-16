@@ -1,0 +1,106 @@
+/*
+ * Copyright 2023 Alexander Fasching
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#pragma once
+
+#include <ffi.h>
+#include <lean/lean.h>
+#include <memory>
+#include <vector>
+
+class CType {
+  public:
+    enum ObjectTag {
+        VOID,
+        INT8,
+        INT16,
+        INT32,
+        INT64,
+        UINT8,
+        UINT16,
+        UINT32,
+        UINT64,
+        FLOAT,
+        DOUBLE,
+        LONGDOUBLE,
+        COMPLEX_FLOAT,
+        COMPLEX_DOUBLE,
+        COMPLEX_LONGDOUBLE,
+        POINTER,
+        STRUCT,
+        LENGTH
+    };
+
+    /** Basic constructor for the base type. */
+    CType(ObjectTag tag);
+
+    virtual ~CType() {}
+
+    /** Convert from Lean to this class. */
+    static std::unique_ptr<CType> unbox(b_lean_obj_arg obj);
+
+    /** Get the size of the basic type. */
+    size_t get_size() const { return m_ffi_type.size; }
+
+    /** Get alignment. */
+    size_t get_alignment() const { return m_ffi_type.alignment; }
+
+    /** Get the number of elements. */
+    size_t get_nelements() const;
+
+    /** Get the array of struct offsets. */
+    const std::vector<size_t> get_offsets() const;
+
+    /** Get a pointer to the internal ffi_type. */
+    ffi_type *get_ffi_type() { return &m_ffi_type; }
+
+    /** Get the tag of the CType. */
+    ObjectTag get_tag() const { return m_tag; }
+
+  private:
+    static const ffi_type *type_map[];
+
+  protected:
+    ffi_type m_ffi_type;
+
+  private:
+    ObjectTag m_tag;
+};
+
+/** Primitive types that are already defined in ffi.h. */
+class CTypePrimitive : public CType {
+  public:
+    /** Basic constructor for the base type. */
+    CTypePrimitive(ObjectTag tag) : CType(tag) {}
+};
+
+/** Composite types that require manual construction. */
+class CTypeStruct : public CType {
+  public:
+    /** Create type from already existing and initialized types. */
+    CTypeStruct(std::vector<std::unique_ptr<CType>> members);
+
+    /** Create type from a Lean array of CType types. */
+    CTypeStruct(b_lean_obj_arg members);
+
+    ~CTypeStruct();
+
+  private:
+    /** Initialize the FFI type. */
+    void populate_ffi_type();
+
+    std::vector<std::unique_ptr<CType>> m_element_types;
+};

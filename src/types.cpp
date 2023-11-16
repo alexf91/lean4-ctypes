@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "ctype.hpp"
+#include "types.hpp"
 
 #include <lean/lean.h>
 #include <stdexcept>

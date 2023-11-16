@@ -16,6 +16,8 @@
             "args": [
                 "build",
                 "-R",
+                "-Kdebug",
+                "-v",
                 "tests"
             ]
         },
@@ -29,6 +31,8 @@
             "args": [
                 "exe",
                 "-R",
+                "-Kdebug",
+                "-v",
                 "tests"
             ]
         },

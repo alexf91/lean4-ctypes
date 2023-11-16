@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "ctype.hpp"
 #include "external_type.hpp"
+#include "types.hpp"
 #include "utils.hpp"
 #include <cstdint>
 #include <ffi.h>

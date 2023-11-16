@@ -15,8 +15,8 @@
  */
 
 #include "function.hpp"
-#include "ctype.hpp"
 #include "pointer.hpp"
+#include "types.hpp"
 #include "utils.hpp"
 #include <algorithm>
 #include <cstdlib>
@@ -111,7 +111,8 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
     auto handle = (void (*)())Pointer::unbox(m_pointer)->get_pointer();
     ffi_call(&m_cif, handle, rvalue, argvals);
 
-    return CValue::from_buffer(*m_rtype.get(), rvalue)->box();
+    return nullptr;
+    // return CValue::from_buffer(m_rtype, rvalue)->box();
 }
 
 /** Create a new Function instance.  */

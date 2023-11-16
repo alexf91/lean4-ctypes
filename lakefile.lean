@@ -70,18 +70,23 @@ def createTarget (pkg : Package) (cfile : FilePath) := do
   let cFile := pkg.dir / cfile
   buildO cFile.toString oFile srcJob weakArgs traceArgs CXX (extraDepTrace cFile)
 
-target ctype.o pkg : FilePath := createTarget pkg $ "src" / "ctype.cpp"
 target function.o pkg : FilePath := createTarget pkg $ "src" / "function.cpp"
 target library.o pkg : FilePath := createTarget pkg $ "src" / "library.cpp"
 target pointer.o pkg : FilePath := createTarget pkg $ "src" / "pointer.cpp"
+target types.o pkg : FilePath := createTarget pkg $ "src" / "types.cpp"
+
+target types_ctype.o pkg : FilePath := createTarget pkg $ "src" / "types" / "ctype.cpp"
+target types_cvalue.o pkg : FilePath := createTarget pkg $ "src" / "types" / "cvalue.cpp"
 
 extern_lib libctypes pkg := do
   let name := nameToStaticLib "ctypes"
   let targets := #[
-    (← fetch <| pkg.target ``ctype.o),
     (← fetch <| pkg.target ``function.o),
     (← fetch <| pkg.target ``library.o),
-    (← fetch <| pkg.target ``pointer.o)
+    (← fetch <| pkg.target ``pointer.o),
+    (← fetch <| pkg.target ``types.o),
+    (← fetch <| pkg.target ``types_ctype.o),
+    (← fetch <| pkg.target ``types_cvalue.o)
   ]
   buildStaticLib (pkg.nativeLibDir / name) targets
 
