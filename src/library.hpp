@@ -37,6 +37,9 @@ class Library final : public ExternalType<Library> {
     /** Close the library. */
     void close();
 
+    /** No children. */
+    const std::vector<lean_object *> children() { return {}; }
+
   private:
     // Path of the library for debugging.
     char *m_path;

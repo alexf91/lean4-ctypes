@@ -39,6 +39,9 @@ class Function final : public ExternalType<Function> {
     /** Get the number of arguments. */
     size_t get_nargs() { return m_argtypes.size(); }
 
+    /** No children. */
+    const std::vector<lean_object *> children() { return {}; }
+
   private:
     // Pointer assocated with the function.
     lean_object *m_pointer;

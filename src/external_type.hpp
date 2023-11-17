@@ -17,6 +17,7 @@
 #pragma once
 
 #include <lean/lean.h>
+#include <vector>
 
 /**
  * External types are defined as opaque in Lean and are only accessed by other opaque
@@ -41,10 +42,18 @@ template <class T> class ExternalType {
         return (T *)(lean_get_external_data(obj));
     }
 
+    // Child objects of the object.
+    // If foreach is called, then we iterate over this vector and apply the function to
+    // every object.
+    virtual const std::vector<lean_object *> children() = 0;
+
   private:
     // Deletes the object when it is garbage collected.
     static void finalize(void *p) { delete (T *)p; }
-    static void foreach (void *mod, b_lean_obj_arg fn) {}
+    static void foreach (void *obj, b_lean_obj_arg fn) {
+        for (auto o : ((T *)obj)->children())
+            lean_apply_1(fn, o);
+    }
 
     // Registered class in Lean.
     inline static lean_external_class *m_class = nullptr;

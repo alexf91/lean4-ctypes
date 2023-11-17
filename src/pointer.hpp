@@ -44,6 +44,9 @@ class Pointer final : public ExternalType<Pointer> {
     /** Get the address of the buffer. */
     uint8_t *get_pointer() const { return m_pointer; }
 
+    /** No children. */
+    const std::vector<lean_object *> children() { return {}; }
+
   private:
     // Address of the pointer.
     uint8_t *m_pointer;
