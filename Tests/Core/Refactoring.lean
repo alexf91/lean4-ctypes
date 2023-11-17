@@ -119,4 +119,45 @@ namespace Tests.Refactoring
       assertTrue $ (vr - 3.1415).abs < 0.1
       assertTrue $ (vi + 1.4142).abs < 0.1
 
+  /-- Write integer values and read back the result. -/
+  testcase testPointerWriteInt requires (libgen : SharedLibrary) := do
+    let lib ← libgen "uint8_t value[32] = {0};"
+    let p ← lib["value"]
+    let testcases : List (CType × List CValue) := [
+      (.int8,   [.int8   42, .int8   $       -42]),
+      (.int16,  [.int16  42, .int16  $       -42]),
+      (.int32,  [.int32  42, .int32  $       -42]),
+      (.int64,  [.int64  42, .int64  $       -42]),
+      (.uint8,  [.uint8  42, .uint8  $ 2^8  - 42]),
+      (.uint16, [.uint16 42, .uint16 $ 2^16 - 42]),
+      (.uint32, [.uint32 42, .uint32 $ 2^32 - 42]),
+      (.uint64, [.uint64 42, .uint64 $ 2^64 - 42])
+    ]
+
+    -- Write values to memory and read back.
+    for (ct, values) in testcases do
+      for (i, v) in values.enum do
+        p.write v
+        let rb ← p.read ct
+        assertEqual rb v s!"wrong result for {repr ct} (#{i}): {repr v} != {repr rb}"
+
+  /-- Get a pointer and dereference it. --/
+  testcase testPointerReadPointer requires (libgen : SharedLibrary) := do
+    let lib ← libgen "uint64_t v = 42; uint64_t *p = &v;"
+    let pp ← lib["p"]
+    let pv ← pp.read .pointer
+    let v ← pv.pointer!.read .uint64
+    assertEqual v (.uint64 42)
+
+  /-- Change the value of a pointer. -/
+  testcase testPointerWritePointer requires (libgen : SharedLibrary) := do
+    let lib ← libgen "uint64_t a = 41; uint64_t b = 42; uint64_t *p = &a;"
+    let pa ← lib["a"]
+    let pb ← lib["b"]
+    let pp ← lib["p"]
+    assertEqual (← pp.read .pointer).pointer! pa
+    pp.write (.pointer pb)
+    assertEqual (← pp.read .pointer).pointer! pb
+    assertEqual (← (← pp.read .pointer).pointer!.read .uint64) (.uint64 42)
+
 end Tests.Refactoring

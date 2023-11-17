@@ -15,54 +15,52 @@
  */
 
 #include "cvalue.hpp"
+#include "../pointer.hpp"
 #include <ffi.h>
 #include <memory>
 
-using namespace std::complex_literals;
-
-/** Unbox the type into a CType class. */
+/** Unbox the type into a CValue class. */
 std::unique_ptr<CValue> CValue::unbox(b_lean_obj_arg obj) {
     ObjectTag tag = (ObjectTag)lean_obj_tag(obj);
-    // TODO: Reference counting?
-    auto type = CType::unbox(CValue_type(obj));
 
+    // TODO: Move type detection to CValue class.
+    auto type = CType::unbox(CValue_type(obj));
     assert(type->get_tag() == tag);
 
-    // TODO: Get rid of this mess, or at least simplify it.
-    // TODO: Move at least lean_ctor_get() etc. to constructor?
+    // TODO: Simplify this?
     switch (tag) {
     case VOID:
-        return std::make_unique<CValueVoid>(type);
+        return std::make_unique<CValueVoid>();
     case INT8:
-        return std::make_unique<CValueInt<INT8>>(type, obj);
+        return std::make_unique<CValueInt<INT8>>(obj);
     case INT16:
-        return std::make_unique<CValueInt<INT16>>(type, obj);
+        return std::make_unique<CValueInt<INT16>>(obj);
     case INT32:
-        return std::make_unique<CValueInt<INT32>>(type, obj);
+        return std::make_unique<CValueInt<INT32>>(obj);
     case INT64:
-        return std::make_unique<CValueInt<INT64>>(type, obj);
+        return std::make_unique<CValueInt<INT64>>(obj);
     case UINT8:
-        return std::make_unique<CValueNat<UINT8>>(type, obj);
+        return std::make_unique<CValueNat<UINT8>>(obj);
     case UINT16:
-        return std::make_unique<CValueNat<UINT16>>(type, obj);
+        return std::make_unique<CValueNat<UINT16>>(obj);
     case UINT32:
-        return std::make_unique<CValueNat<UINT32>>(type, obj);
+        return std::make_unique<CValueNat<UINT32>>(obj);
     case UINT64:
-        return std::make_unique<CValueNat<UINT64>>(type, obj);
+        return std::make_unique<CValueNat<UINT64>>(obj);
     case FLOAT:
-        return std::make_unique<CValueFloat<FLOAT>>(type, obj);
+        return std::make_unique<CValueFloat<FLOAT>>(obj);
     case DOUBLE:
-        return std::make_unique<CValueFloat<DOUBLE>>(type, obj);
+        return std::make_unique<CValueFloat<DOUBLE>>(obj);
     case LONGDOUBLE:
-        return std::make_unique<CValueFloat<LONGDOUBLE>>(type, obj);
+        return std::make_unique<CValueFloat<LONGDOUBLE>>(obj);
     case COMPLEX_FLOAT:
-        return std::make_unique<CValueComplex<COMPLEX_FLOAT>>(type, obj);
+        return std::make_unique<CValueComplex<COMPLEX_FLOAT>>(obj);
     case COMPLEX_DOUBLE:
-        return std::make_unique<CValueComplex<COMPLEX_DOUBLE>>(type, obj);
+        return std::make_unique<CValueComplex<COMPLEX_DOUBLE>>(obj);
     case COMPLEX_LONGDOUBLE:
-        return std::make_unique<CValueComplex<COMPLEX_LONGDOUBLE>>(type, obj);
+        return std::make_unique<CValueComplex<COMPLEX_LONGDOUBLE>>(obj);
     case POINTER:
-        lean_internal_panic("pointer boxing not implemented");
+        return std::make_unique<CValuePointer>(obj);
     case STRUCT:
         lean_internal_panic("struct boxing not implemented");
     default:
@@ -72,45 +70,64 @@ std::unique_ptr<CValue> CValue::unbox(b_lean_obj_arg obj) {
 }
 
 /** Create a value from a type and a buffer. */
-std::unique_ptr<CValue> CValue::from_buffer(std::unique_ptr<CType> &type,
+std::unique_ptr<CValue> CValue::from_buffer(std::unique_ptr<CType> type,
                                             const uint8_t *buffer) {
     switch (type->get_tag()) {
     case VOID:
-        return std::make_unique<CValueVoid>(type);
+        return std::make_unique<CValueVoid>();
     case INT8:
-        return std::make_unique<CValueInt<INT8>>(type, buffer);
+        return std::make_unique<CValueInt<INT8>>(buffer);
     case INT16:
-        return std::make_unique<CValueInt<INT16>>(type, buffer);
+        return std::make_unique<CValueInt<INT16>>(buffer);
     case INT32:
-        return std::make_unique<CValueInt<INT32>>(type, buffer);
+        return std::make_unique<CValueInt<INT32>>(buffer);
     case INT64:
-        return std::make_unique<CValueInt<INT64>>(type, buffer);
+        return std::make_unique<CValueInt<INT64>>(buffer);
     case UINT8:
-        return std::make_unique<CValueNat<UINT8>>(type, buffer);
+        return std::make_unique<CValueNat<UINT8>>(buffer);
     case UINT16:
-        return std::make_unique<CValueNat<UINT16>>(type, buffer);
+        return std::make_unique<CValueNat<UINT16>>(buffer);
     case UINT32:
-        return std::make_unique<CValueNat<UINT32>>(type, buffer);
+        return std::make_unique<CValueNat<UINT32>>(buffer);
     case UINT64:
-        return std::make_unique<CValueNat<UINT64>>(type, buffer);
+        return std::make_unique<CValueNat<UINT64>>(buffer);
     case FLOAT:
-        return std::make_unique<CValueFloat<FLOAT>>(type, buffer);
+        return std::make_unique<CValueFloat<FLOAT>>(buffer);
     case DOUBLE:
-        return std::make_unique<CValueFloat<DOUBLE>>(type, buffer);
+        return std::make_unique<CValueFloat<DOUBLE>>(buffer);
     case LONGDOUBLE:
-        return std::make_unique<CValueFloat<LONGDOUBLE>>(type, buffer);
+        return std::make_unique<CValueFloat<LONGDOUBLE>>(buffer);
     case COMPLEX_FLOAT:
-        return std::make_unique<CValueComplex<COMPLEX_FLOAT>>(type, buffer);
+        return std::make_unique<CValueComplex<COMPLEX_FLOAT>>(buffer);
     case COMPLEX_DOUBLE:
-        return std::make_unique<CValueComplex<COMPLEX_DOUBLE>>(type, buffer);
+        return std::make_unique<CValueComplex<COMPLEX_DOUBLE>>(buffer);
     case COMPLEX_LONGDOUBLE:
-        return std::make_unique<CValueComplex<COMPLEX_LONGDOUBLE>>(type, buffer);
+        return std::make_unique<CValueComplex<COMPLEX_LONGDOUBLE>>(buffer);
     case POINTER:
-        break;
+        return std::make_unique<CValuePointer>(buffer);
     case STRUCT:
         break;
     default:
         lean_internal_panic_unreachable();
     }
     lean_internal_panic_unreachable();
+}
+
+/** Create the value from a CValue object. */
+CValuePointer::CValuePointer(b_lean_obj_arg obj)
+    : CValue(std::make_unique<CType>(POINTER)), m_pointer(lean_ctor_get(obj, 0)) {
+    assert(lean_obj_tag(obj) == POINTER);
+    lean_inc(m_pointer);
+}
+
+CValuePointer::CValuePointer(const uint8_t *buffer)
+    : CValue(std::make_unique<CType>(POINTER)),
+      m_pointer((new Pointer(*((uint8_t **)buffer)))->box()) {
+    lean_inc(m_pointer);
+}
+
+std::unique_ptr<uint8_t[]> CValuePointer::to_buffer() const {
+    std::unique_ptr<uint8_t[]> buffer(new uint8_t[m_type->get_size()]);
+    *((uint8_t **)buffer.get()) = Pointer::unbox(m_pointer)->get_pointer();
+    return buffer;
 }

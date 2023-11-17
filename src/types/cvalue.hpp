@@ -25,14 +25,17 @@
 #include <vector>
 
 /** Get the CType of a CValue. */
-LEAN_EXPORT_WEAK lean_object *CValue_type(lean_object *);
+extern "C" LEAN_EXPORT_WEAK lean_object *CValue_type(lean_object *);
+
+/** A pointer in C. */
+class Pointer;
 
 /**
  * Representation of a C value in Lean.
  */
 class CValue {
   public:
-    CValue(std::unique_ptr<CType> &type) : m_type(std::move(type)) {}
+    CValue(std::unique_ptr<CType> type) : m_type(std::move(type)) {}
 
     virtual ~CValue() {}
 
@@ -40,7 +43,7 @@ class CValue {
     static std::unique_ptr<CValue> unbox(b_lean_obj_arg obj);
 
     /** Create a value from a type and a buffer. */
-    static std::unique_ptr<CValue> from_buffer(std::unique_ptr<CType> &type,
+    static std::unique_ptr<CValue> from_buffer(std::unique_ptr<CType> type,
                                                const uint8_t *buffer);
 
     /** Convert this class to a Lean object. */
@@ -49,11 +52,8 @@ class CValue {
     /** Create a buffer for the value. */
     virtual std::unique_ptr<uint8_t[]> to_buffer() const = 0;
 
-    /** Get the type of the value.
-     *
-     * TODO: Remove this. It leaks the address of the unique pointer.
-     */
-    const CType *get_type() const { return m_type.get(); }
+    /** Get the type of the value. */
+    const CType &type() const { return *m_type; }
 
   protected:
     std::unique_ptr<CType> m_type;
@@ -66,7 +66,7 @@ class CValue {
  */
 class CValueVoid : public CValue {
   public:
-    CValueVoid(std::unique_ptr<CType> &type) : CValue(type) {}
+    CValueVoid() : CValue(std::make_unique<CTypePrimitive>(VOID)) {}
     lean_obj_res box() { return lean_box(0); }
     std::unique_ptr<uint8_t[]> to_buffer() const {
         lean_internal_panic("can't convert void to buffer");
@@ -78,7 +78,8 @@ template <ObjectTag Tag> class CValueScalar : public CValue {
     using T = TagToType<Tag>::type;
 
   public:
-    CValueScalar(std::unique_ptr<CType> &type, T value) : CValue(type), m_value(value) {
+    CValueScalar(T value)
+        : CValue(std::make_unique<CTypePrimitive>(Tag)), m_value(value) {
         assert(Tag == m_type->get_tag());
     }
 
@@ -97,18 +98,17 @@ template <ObjectTag Tag> class CValueNat : public CValueScalar<Tag> {
     using T = TagToType<Tag>::type;
 
   public:
-    /** Create the value from a type and a CValue object. */
-    CValueNat(std::unique_ptr<CType> &type, b_lean_obj_arg obj)
-        : CValueNat<Tag>(type, (T)lean_uint64_of_nat(lean_ctor_get(obj, 0))) {
+    /** Create the value from a CValue object. */
+    CValueNat(b_lean_obj_arg obj)
+        : CValueNat<Tag>((T)lean_uint64_of_nat(lean_ctor_get(obj, 0))) {
         assert(lean_obj_tag(obj) == Tag);
     }
 
     /** Create from buffer. */
-    CValueNat(std::unique_ptr<CType> &type, const uint8_t *buffer)
-        : CValueNat(type, *((T *)buffer)) {}
+    CValueNat(const uint8_t *buffer) : CValueNat(*((T *)buffer)) {}
 
     /** Create directly from value. */
-    CValueNat(std::unique_ptr<CType> &type, T value) : CValueScalar<Tag>(type, value) {}
+    CValueNat(T value) : CValueScalar<Tag>(value) {}
 
     lean_obj_res box() {
         auto o = lean_alloc_ctor(Tag, 1, 0);
@@ -122,19 +122,17 @@ template <ObjectTag Tag> class CValueInt : public CValueScalar<Tag> {
     using T = TagToType<Tag>::type;
 
   public:
-    /** Create the value from a type and a CValue object. */
-    // TODO: Is lean_uint64_of_nat() correct here?
-    CValueInt(std::unique_ptr<CType> &type, b_lean_obj_arg obj)
-        : CValueInt<Tag>(type, (T)lean_uint64_of_nat(lean_ctor_get(obj, 0))) {
+    /** Create the value from a CValue object. */
+    CValueInt(b_lean_obj_arg obj)
+        : CValueInt<Tag>((T)lean_scalar_to_int64(lean_ctor_get(obj, 0))) {
         assert(lean_obj_tag(obj) == Tag);
     }
 
     /** Create from buffer. */
-    CValueInt(std::unique_ptr<CType> &type, const uint8_t *buffer)
-        : CValueInt(type, *((T *)buffer)) {}
+    CValueInt(const uint8_t *buffer) : CValueInt(*((T *)buffer)) {}
 
     /** Create directly from value. */
-    CValueInt(std::unique_ptr<CType> &type, T value) : CValueScalar<Tag>(type, value) {}
+    CValueInt(T value) : CValueScalar<Tag>(value) {}
 
     lean_obj_res box() {
         auto o = lean_alloc_ctor(Tag, 1, 0);
@@ -148,19 +146,16 @@ template <ObjectTag Tag> class CValueFloat : public CValueScalar<Tag> {
     using T = TagToType<Tag>::type;
 
   public:
-    /** Create the value from a type and a CValue object. */
-    CValueFloat(std::unique_ptr<CType> &type, b_lean_obj_arg obj)
-        : CValueFloat<Tag>(type, (T)lean_unbox_float(obj)) {
+    /** Create the value from a CValue object. */
+    CValueFloat(b_lean_obj_arg obj) : CValueFloat<Tag>((T)lean_unbox_float(obj)) {
         assert(lean_obj_tag(obj) == Tag);
     }
 
     /** Create from buffer. */
-    CValueFloat(std::unique_ptr<CType> &type, const uint8_t *buffer)
-        : CValueFloat(type, *((T *)buffer)) {}
+    CValueFloat(const uint8_t *buffer) : CValueFloat(*((T *)buffer)) {}
 
     /** Create directly from value. */
-    CValueFloat(std::unique_ptr<CType> &type, T value)
-        : CValueScalar<Tag>(type, value) {}
+    CValueFloat(T value) : CValueScalar<Tag>(value) {}
 
     lean_obj_res box() {
         auto o = lean_alloc_ctor(Tag, 0, sizeof(double));
@@ -174,20 +169,18 @@ template <ObjectTag Tag> class CValueComplex : public CValueScalar<Tag> {
     using T = TagToType<Tag>::type;
 
   public:
-    /** Create the value from a type and a CValue object. */
-    CValueComplex(std::unique_ptr<CType> &type, b_lean_obj_arg obj)
-        : CValueScalar<Tag>(type, lean_ctor_get_float(obj, 0) +
-                                      1i * lean_ctor_get_float(obj, sizeof(double))) {
+    /** Create the value from a CValue object. */
+    CValueComplex(b_lean_obj_arg obj)
+        : CValueScalar<Tag>(lean_ctor_get_float(obj, 0) +
+                            1i * lean_ctor_get_float(obj, sizeof(double))) {
         assert(lean_obj_tag(obj) == Tag);
     }
 
     /** Create from buffer. */
-    CValueComplex(std::unique_ptr<CType> &type, const uint8_t *buffer)
-        : CValueComplex(type, *((T *)buffer)) {}
+    CValueComplex(const uint8_t *buffer) : CValueComplex(*((T *)buffer)) {}
 
     /** Create directly from value. */
-    CValueComplex(std::unique_ptr<CType> &type, T value)
-        : CValueScalar<Tag>(type, value) {}
+    CValueComplex(T value) : CValueScalar<Tag>(value) {}
 
     lean_obj_res box() {
         auto o = lean_alloc_ctor(Tag, 0, 2 * sizeof(double));
@@ -198,7 +191,37 @@ template <ObjectTag Tag> class CValueComplex : public CValueScalar<Tag> {
 };
 
 /** CValue for pointers. */
-class CValuePointer : CValue {};
+class CValuePointer : public CValue {
+  public:
+    /** Create the value from a CValue object. */
+    CValuePointer(b_lean_obj_arg obj);
+
+    /**
+     * Create from buffer.
+     *
+     * Note that `buffer` this is not the address of the pointer. The actual address is
+     * found by treating the value in the buffer as a `void` pointer.
+     */
+    CValuePointer(const uint8_t *buffer);
+
+    /** Just decrease the reference count, it is freed in the finalizer. */
+    ~CValuePointer() { lean_dec(m_pointer); }
+
+    lean_obj_res box() {
+        // TODO: Do we need to change the reference count of m_pointer?
+        auto o = lean_alloc_ctor(POINTER, 1, 0);
+        lean_ctor_set(o, 0, m_pointer);
+        return o;
+    }
+
+    std::unique_ptr<uint8_t[]> to_buffer() const;
+
+  private:
+    // CValuePointer objects are different than scalars, because Pointer is an external
+    // type. We have to keep track of its reference count, so we reference the object
+    // itself.
+    lean_object *m_pointer;
+};
 
 /** CValue for structs. */
-class CValueStruct : CValue {};
+class CValueStruct : public CValue {};

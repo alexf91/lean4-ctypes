@@ -24,6 +24,7 @@
 #include <lean/lean.h>
 #include <memory>
 
+/** A pointer in C. */
 class Pointer final : public ExternalType<Pointer> {
   public:
     Pointer(uint8_t *pointer) : m_pointer(pointer) {}
@@ -31,14 +32,13 @@ class Pointer final : public ExternalType<Pointer> {
     ~Pointer() {}
 
     /** Read a CType from the memory, creating a CValue. */
-    std::unique_ptr<CValue> read(std::unique_ptr<CType> &type) {
-        return CValue::from_buffer(type, m_pointer);
+    std::unique_ptr<CValue> read(std::unique_ptr<CType> type) {
+        return CValue::from_buffer(std::move(type), m_pointer);
     }
 
     /** Write a value to the memory location. */
     void write(const CValue &value) {
-        // TODO: Use std::copy() and value.to_buffer() to avoid accessing the type.
-        memcpy(m_pointer, value.to_buffer().get(), value.get_type()->get_size());
+        memcpy(m_pointer, value.to_buffer().get(), value.type().get_size());
     }
 
     /** Get the address of the buffer. */
