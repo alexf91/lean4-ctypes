@@ -16,6 +16,7 @@
 
 import LTest
 import CTypes
+import Tests.Core.Fixtures
 open LTest
 open CTypes.Core
 
@@ -69,8 +70,53 @@ namespace Tests.Refactoring
     let p := (Pointer.mk 128) - (32 : USize)
     assertEqual p.address 96 s!"wrong address: {p.address}"
 
-  testcase testReadVoid := do
-    let value ← Pointer.null.read .void
-    assertEqual value .void
+  testcase testPointerReadInt requires (libgen : SharedLibrary) := do
+    let lib ← libgen "int64_t pos = 42; int64_t neg = -42;"
+    let testcases : List (CType × CValue × CValue) := [
+      (.int8,   .int8   42, .int8   $       -42),
+      (.int16,  .int16  42, .int16  $       -42),
+      (.int32,  .int32  42, .int32  $       -42),
+      (.int64,  .int64  42, .int64  $       -42),
+      (.uint8,  .uint8  42, .uint8  $ 2^8  - 42),
+      (.uint16, .uint16 42, .uint16 $ 2^16 - 42),
+      (.uint32, .uint32 42, .uint32 $ 2^32 - 42),
+      (.uint64, .uint64 42, .uint64 $ 2^64 - 42)
+    ]
+
+    for (ct, pv, nv) in testcases do
+      let pos ← (← lib["pos"]).read ct
+      let neg ← (← lib["neg"]).read ct
+      assertEqual pos pv s!"wrong result for {repr ct}: pos = {repr pos}"
+      assertEqual neg nv s!"wrong result for {repr ct}: neg = {repr neg}"
+
+  testcase testPointerReadFloat requires (libgen : SharedLibrary) := do
+    let lib ← libgen "float vf = 3.1415; double vd = 2.7182; long double vl = 1.4142;"
+    let vf ← (← lib["vf"]).read .float
+    let vd ← (← lib["vd"]).read .double
+    let vl ← (← lib["vl"]).read .longdouble
+
+    assertEqual vf.type .float
+    assertTrue $ (vf.float! - 3.1415).abs < 0.1
+    assertEqual vd.type .double
+    assertTrue $ (vd.float! - 2.7182).abs < 0.1
+    assertEqual vl.type .longdouble
+    assertTrue $ (vl.float! - 1.4142).abs < 0.1
+
+  testcase testPointerReadComplex requires (libgen : SharedLibrary) := do
+    let lib ← libgen $ "const complex float value = 3.1415 - 1.4142 * I;" ++
+                       "complex float vf = value;" ++
+                       "complex double vd = value;" ++
+                       "complex long double vl = value;"
+    let testcases : List (String × CType) := [
+      ("vf", .complex_float),
+      ("vd", .complex_double),
+      ("vl", .complex_longdouble)
+    ]
+    for (n, ct) in testcases do
+      let v ← (← lib[n]).read ct
+      assertEqual v.type ct
+      let (vr, vi) := v.complex!
+      assertTrue $ (vr - 3.1415).abs < 0.1
+      assertTrue $ (vi + 1.4142).abs < 0.1
 
 end Tests.Refactoring

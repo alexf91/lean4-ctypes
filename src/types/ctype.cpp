@@ -43,7 +43,7 @@ std::unique_ptr<CType> CType::unbox(b_lean_obj_arg obj) {
     } else if (tag == STRUCT) {
         return std::make_unique<CTypeStruct>(lean_ctor_get(obj, 0));
     } else {
-        lean_internal_panic_unreachable();
+        lean_internal_panic("unknown type");
     }
 }
 

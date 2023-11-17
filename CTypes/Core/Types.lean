@@ -73,7 +73,7 @@ inductive CType where
   | complex_longdouble
   | pointer
   | struct (elements : Array CType)
-deriving Inhabited, Repr
+deriving Inhabited, Repr, BEq
 
 namespace CType
   /-- Get the size of a basic type. -/
@@ -118,7 +118,7 @@ namespace CValue
 
   /-- Get the type of a `CValue`. -/
   @[export CValue_type]
-  private partial def CValue.type : CValue → CType
+  partial def type : CValue → CType
     | .void .. => .void
     | .int8 .. => .int8
     | .int16 .. => .int16
@@ -136,42 +136,6 @@ namespace CValue
     | .complex_longdouble .. => .complex_longdouble
     | .pointer .. => .pointer
     | .struct e => .struct (e.map type)
-
-  /- Constructors for values. Avoids dealing with ctor magic in C++. -/
-  @[export CValue_mk_void]
-  private def mk_void := CValue.void
-  @[export CValue_mk_int8]
-  private def mk_int8 := CValue.int8
-  @[export CValue_mk_int16]
-  private def mk_int16 := CValue.int16
-  @[export CValue_mk_int32]
-  private def mk_int32 := CValue.int32
-  @[export CValue_mk_int64]
-  private def mk_int64 := CValue.int64
-  @[export CValue_mk_uint8]
-  private def mk_uint8 := CValue.uint8
-  @[export CValue_mk_uint16]
-  private def mk_uint16 := CValue.uint16
-  @[export CValue_mk_uint32]
-  private def mk_uint32 := CValue.uint32
-  @[export CValue_mk_uint64]
-  private def mk_uint64 := CValue.uint64
-  @[export CValue_mk_float]
-  private def mk_float := CValue.float
-  @[export CValue_mk_double]
-  private def mk_double := CValue.double
-  @[export CValue_mk_longdouble]
-  private def mk_longdouble := CValue.longdouble
-  @[export CValue_mk_complex_float]
-  private def mk_complex_float := CValue.complex_float
-  @[export CValue_mk_complex_double]
-  private def mk_complex_double := CValue.complex_double
-  @[export CValue_mk_complex_longdouble]
-  private def mk_complex_longdouble := CValue.complex_longdouble
-  @[export CValue_mk_pointer]
-  private def mk_pointer := CValue.pointer
-  @[export CValue_mk_struct]
-  private def mk_struct := CValue.struct
 
   /- Functions to extract a value from a `CValue`. -/
   def int? : CValue → Option Int
@@ -208,22 +172,11 @@ namespace CValue
   | .struct e => e
   | _         => none
 
-  @[export CValue_get_int]
   def int! a := (int? a).get!
-
-  @[export CValue_get_nat]
   def nat a := (nat? a).get!
-
-  @[export CValue_get_float]
   def float! a := (float? a).get!
-
-  @[export CValue_get_complex]
   def complex! a := (complex? a).get!
-
-  @[export CValue_get_pointer]
   def pointer! a := (pointer? a).get!
-
-  @[export CValue_get_struct]
   def struct! a := (struct? a).get!
 
 end CValue
