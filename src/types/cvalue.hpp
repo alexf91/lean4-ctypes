@@ -39,8 +39,6 @@ class Pointer;
  */
 class CValue {
   public:
-    CValue(std::unique_ptr<CType> type) : m_type(std::move(type)) {}
-
     virtual ~CValue() {}
 
     /** Convert from Lean to this class. */
@@ -51,16 +49,15 @@ class CValue {
                                                const uint8_t *buffer);
 
     /** Convert this class to a Lean object. */
-    virtual lean_obj_res box() = 0;
+    virtual lean_obj_res box() const = 0;
 
     /** Create a buffer for the value. */
     virtual std::unique_ptr<uint8_t[]> to_buffer() const = 0;
 
     /** Get the type of the value. */
-    const CType &type() const { return *m_type; }
-
-  protected:
-    std::unique_ptr<CType> m_type;
+    virtual std::unique_ptr<CType> type() const {
+        return CType::unbox(CValue_type(box()));
+    }
 };
 
 /**
@@ -70,9 +67,8 @@ class CValue {
  */
 class CValueVoid : public CValue {
   public:
-    CValueVoid() : CValue(std::make_unique<CTypePrimitive>(VOID)) {}
-    lean_obj_res box() { return lean_box(0); }
-    std::unique_ptr<uint8_t[]> to_buffer() const {
+    lean_obj_res box() const override { return lean_box(0); }
+    std::unique_ptr<uint8_t[]> to_buffer() const override {
         lean_internal_panic("can't convert void to buffer");
     }
 };
@@ -82,13 +78,10 @@ template <ObjectTag Tag> class CValueScalar : public CValue {
     using T = TagToType<Tag>::type;
 
   public:
-    CValueScalar(T value)
-        : CValue(std::make_unique<CTypePrimitive>(Tag)), m_value(value) {
-        assert(Tag == m_type->get_tag());
-    }
+    CValueScalar(T value) : m_value(value) {}
 
-    std::unique_ptr<uint8_t[]> to_buffer() const {
-        std::unique_ptr<uint8_t[]> buffer(new uint8_t[m_type->get_size()]);
+    std::unique_ptr<uint8_t[]> to_buffer() const override {
+        std::unique_ptr<uint8_t[]> buffer(new uint8_t[type()->get_size()]);
         *((T *)buffer.get()) = m_value;
         return buffer;
     }
@@ -114,7 +107,7 @@ template <ObjectTag Tag> class CValueNat : public CValueScalar<Tag> {
     /** Create directly from value. */
     CValueNat(T value) : CValueScalar<Tag>(value) {}
 
-    lean_obj_res box() {
+    lean_obj_res box() const override {
         auto o = lean_alloc_ctor(Tag, 1, 0);
         lean_ctor_set(o, 0, lean_uint64_to_nat(this->m_value));
         return o;
@@ -138,7 +131,7 @@ template <ObjectTag Tag> class CValueInt : public CValueScalar<Tag> {
     /** Create directly from value. */
     CValueInt(T value) : CValueScalar<Tag>(value) {}
 
-    lean_obj_res box() {
+    lean_obj_res box() const override {
         auto o = lean_alloc_ctor(Tag, 1, 0);
         lean_ctor_set(o, 0, lean_int64_to_int(this->m_value));
         return o;
@@ -161,7 +154,7 @@ template <ObjectTag Tag> class CValueFloat : public CValueScalar<Tag> {
     /** Create directly from value. */
     CValueFloat(T value) : CValueScalar<Tag>(value) {}
 
-    lean_obj_res box() {
+    lean_obj_res box() const override {
         auto o = lean_alloc_ctor(Tag, 0, sizeof(double));
         lean_ctor_set_float(o, 0, (double)this->m_value);
         return o;
@@ -186,7 +179,7 @@ template <ObjectTag Tag> class CValueComplex : public CValueScalar<Tag> {
     /** Create directly from value. */
     CValueComplex(T value) : CValueScalar<Tag>(value) {}
 
-    lean_obj_res box() {
+    lean_obj_res box() const override {
         auto o = lean_alloc_ctor(Tag, 0, 2 * sizeof(double));
         lean_ctor_set_float(o, 0, (double)this->m_value.real());
         lean_ctor_set_float(o, sizeof(double), (double)this->m_value.imag());
@@ -211,14 +204,14 @@ class CValuePointer : public CValue {
     /** Just decrease the reference count, it is freed in the finalizer. */
     ~CValuePointer() { lean_dec(m_pointer); }
 
-    lean_obj_res box() {
+    lean_obj_res box() const override {
         // TODO: Do we need to change the reference count of m_pointer?
         auto o = lean_alloc_ctor(POINTER, 1, 0);
         lean_ctor_set(o, 0, m_pointer);
         return o;
     }
 
-    std::unique_ptr<uint8_t[]> to_buffer() const;
+    std::unique_ptr<uint8_t[]> to_buffer() const override;
 
   private:
     // CValuePointer objects are different than scalars, because Pointer is an external
@@ -231,7 +224,7 @@ class CValuePointer : public CValue {
 class CValueStruct : public CValue {
   public:
     /** Create the value from a CValue object. */
-    CValueStruct(b_lean_obj_arg obj) : CValue(CType::unbox(CValue_type(obj))) {
+    CValueStruct(b_lean_obj_arg obj) {
         assert(lean_obj_tag(obj) == STRUCT);
         auto values = lean_ctor_get(obj, 0);
         for (size_t i = 0; i < lean_array_size(values); i++) {
@@ -242,12 +235,11 @@ class CValueStruct : public CValue {
     }
 
     /** Use type description to read a value from a buffer. */
-    CValueStruct(std::unique_ptr<CType> type, const uint8_t *buffer)
-        : CValue(std::move(type)) {
-        assert(m_type->get_tag() == STRUCT);
-        auto elements = dynamic_cast<CTypeStruct &>(*m_type).elements();
-        auto offsets = type->get_offsets();
-        assert(elements.size() == offsets.size());
+    CValueStruct(std::unique_ptr<CType> type, const uint8_t *buffer) {
+        // assert(type->get_tag() == STRUCT);
+        // auto elements = dynamic_cast<CTypeStruct &>(*type()).elements();
+        // auto offsets = type->get_offsets();
+        // assert(elements.size() == offsets.size());
 
         // TODO: Implement the rest.
         // for (size_t i; i < elements.size(); i++) {
@@ -256,13 +248,13 @@ class CValueStruct : public CValue {
         //}
     }
 
-    lean_obj_res box() {
+    lean_obj_res box() const override {
         // TODO: Implement
         return nullptr;
     }
 
-    std::unique_ptr<uint8_t[]> to_buffer() const {
-        std::unique_ptr<uint8_t[]> buffer(new uint8_t[m_type->get_size()]);
+    std::unique_ptr<uint8_t[]> to_buffer() const override {
+        std::unique_ptr<uint8_t[]> buffer(new uint8_t[type()->get_size()]);
         // TODO: Implement
         return buffer;
     }

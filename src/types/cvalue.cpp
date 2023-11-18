@@ -110,20 +110,18 @@ std::unique_ptr<CValue> CValue::from_buffer(std::unique_ptr<CType> type,
 }
 
 /** Create the value from a CValue object. */
-CValuePointer::CValuePointer(b_lean_obj_arg obj)
-    : CValue(std::make_unique<CType>(POINTER)), m_pointer(lean_ctor_get(obj, 0)) {
+CValuePointer::CValuePointer(b_lean_obj_arg obj) : m_pointer(lean_ctor_get(obj, 0)) {
     assert(lean_obj_tag(obj) == POINTER);
     lean_inc(m_pointer);
 }
 
 CValuePointer::CValuePointer(const uint8_t *buffer)
-    : CValue(std::make_unique<CType>(POINTER)),
-      m_pointer((new Pointer(*((uint8_t **)buffer)))->box()) {
+    : m_pointer((new Pointer(*((uint8_t **)buffer)))->box()) {
     lean_inc(m_pointer);
 }
 
 std::unique_ptr<uint8_t[]> CValuePointer::to_buffer() const {
-    std::unique_ptr<uint8_t[]> buffer(new uint8_t[m_type->get_size()]);
+    std::unique_ptr<uint8_t[]> buffer(new uint8_t[type()->get_size()]);
     *((uint8_t **)buffer.get()) = Pointer::unbox(m_pointer)->get_pointer();
     return buffer;
 }

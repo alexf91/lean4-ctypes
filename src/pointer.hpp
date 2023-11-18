@@ -38,7 +38,7 @@ class Pointer final : public ExternalType<Pointer> {
 
     /** Write a value to the memory location. */
     void write(const CValue &value) {
-        memcpy(m_pointer, value.to_buffer().get(), value.type().get_size());
+        memcpy(m_pointer, value.to_buffer().get(), value.type()->get_size());
     }
 
     /** Get the address of the buffer. */
