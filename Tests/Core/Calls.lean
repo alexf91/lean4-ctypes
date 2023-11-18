@@ -22,10 +22,21 @@ open CTypes.Core
 
 namespace Tests.Calls
 
-  testcase testCall requires (libgen : SharedLibrary) := do
+  testcase testCallRegular requires (libgen : SharedLibrary) := do
     let lib ← libgen $ "uint32_t foo(void) { return 42; }"
     let foo ← lib["foo"]
     let value ← foo.call .uint32 #[] #[]
     assertEqual value (.uint32 42) s!"wrong result: {repr value}"
+
+  testcase testCallVariadic requires (libgen : SharedLibrary) := do
+    let lib ← libgen $ "int sum(int a, ...) {" ++
+                       "    va_list ap; int sum = a; int n;" ++
+                       "    va_start(ap, a);" ++
+                       "    while ((n = va_arg(ap, int)) != 0) sum += n;" ++
+                       "    va_end(ap);" ++
+                       "    return sum;}"
+    let sum ← lib["sum"]
+    let value ← sum.call .int #[] #[.int 8, .int 16, .int 32, .int 0]
+    assertEqual value (.int 56)
 
 end Tests.Calls
