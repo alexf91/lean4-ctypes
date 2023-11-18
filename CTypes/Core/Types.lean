@@ -87,6 +87,26 @@ namespace CType
   /-- Get alignment. -/
   @[extern "CType_alignment"]
   opaque alignment (type : @&CType) : Nat
+
+  /-
+    Type aliases
+
+    TODO: This is machine dependent.
+  -/
+  def char      := int8
+  def short     := int16
+  def int       := int32
+  def long      := int64
+  def longlong  := int64
+  def ssize_t   := int64
+  def uchar     := uint8
+  def ushort    := uint16
+  def uint      := uint32
+  def ulong     := uint64
+  def ulonglong := uint64
+  def size_t    := uint64
+  def time_t    := int64
+
 end CType
 
 
@@ -183,6 +203,25 @@ namespace CValue
   def complex! a := (complex? a).get!
   def pointer! a := (pointer? a).get!
   def struct! a := (struct? a).get!
+
+  /-
+    Type aliases
+
+    TODO: This is machine dependent.
+  -/
+  def char      := int8
+  def short     := int16
+  def int       := int32
+  def long      := int64
+  def longlong  := int64
+  def ssize_t   := int64
+  def uchar     := uint8
+  def ushort    := uint16
+  def uint      := uint32
+  def ulong     := uint64
+  def ulonglong := uint64
+  def size_t    := uint64
+  def time_t    := int64
 
 end CValue
 
