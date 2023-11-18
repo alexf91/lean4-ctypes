@@ -14,6 +14,4 @@
 -- limitations under the License.
 --
 
---import Tests.Core.Basic
---import Tests.Core.Types
-import Tests.Core.Refactoring
+import Tests.Core.Types
