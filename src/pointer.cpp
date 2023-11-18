@@ -32,7 +32,7 @@ extern "C" lean_obj_res Pointer_read(b_lean_obj_arg ptr, b_lean_obj_arg type,
     auto ct = CType::unbox(type);
 
     try {
-        return lean_io_result_mk_ok(p->read(std::move(ct))->box());
+        return lean_io_result_mk_ok(p->read(*ct)->box());
     } catch (const std::runtime_error &error) {
         lean_object *err = lean_mk_io_user_error(lean_mk_string(error.what()));
         return lean_io_result_mk_error(err);

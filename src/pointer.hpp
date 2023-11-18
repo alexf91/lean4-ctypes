@@ -32,8 +32,8 @@ class Pointer final : public ExternalType<Pointer> {
     ~Pointer() {}
 
     /** Read a CType from the memory, creating a CValue. */
-    std::unique_ptr<CValue> read(std::unique_ptr<CType> type) {
-        return CValue::from_buffer(std::move(type), m_pointer);
+    std::unique_ptr<CValue> read(const CType &type) {
+        return CValue::from_buffer(type, m_pointer);
     }
 
     /** Write a value to the memory location. */

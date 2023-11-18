@@ -77,7 +77,6 @@ class CTypeStruct : public CType {
 
     /** Get elements in the struct. */
     const std::vector<CType *> elements() const {
-        // TODO: Could this leak memory?
         std::vector<CType *> elements;
         for (auto &e : m_element_types)
             elements.push_back(e.get());

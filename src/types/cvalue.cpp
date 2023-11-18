@@ -66,9 +66,8 @@ std::unique_ptr<CValue> CValue::unbox(b_lean_obj_arg obj) {
 }
 
 /** Create a value from a type and a buffer. */
-std::unique_ptr<CValue> CValue::from_buffer(std::unique_ptr<CType> type,
-                                            const uint8_t *buffer) {
-    switch (type->get_tag()) {
+std::unique_ptr<CValue> CValue::from_buffer(const CType &type, const uint8_t *buffer) {
+    switch (type.get_tag()) {
     case VOID:
         return std::make_unique<CValueVoid>();
     case INT8:
@@ -102,7 +101,7 @@ std::unique_ptr<CValue> CValue::from_buffer(std::unique_ptr<CType> type,
     case POINTER:
         return std::make_unique<CValuePointer>(buffer);
     case STRUCT:
-        return std::make_unique<CValueStruct>(std::move(type), buffer);
+        return std::make_unique<CValueStruct>(type, buffer);
     default:
         lean_internal_panic_unreachable();
     }

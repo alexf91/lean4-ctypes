@@ -19,6 +19,7 @@
 #include "../utils.hpp"
 #include "common.hpp"
 #include "ctype.hpp"
+#include <cstring>
 #include <ffi.h>
 #include <lean/lean.h>
 #include <memory>
@@ -45,7 +46,7 @@ class CValue {
     static std::unique_ptr<CValue> unbox(b_lean_obj_arg obj);
 
     /** Create a value from a type and a buffer. */
-    static std::unique_ptr<CValue> from_buffer(std::unique_ptr<CType> type,
+    static std::unique_ptr<CValue> from_buffer(const CType &type,
                                                const uint8_t *buffer);
 
     /** Convert this class to a Lean object. */
@@ -235,27 +236,39 @@ class CValueStruct : public CValue {
     }
 
     /** Use type description to read a value from a buffer. */
-    CValueStruct(std::unique_ptr<CType> type, const uint8_t *buffer) {
-        // assert(type->get_tag() == STRUCT);
-        // auto elements = dynamic_cast<CTypeStruct &>(*type()).elements();
-        // auto offsets = type->get_offsets();
-        // assert(elements.size() == offsets.size());
+    CValueStruct(const CType &type, const uint8_t *buffer) {
+        assert(type.get_tag() == STRUCT);
+        auto elements = dynamic_cast<const CTypeStruct &>(type).elements();
+        auto offsets = type.get_offsets();
+        assert(elements.size() == offsets.size());
 
-        // TODO: Implement the rest.
-        // for (size_t i; i < elements.size(); i++) {
-        //    auto offset = offsets[i];
-        //    m_values.push_back(CValue::from_buffer(elements[i], buffer[offset]));
-        //}
+        for (size_t i = 0; i < elements.size(); i++) {
+            auto offset = offsets[i];
+            m_values.push_back(CValue::from_buffer(*elements[i], &buffer[offset]));
+        }
     }
 
     lean_obj_res box() const override {
-        // TODO: Implement
-        return nullptr;
+        lean_object *obj = lean_alloc_ctor(STRUCT, 1, 0);
+        lean_object *values = lean_alloc_array(m_values.size(), m_values.size());
+        for (size_t i = 0; i < m_values.size(); i++)
+            lean_array_set_core(values, i, m_values[i]->box());
+        lean_ctor_set(obj, 0, values);
+        return obj;
     }
 
     std::unique_ptr<uint8_t[]> to_buffer() const override {
-        std::unique_ptr<uint8_t[]> buffer(new uint8_t[type()->get_size()]);
-        // TODO: Implement
+        auto tp = type();
+        auto offsets = tp->get_offsets();
+        std::unique_ptr<uint8_t[]> buffer(new uint8_t[tp->get_size()]);
+
+        assert(m_values.size() == offsets.size());
+        for (size_t i = 0; i < m_values.size(); i++) {
+            auto off = offsets[i];
+            auto value = m_values[i]->to_buffer();
+            auto size = m_values[i]->type()->get_size();
+            memcpy(buffer.get() + off, value.get(), size);
+        }
         return buffer;
     }
 

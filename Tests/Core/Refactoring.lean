@@ -162,16 +162,30 @@ namespace Tests.Refactoring
 
   /-- Read a struct. -/
   testcase testPointerReadStruct requires (libgen : SharedLibrary) := do
-    let lib ← libgen "struct Foo { uint32_t x; uint32_t y; }; struct Foo v = {42, 11};"
-    let pv ← lib["v"]
-    let v ← pv.read $ .struct #[.uint32, .uint32]
-    assertEqual v (.struct #[.uint32 42, .uint32 11])
+    let lib ← libgen $ "typedef struct { uint8_t a; uint16_t b; uint32_t c; uint64_t d; } A;" ++
+                       "typedef struct { A a; A b; } B;" ++
+                       "B v = {{0, 1, 2, 3}, {4, 5, 6, 7}};"
+    let A := CType.struct #[.uint8, .uint16, .uint32, .uint64]
+    let v ← (← lib["v"]).read $ .struct #[A, A]
+    assertEqual v (.struct #[
+      .struct #[.uint8 0, .uint16 1, .uint32 2, .uint64 3],
+      .struct #[.uint8 4, .uint16 5, .uint32 6, .uint64 7]
+    ])
 
-  /-- Write a struct. -/
+  /-- Write a struct and read it back. -/
   testcase testPointerWriteStruct requires (libgen : SharedLibrary) := do
-    let lib ← libgen "struct Foo { int32_t x; uint32_t y; }; struct Foo v = {0, 0};"
+    let lib ← libgen $ "typedef struct { uint8_t a; uint16_t b; uint32_t c; uint64_t d; } A;" ++
+                       "typedef struct { A a; A b; } B;" ++
+                       "B v = {{0, 0, 0, 0}, {0, 0, 0, 0}};"
+    let A := CType.struct #[.uint8, .uint16, .uint32, .uint64]
+    let v := CValue.struct #[
+      .struct #[.uint8 0, .uint16 1, .uint32 2, .uint64 3],
+      .struct #[.uint8 4, .uint16 5, .uint32 6, .uint64 7]
+    ]
+
     let pv ← lib["v"]
-    pv.write $ .struct #[.int32 42, .uint32 11]
-    -- TODO: Finish
+    pv.write  v
+    let w ← pv.read $ .struct #[A, A]
+    assertEqual v w
 
 end Tests.Refactoring
