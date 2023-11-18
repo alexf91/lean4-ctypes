@@ -40,7 +40,7 @@ class Function final : public ExternalType<Function> {
     size_t get_nargs() { return m_argtypes.size(); }
 
     /** No children. */
-    const std::vector<lean_object *> children() { return {}; }
+    const std::vector<lean_object *> children() { return {m_pointer}; }
 
   private:
     // Pointer assocated with the function.

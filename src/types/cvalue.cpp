@@ -23,10 +23,6 @@
 std::unique_ptr<CValue> CValue::unbox(b_lean_obj_arg obj) {
     ObjectTag tag = (ObjectTag)lean_obj_tag(obj);
 
-    // TODO: Move type detection to CValue class.
-    auto type = CType::unbox(CValue_type(obj));
-    assert(type->get_tag() == tag);
-
     // TODO: Simplify this?
     switch (tag) {
     case VOID:
@@ -62,7 +58,7 @@ std::unique_ptr<CValue> CValue::unbox(b_lean_obj_arg obj) {
     case POINTER:
         return std::make_unique<CValuePointer>(obj);
     case STRUCT:
-        lean_internal_panic("struct boxing not implemented");
+        return std::make_unique<CValueStruct>(obj);
     default:
         lean_internal_panic("unknown tag");
     }
@@ -106,7 +102,7 @@ std::unique_ptr<CValue> CValue::from_buffer(std::unique_ptr<CType> type,
     case POINTER:
         return std::make_unique<CValuePointer>(buffer);
     case STRUCT:
-        break;
+        return std::make_unique<CValueStruct>(std::move(type), buffer);
     default:
         lean_internal_panic_unreachable();
     }

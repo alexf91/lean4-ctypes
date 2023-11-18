@@ -75,6 +75,15 @@ class CTypeStruct : public CType {
 
     ~CTypeStruct();
 
+    /** Get elements in the struct. */
+    const std::vector<CType *> elements() const {
+        // TODO: Could this leak memory?
+        std::vector<CType *> elements;
+        for (auto &e : m_element_types)
+            elements.push_back(e.get());
+        return elements;
+    }
+
   private:
     /** Initialize the FFI type. */
     void populate_ffi_type();

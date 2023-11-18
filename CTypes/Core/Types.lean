@@ -116,8 +116,13 @@ deriving Inhabited, Repr, BEq
 
 namespace CValue
 
-  /-- Get the type of a `CValue`. -/
-  @[export CValue_type]
+  /--
+    Get the type of a `CValue`.
+
+    IMPORTANT: Do not use this function directly in C++. The `CValue` argument is
+               owned by the function.
+  -/
+  @[export CValue_type__]
   partial def type : CValue → CType
     | .void .. => .void
     | .int8 .. => .int8

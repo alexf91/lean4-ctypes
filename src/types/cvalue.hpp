@@ -24,8 +24,12 @@
 #include <memory>
 #include <vector>
 
+extern "C" LEAN_EXPORT_WEAK lean_object *CValue_type__(lean_object *);
 /** Get the CType of a CValue. */
-extern "C" LEAN_EXPORT_WEAK lean_object *CValue_type(lean_object *);
+static inline lean_object *CValue_type(lean_object *o) {
+    lean_inc(o);
+    return CValue_type__(o);
+}
 
 /** A pointer in C. */
 class Pointer;
@@ -224,4 +228,46 @@ class CValuePointer : public CValue {
 };
 
 /** CValue for structs. */
-class CValueStruct : public CValue {};
+class CValueStruct : public CValue {
+  public:
+    /** Create the value from a CValue object. */
+    CValueStruct(b_lean_obj_arg obj) : CValue(CType::unbox(CValue_type(obj))) {
+        assert(lean_obj_tag(obj) == STRUCT);
+        auto values = lean_ctor_get(obj, 0);
+        for (size_t i = 0; i < lean_array_size(values); i++) {
+            auto o = lean_array_uget(values, i); // Calls lean_inc()
+            auto value = CValue::unbox(o);
+            m_values.push_back(std::move(value));
+        }
+    }
+
+    /** Use type description to read a value from a buffer. */
+    CValueStruct(std::unique_ptr<CType> type, const uint8_t *buffer)
+        : CValue(std::move(type)) {
+        assert(m_type->get_tag() == STRUCT);
+        auto elements = dynamic_cast<CTypeStruct &>(*m_type).elements();
+        auto offsets = type->get_offsets();
+        assert(elements.size() == offsets.size());
+
+        // TODO: Implement the rest.
+        // for (size_t i; i < elements.size(); i++) {
+        //    auto offset = offsets[i];
+        //    m_values.push_back(CValue::from_buffer(elements[i], buffer[offset]));
+        //}
+    }
+
+    lean_obj_res box() {
+        // TODO: Implement
+        return nullptr;
+    }
+
+    std::unique_ptr<uint8_t[]> to_buffer() const {
+        std::unique_ptr<uint8_t[]> buffer(new uint8_t[m_type->get_size()]);
+        // TODO: Implement
+        return buffer;
+    }
+
+  private:
+    /** Values in the struct. */
+    std::vector<std::unique_ptr<CValue>> m_values;
+};

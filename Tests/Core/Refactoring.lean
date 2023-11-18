@@ -160,4 +160,18 @@ namespace Tests.Refactoring
     assertEqual (← pp.read .pointer).pointer! pb
     assertEqual (← (← pp.read .pointer).pointer!.read .uint64) (.uint64 42)
 
+  /-- Read a struct. -/
+  testcase testPointerReadStruct requires (libgen : SharedLibrary) := do
+    let lib ← libgen "struct Foo { uint32_t x; uint32_t y; }; struct Foo v = {42, 11};"
+    let pv ← lib["v"]
+    let v ← pv.read $ .struct #[.uint32, .uint32]
+    assertEqual v (.struct #[.uint32 42, .uint32 11])
+
+  /-- Write a struct. -/
+  testcase testPointerWriteStruct requires (libgen : SharedLibrary) := do
+    let lib ← libgen "struct Foo { int32_t x; uint32_t y; }; struct Foo v = {0, 0};"
+    let pv ← lib["v"]
+    pv.write $ .struct #[.int32 42, .uint32 11]
+    -- TODO: Finish
+
 end Tests.Refactoring
