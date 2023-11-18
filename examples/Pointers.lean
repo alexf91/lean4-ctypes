@@ -19,18 +19,18 @@ open CTypes.Core
 
 def main (_ : List String) : IO UInt32 := do
   let lib ← Library.mk "libc.so.6" #[.RTLD_NOW]
-  let malloc ← Function.mk (← lib["malloc"]) .pointer #[.size_t]
-  let free   ← Function.mk (← lib["free"])   .void    #[.pointer]
+  let malloc ← lib["malloc"]
+  let free   ← lib["free"]
 
   -- Allocate a `int16_t` buffer.
-  let p ← malloc.call #[.nat CType.int16.size]
+  let p ← malloc.call .pointer #[.size_t CType.int16.size] #[]
   -- Write the value.
-  p.pointer!.write .int16 (.int 42)
+  p.pointer!.write (.int16 42)
   -- Read back the value.
   let value ← p.pointer!.read .int16
 
   IO.println s!"value: {repr value}"
   -- Free the allocated buffer.
-  discard <| free.call #[p]
+  discard <| free.call .void #[p] #[]
 
   return 0

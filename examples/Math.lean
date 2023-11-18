@@ -23,16 +23,12 @@ def main (_ : List String) : IO UInt32 := do
 
   -- Lookup the symbol `pow`.
   -- As an alternative `libm["pow"]` can be used.
-  let sym ← lib.symbol "pow"
+  let pow ← lib.symbol "pow"
 
-  -- Annotate the function with `CType` types. `pow()` returns a double value
-  -- and takes two double values as arguments.
-  let pow ← Function.mk sym .double #[.double, .double]
+  -- Call the function with two regular `CValue` objects and no variadic arguments.
+  let result ← pow.call .double #[.double 1.4142, .double 2.0] #[]
 
-  -- Call the function with `LeanValue` arguments.
-  let result ← pow.call #[.float 1.4142, .float 2.0]
-
-  -- The result has type `LeanValue.float`.
-  IO.println s!"result: {result.float!}"
+  -- The result has type `CType.double`.
+  IO.println s!"result: {repr result}"
 
   return 0

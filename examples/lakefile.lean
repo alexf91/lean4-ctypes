@@ -36,5 +36,3 @@ require ctypes from ".."
 lean_exe Math
 @[default_target]
 lean_exe Pointers
-@[default_target]
-lean_exe StructsArrays
