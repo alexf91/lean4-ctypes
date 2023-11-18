@@ -19,7 +19,7 @@ open CTypes.Core
 
 def main (_ : List String) : IO UInt32 := do
   -- Open the library. See man page for dlopen() for flags.
-  let lib ← Library.mk "libm.so.6" #[.RTLD_NOW]
+  let lib ← Library.mk "libm.so.6" .RTLD_NOW #[]
 
   -- Lookup the symbol `pow`.
   -- As an alternative `libm["pow"]` can be used.

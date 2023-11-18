@@ -26,7 +26,7 @@ open CTypes.Core
 
 def main (_ : List String) : IO UInt32 := do
   -- Open the library. See man page for dlopen() for flags.
-  let lib ← Library.mk "libm.so.6" #[.RTLD_NOW]
+  let lib ← Library.mk "libm.so.6" .RTLD_NOW #[]
 
   -- Lookup the symbol `pow`.
   -- As an alternative `libm["pow"]` can be used.
@@ -55,7 +55,7 @@ import CTypes
 open CTypes.Core
 
 def main (_ : List String) : IO UInt32 := do
-  let lib ← Library.mk "libc.so.6" #[.RTLD_NOW]
+  let lib ← Library.mk "libc.so.6" .RTLD_NOW #[]
   let malloc ← lib["malloc"]
   let free   ← lib["free"]
 

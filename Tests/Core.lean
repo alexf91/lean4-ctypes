@@ -14,5 +14,5 @@
 -- limitations under the License.
 --
 
-import Tests.Core.Calls
+import Tests.Core.Functions
 import Tests.Core.Types

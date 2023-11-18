@@ -20,26 +20,35 @@ set_option relaxedAutoImplicit false
 
 namespace CTypes.Core
 
-/-- Flags for opening a shared library. -/
-inductive Flag where
-  | RTLD_LAZY
-  | RTLD_NOW
-  | RTLD_NOLOAD
-  | RTLD_DEEPBIND
-  | RTLD_GLOBAL
-  | RTLD_LOCAL
-  | RTLD_NODELETE
-
-
 /-- Library handle returned by `dlopen()`. -/
 opaque Library.Nonempty : NonemptyType
 def Library : Type := Library.Nonempty.type
 instance : Nonempty Library := Library.Nonempty.property
 
 namespace Library
+
+  /--
+    Flags for when the library should be resolved.
+    See `man dlopen` for details.
+  -/
+  inductive ModeFlag where
+    | RTLD_LAZY
+    | RTLD_NOW
+
+  /--
+    Other options for `dlopen()`.
+    See `man dlopen` for details.
+  -/
+  inductive OptionFlag where
+    | RTLD_NOLOAD
+    | RTLD_DEEPBIND
+    | RTLD_GLOBAL
+    | RTLD_LOCAL
+    | RTLD_NODELETE
+
   /-- Thin wrapper around `dlopen()`. -/
   @[extern "Library_mk"]
-  opaque mk (path : @&String) (flags : @&Array Flag) : IO Library
+  opaque mk (path : @&String) (mode : @&ModeFlag) (opts : @&Array OptionFlag) : IO Library
 
   /--
     Thin wrapper around `dlclose()`.

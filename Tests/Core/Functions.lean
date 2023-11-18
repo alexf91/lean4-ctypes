@@ -20,7 +20,7 @@ import Tests.Core.Fixtures
 open LTest
 open CTypes.Core
 
-namespace Tests.Calls
+namespace Tests.Functions
 
   testcase testCallRegular requires (libgen : SharedLibrary) := do
     let lib ← libgen $ "uint32_t foo(void) { return 42; }"
@@ -36,7 +36,7 @@ namespace Tests.Calls
                        "    va_end(ap);" ++
                        "    return sum;}"
     let sum ← lib["sum"]
-    let value ← sum.call .int #[] #[.int 8, .int 16, .int 32, .int 0]
+    let value ← sum.call .int #[.int 8] #[.int 16, .int 32, .int 0]
     assertEqual value (.int 56)
 
-end Tests.Calls
+end Tests.Functions

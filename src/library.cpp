@@ -22,23 +22,31 @@
 #include <lean/lean.h>
 #include <stdexcept>
 
-/** Unbox the Flag enum. */
-static inline int Flag_unbox(b_lean_obj_arg flag) {
+/** Unbox the ModeFlag enum. */
+static inline int ModeFlag_unbox(b_lean_obj_arg flag) {
     assert(lean_is_scalar(flag));
     switch (lean_unbox(flag)) {
     case 0:
         return RTLD_LAZY;
     case 1:
         return RTLD_NOW;
-    case 2:
+    }
+    lean_internal_panic_unreachable();
+}
+
+/** Unbox the OptionFlag enum. */
+static inline int OptionFlag_unbox(b_lean_obj_arg flag) {
+    assert(lean_is_scalar(flag));
+    switch (lean_unbox(flag)) {
+    case 0:
         return RTLD_NOLOAD;
-    case 3:
+    case 1:
         return RTLD_DEEPBIND;
-    case 4:
+    case 2:
         return RTLD_GLOBAL;
-    case 5:
+    case 3:
         return RTLD_LOCAL;
-    case 6:
+    case 4:
         return RTLD_NODELETE;
     }
     lean_internal_panic_unreachable();
@@ -49,12 +57,13 @@ static inline int Flag_unbox(b_lean_obj_arg flag) {
  *
  * Raises an exception with an error message on error.
  */
-Library::Library(b_lean_obj_arg path, b_lean_obj_arg flags) : m_closed(false) {
+Library::Library(b_lean_obj_arg path, b_lean_obj_arg mode, b_lean_obj_arg options)
+    : m_closed(false) {
     const char *p = lean_string_cstr(path);
-    uint64_t openflags = 0;
-    for (size_t i = 0; i < lean_array_size(flags); i++) {
-        lean_object *o = lean_array_get_core(flags, i);
-        openflags |= Flag_unbox(o);
+    uint64_t openflags = ModeFlag_unbox(mode);
+    for (size_t i = 0; i < lean_array_size(options); i++) {
+        lean_object *o = lean_array_get_core(options, i);
+        openflags |= OptionFlag_unbox(o);
     }
     void *handle = dlopen(p, openflags);
     if (handle == NULL)
@@ -112,10 +121,10 @@ void Library::close() {
  *
  * @return Library object or an exception.
  */
-extern "C" lean_obj_res Library_mk(b_lean_obj_arg path, b_lean_obj_arg flags,
-                                   lean_object *unused) {
+extern "C" lean_obj_res Library_mk(b_lean_obj_arg path, b_lean_obj_arg mode,
+                                   b_lean_obj_arg options, lean_object *unused) {
     try {
-        Library *lib = new Library(path, flags);
+        Library *lib = new Library(path, mode, options);
         return lean_io_result_mk_ok(lib->box());
     } catch (const std::runtime_error &error) {
         lean_object *err = lean_mk_io_user_error(lean_mk_string(error.what()));

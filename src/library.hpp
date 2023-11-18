@@ -22,7 +22,7 @@
 
 class Library final : public ExternalType<Library> {
   public:
-    Library(b_lean_obj_arg path, b_lean_obj_arg flags);
+    Library(b_lean_obj_arg path, b_lean_obj_arg mode, b_lean_obj_arg options);
     ~Library();
 
     /** Get the name of the library. */

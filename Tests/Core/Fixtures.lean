@@ -70,7 +70,7 @@ private def generateLibrary (path : FilePath) (code : String) : IO Library := do
     cmd := "gcc",
     args := #["-shared", "-o", lib, ofile]
   }
-  Library.mk lib #[.RTLD_NOW]
+  Library.mk lib .RTLD_NOW #[]
 
 /--
   Fixture for generating a temporary shared library.
@@ -87,4 +87,4 @@ fixture SharedLibrary FilePath (String → IO Library) requires (td : TemporaryD
   Fixture for access to `libc`.
  -/
 fixture LibC Unit Library where
-  setup := Library.mk "/usr/lib/libc.so.6" #[.RTLD_NOW]
+  setup := Library.mk "/usr/lib/libc.so.6" .RTLD_NOW #[]
