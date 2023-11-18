@@ -65,7 +65,7 @@ extern "C" lean_obj_res Pointer_mk(size_t value) {
  * Get the address of a pointer.
  */
 extern "C" size_t Pointer_address(b_lean_obj_arg obj) {
-    return (size_t)Pointer::unbox(obj)->get_pointer();
+    return (size_t)Pointer::unbox(obj)->pointer();
 }
 
 /**

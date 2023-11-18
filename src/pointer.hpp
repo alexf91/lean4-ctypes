@@ -38,11 +38,11 @@ class Pointer final : public ExternalType<Pointer> {
 
     /** Write a value to the memory location. */
     void write(const CValue &value) {
-        memcpy(m_pointer, value.to_buffer().get(), value.type()->get_size());
+        memcpy(m_pointer, value.to_buffer().get(), value.type()->size());
     }
 
     /** Get the address of the buffer. */
-    uint8_t *get_pointer() const { return m_pointer; }
+    uint8_t *pointer() const { return m_pointer; }
 
     /** No children. */
     const std::vector<lean_object *> children() { return {}; }

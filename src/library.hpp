@@ -26,10 +26,10 @@ class Library final : public ExternalType<Library> {
     ~Library();
 
     /** Get the name of the library. */
-    const char *get_path(void) { return m_path; }
+    const char *path() { return m_path; }
 
     /** Get the handle of the library. */
-    void *get_handle(void) { return m_handle; }
+    void *handle() { return m_handle; }
 
     /** Lookup a symbol in the library. */
     Pointer *symbol(const char *name);

@@ -33,22 +33,22 @@ class CType {
     static std::unique_ptr<CType> unbox(b_lean_obj_arg obj);
 
     /** Get the size of the basic type. */
-    size_t get_size() const { return m_ffi_type.size; }
+    size_t size() const { return m_ffi_type.size; }
 
     /** Get alignment. */
-    size_t get_alignment() const { return m_ffi_type.alignment; }
+    size_t alignment() const { return m_ffi_type.alignment; }
 
     /** Get the number of elements. */
-    size_t get_nelements() const;
+    size_t nelements() const;
 
     /** Get the array of struct offsets. */
-    const std::vector<size_t> get_offsets() const;
+    const std::vector<size_t> offsets() const;
 
     /** Get a pointer to the internal ffi_type. */
-    ffi_type *get_ffi_type() { return &m_ffi_type; }
+    ffi_type *ffitype() { return &m_ffi_type; }
 
     /** Get the tag of the CType. */
-    ObjectTag get_tag() const { return m_tag; }
+    ObjectTag tag() const { return m_tag; }
 
   protected:
     ffi_type m_ffi_type;

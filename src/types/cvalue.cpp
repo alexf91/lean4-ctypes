@@ -67,7 +67,7 @@ std::unique_ptr<CValue> CValue::unbox(b_lean_obj_arg obj) {
 
 /** Create a value from a type and a buffer. */
 std::unique_ptr<CValue> CValue::from_buffer(const CType &type, const uint8_t *buffer) {
-    switch (type.get_tag()) {
+    switch (type.tag()) {
     case VOID:
         return std::make_unique<CValueVoid>();
     case INT8:
@@ -120,7 +120,7 @@ CValuePointer::CValuePointer(const uint8_t *buffer)
 }
 
 std::unique_ptr<uint8_t[]> CValuePointer::to_buffer() const {
-    std::unique_ptr<uint8_t[]> buffer(new uint8_t[type()->get_size()]);
-    *((uint8_t **)buffer.get()) = Pointer::unbox(m_pointer)->get_pointer();
+    std::unique_ptr<uint8_t[]> buffer(new uint8_t[type()->size()]);
+    *((uint8_t **)buffer.get()) = Pointer::unbox(m_pointer)->pointer();
     return buffer;
 }

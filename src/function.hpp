@@ -37,7 +37,7 @@ class Function final : public ExternalType<Function> {
     lean_obj_res call(b_lean_obj_arg argvals_object);
 
     /** Get the number of arguments. */
-    size_t get_nargs() { return m_argtypes.size(); }
+    size_t nargs() { return m_argtypes.size(); }
 
     /** No children. */
     const std::vector<lean_object *> children() { return {m_pointer}; }

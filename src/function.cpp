@@ -37,14 +37,14 @@ Function::Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
 
     // Unbox the return type. We don't allow arrays as arguments.
     m_rtype = CType::unbox(rtype_object);
-    m_ffi_rtype = m_rtype->get_ffi_type();
+    m_ffi_rtype = m_rtype->ffitype();
     // if (m_rtype->get_tag() == CType::ARRAY)
     //     throw std::runtime_error("invalid return type: array not allowed");
 
     // Unbox argument types. We don't allow void or arrays.
-    size_t nargs = lean_array_size(argtypes_object);
-    m_ffi_argtypes = new ffi_type *[nargs];
-    for (size_t i = 0; i < nargs; i++) {
+    size_t n = lean_array_size(argtypes_object);
+    m_ffi_argtypes = new ffi_type *[n];
+    for (size_t i = 0; i < n; i++) {
         auto ct = CType::unbox(lean_array_get_core(argtypes_object, i));
 
         // if (ct->get_tag() == CType::VOID) {
@@ -55,13 +55,13 @@ Function::Function(b_lean_obj_arg symbol, b_lean_obj_arg rtype_object,
         //     throw std::runtime_error("invalid argument type: array not allowed");
         // }
 
-        m_ffi_argtypes[i] = ct->get_ffi_type();
+        m_ffi_argtypes[i] = ct->ffitype();
         m_argtypes.push_back(std::move(ct));
     }
 
     // Create the call interface for the function.
     ffi_status stat =
-        ffi_prep_cif(&m_cif, FFI_DEFAULT_ABI, nargs, m_ffi_rtype, m_ffi_argtypes);
+        ffi_prep_cif(&m_cif, FFI_DEFAULT_ABI, n, m_ffi_rtype, m_ffi_argtypes);
     if (stat != FFI_OK) {
         delete[] m_ffi_argtypes;
         throw std::runtime_error("creating CIF failed");
@@ -83,17 +83,17 @@ Function::~Function() {
  * Call the function with the given arguments.
  */
 lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
-    size_t nargs = lean_array_size(argvals_object);
-    if (nargs < get_nargs())
+    size_t n = lean_array_size(argvals_object);
+    if (n < nargs())
         throw std::runtime_error("not enough arguments");
-    else if (nargs > get_nargs())
+    else if (n > nargs())
         throw std::runtime_error("variadic arguments not supported");
 
     // Construct the argument buffer. Using a vector automates cleanup after an
     // exception.
     std::vector<std::unique_ptr<uint8_t[]>> argbufs;
-    void *argvals[nargs];
-    for (size_t i = 0; i < nargs; i++) {
+    void *argvals[n];
+    for (size_t i = 0; i < n; i++) {
         // lean_object *arg = lean_array_get_core(argvals_object, i);
         //  DELETED
         // auto v = CValue::unbox(arg);
@@ -104,11 +104,11 @@ lean_obj_res Function::call(b_lean_obj_arg argvals_object) {
 
     // At least a buffer with the size of a register is required for the return
     // buffer.
-    size_t rsize = std::max((size_t)FFI_SIZEOF_ARG, m_rtype->get_size());
+    size_t rsize = std::max((size_t)FFI_SIZEOF_ARG, m_rtype->size());
     uint8_t rvalue[rsize];
 
     // Call the symbol handle.
-    auto handle = (void (*)())Pointer::unbox(m_pointer)->get_pointer();
+    auto handle = (void (*)())Pointer::unbox(m_pointer)->pointer();
     ffi_call(&m_cif, handle, rvalue, argvals);
 
     return nullptr;

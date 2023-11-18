@@ -48,7 +48,7 @@ std::unique_ptr<CType> CType::unbox(b_lean_obj_arg obj) {
 }
 
 /** Get the number of elements. */
-size_t CType::get_nelements() const {
+size_t CType::nelements() const {
     if (m_ffi_type.elements) {
         size_t n = 0;
         while (m_ffi_type.elements[n])
@@ -59,8 +59,8 @@ size_t CType::get_nelements() const {
 }
 
 /** Get the array of struct offsets. */
-const std::vector<size_t> CType::get_offsets() const {
-    size_t n = get_nelements();
+const std::vector<size_t> CType::offsets() const {
+    size_t n = nelements();
     std::vector<size_t> offsets;
 
     size_t offs[n];
@@ -109,7 +109,7 @@ void CTypeStruct::populate_ffi_type() {
     m_ffi_type.type = FFI_TYPE_STRUCT;
     m_ffi_type.elements = new ffi_type *[m_element_types.size() + 1]();
     for (size_t i = 0; i < m_element_types.size(); i++)
-        m_ffi_type.elements[i] = m_element_types[i]->get_ffi_type();
+        m_ffi_type.elements[i] = m_element_types[i]->ffitype();
 
     // Initialize size and alignment fields.
     ffi_get_struct_offsets(FFI_DEFAULT_ABI, &m_ffi_type, nullptr);

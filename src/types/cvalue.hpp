@@ -82,7 +82,7 @@ template <ObjectTag Tag> class CValueScalar : public CValue {
     CValueScalar(T value) : m_value(value) {}
 
     std::unique_ptr<uint8_t[]> to_buffer() const override {
-        std::unique_ptr<uint8_t[]> buffer(new uint8_t[type()->get_size()]);
+        std::unique_ptr<uint8_t[]> buffer(new uint8_t[type()->size()]);
         *((T *)buffer.get()) = m_value;
         return buffer;
     }
@@ -237,14 +237,13 @@ class CValueStruct : public CValue {
 
     /** Use type description to read a value from a buffer. */
     CValueStruct(const CType &type, const uint8_t *buffer) {
-        assert(type.get_tag() == STRUCT);
+        assert(type.tag() == STRUCT);
         auto elements = dynamic_cast<const CTypeStruct &>(type).elements();
-        auto offsets = type.get_offsets();
-        assert(elements.size() == offsets.size());
+        auto offs = type.offsets();
+        assert(elements.size() == offs.size());
 
         for (size_t i = 0; i < elements.size(); i++) {
-            auto offset = offsets[i];
-            m_values.push_back(CValue::from_buffer(*elements[i], &buffer[offset]));
+            m_values.push_back(CValue::from_buffer(*elements[i], &buffer[offs[i]]));
         }
     }
 
@@ -259,14 +258,14 @@ class CValueStruct : public CValue {
 
     std::unique_ptr<uint8_t[]> to_buffer() const override {
         auto tp = type();
-        auto offsets = tp->get_offsets();
-        std::unique_ptr<uint8_t[]> buffer(new uint8_t[tp->get_size()]);
+        auto offsets = tp->offsets();
+        std::unique_ptr<uint8_t[]> buffer(new uint8_t[tp->size()]);
 
         assert(m_values.size() == offsets.size());
         for (size_t i = 0; i < m_values.size(); i++) {
             auto off = offsets[i];
             auto value = m_values[i]->to_buffer();
-            auto size = m_values[i]->type()->get_size();
+            auto size = m_values[i]->type()->size();
             memcpy(buffer.get() + off, value.get(), size);
         }
         return buffer;

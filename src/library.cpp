@@ -127,7 +127,7 @@ extern "C" lean_obj_res Library_mk(b_lean_obj_arg path, b_lean_obj_arg flags,
  * Get the path of the library.
  */
 extern "C" lean_obj_res Library_path(b_lean_obj_arg obj) {
-    return lean_mk_string(Library::unbox(obj)->get_path());
+    return lean_mk_string(Library::unbox(obj)->path());
 }
 
 /**
