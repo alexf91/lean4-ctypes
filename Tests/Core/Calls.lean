@@ -14,5 +14,18 @@
 -- limitations under the License.
 --
 
-import Tests.Core.Calls
-import Tests.Core.Types
+import LTest
+import CTypes
+import Tests.Core.Fixtures
+open LTest
+open CTypes.Core
+
+namespace Tests.Calls
+
+  testcase testCall requires (libgen : SharedLibrary) := do
+    let lib ← libgen $ "uint32_t foo(void) { return 42; }"
+    let foo ← lib["foo"]
+    let value ← foo.call .uint32 #[] #[]
+    assertEqual value (.uint32 42) s!"wrong result: {repr value}"
+
+end Tests.Calls

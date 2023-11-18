@@ -45,10 +45,9 @@ namespace Library
     Thin wrapper around `dlclose()`.
 
     This should be used carefully and is usually not necessary.
-    Functions or pointers might still depend on the library and get
-    invalidated if it is unloaded. Note that this function can only
-    be called once for each library and no new symbols can be created
-    afterwards.
+    Pointers might still depend on the library and get invalidated if it is unloaded.
+    Note that this function can only be called once for each library and no new
+    symbols can be created afterwards.
   -/
   @[extern "Library_close"]
   opaque close (library : @&Library) : IO Unit
@@ -70,22 +69,5 @@ instance : ToString Library := ⟨fun lib   => s!"{repr lib}"⟩
 
 /-- Get a symbol from the library. -/
 instance : GetElem Library String (IO Pointer) (fun _ _ => True) := ⟨fun l s _ => l.symbol s⟩
-
-
-/-- A symbol with a return type and argument types. -/
-opaque Function.Nonempty : NonemptyType
-def Function : Type := Function.Nonempty.type
-instance : Nonempty Function := Function.Nonempty.property
-
-namespace Function
-  /-- Create a new function instance from a symbol. -/
-  @[extern "Function_mk"]
-  opaque mk (s : @&Pointer) (returnType : @&CType) (argTypes : @&Array CType) : IO Function
-
-  /-- Call a function with the given arguments. -/
-  @[extern "Function_call"]
-  opaque call (function : @&Function) (args : @&Array CValue) : IO CValue
-end Function
-
 
 end CTypes.Core

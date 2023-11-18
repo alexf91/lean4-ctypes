@@ -21,8 +21,10 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
+#include <ffi.h>
 #include <lean/lean.h>
 #include <memory>
+#include <vector>
 
 /** A pointer in C. */
 class Pointer final : public ExternalType<Pointer> {
@@ -40,6 +42,11 @@ class Pointer final : public ExternalType<Pointer> {
     void write(const CValue &value) {
         memcpy(m_pointer, value.to_buffer().get(), value.type()->size());
     }
+
+    /** Call the pointer as a function. */
+    std::unique_ptr<CValue> call(CType &rtype,
+                                 std::vector<std::unique_ptr<CValue>> &args,
+                                 std::vector<std::unique_ptr<CValue>> &vargs);
 
     /** Get the address of the buffer. */
     uint8_t *pointer() const { return m_pointer; }

@@ -23,6 +23,60 @@
 #include <cstdint>
 #include <stdexcept>
 
+/** Call the pointer as a function. */
+std::unique_ptr<CValue> Pointer::call(CType &rtype,
+                                      std::vector<std::unique_ptr<CValue>> &args,
+                                      std::vector<std::unique_ptr<CValue>> &vargs) {
+
+    // Type buffer and vector for cleanup.
+    std::vector<std::unique_ptr<CType>> types;
+    ffi_type *argtypes[args.size() + vargs.size()];
+
+    // Value buffer and vector for cleanup.
+    std::vector<std::unique_ptr<uint8_t[]>> argbufs;
+    void *argvals[args.size() + vargs.size()];
+
+    for (size_t i = 0; i < args.size(); i++) {
+        auto tp = args[i]->type();
+        argtypes[i] = tp->ffitype();
+        types.push_back(std::move(tp));
+
+        auto buf = args[i]->to_buffer();
+        argvals[i] = buf.get();
+        argbufs.push_back(std::move(buf));
+    }
+    for (size_t i = 0; i < vargs.size(); i++) {
+        auto tp = vargs[i]->type();
+        argtypes[args.size() + i] = tp->ffitype();
+        types.push_back(std::move(tp));
+
+        auto buf = vargs[i]->to_buffer();
+        argvals[args.size() + i] = buf.get();
+        argbufs.push_back(std::move(buf));
+    }
+
+    // Prepare the CIF.
+    ffi_cif cif;
+    if (vargs.size() == 0) {
+        ffi_status status =
+            ffi_prep_cif(&cif, FFI_DEFAULT_ABI, args.size(), rtype.ffitype(), argtypes);
+        if (status != FFI_OK)
+            throw std::runtime_error("ffi_prep_cif() failed");
+    } else {
+        ffi_status status =
+            ffi_prep_cif_var(&cif, FFI_DEFAULT_ABI, args.size(),
+                             args.size() + vargs.size(), rtype.ffitype(), argtypes);
+        if (status != FFI_OK)
+            throw std::runtime_error("ffi_prep_cif_var() failed");
+    }
+
+    // Call the function.
+    uint8_t rvalue[std::max(sizeof(ffi_arg), rtype.size())];
+    ffi_call(&cif, (void (*)())m_pointer, rvalue, argvals);
+
+    return CValue::from_buffer(rtype, rvalue);
+}
+
 /**
  * Dereference the pointer.
  */
@@ -71,10 +125,32 @@ extern "C" size_t Pointer_address(b_lean_obj_arg obj) {
 /**
  * Call a pointer with CValue arguments.
  */
-extern "C" lean_obj_res Pointer_call(b_lean_obj_arg ptr_obj, b_lean_obj_arg rt_obj,
+extern "C" lean_obj_res Pointer_call(b_lean_obj_arg ptr_obj, b_lean_obj_arg rtype_obj,
                                      b_lean_obj_arg args_obj, b_lean_obj_arg vargs_obj,
                                      lean_object *unused) {
 
-    lean_object *err = lean_mk_io_user_error(lean_mk_string("not implemented"));
-    return lean_io_result_mk_error(err);
+    auto ptr = Pointer::unbox(ptr_obj);
+    auto rtype = CType::unbox(rtype_obj);
+
+    // Regular arguments
+    std::vector<std::unique_ptr<CValue>> args;
+    for (size_t i = 0; i < lean_array_size(args_obj); i++) {
+        lean_object *o = lean_array_get_core(args_obj, i);
+        args.push_back(CValue::unbox(o));
+    }
+
+    // Variadic arguments
+    std::vector<std::unique_ptr<CValue>> vargs;
+    for (size_t i = 0; i < lean_array_size(vargs_obj); i++) {
+        lean_object *o = lean_array_get_core(vargs_obj, i);
+        vargs.push_back(CValue::unbox(o));
+    }
+
+    try {
+        auto result = ptr->call(*rtype, args, vargs);
+        return lean_io_result_mk_ok(result->box());
+    } catch (const std::runtime_error &error) {
+        lean_object *err = lean_mk_io_user_error(lean_mk_string(error.what()));
+        return lean_io_result_mk_error(err);
+    }
 }
