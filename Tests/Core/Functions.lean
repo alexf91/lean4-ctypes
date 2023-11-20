@@ -70,7 +70,7 @@ namespace Tests.Functions
   --   The segmentation fault is not caused in this testcase, but in one that comes after
   --   this one.
   -- -/
-  -- testcase testCallClosureSegfault := do
+  -- testcase testCallClosureSegfault₁ := do
   --   let callArgs : IO.Ref (Array CValue) ← IO.mkRef #[]
   --   let callback : Callback := fun args => do
   --     callArgs.set args
@@ -82,5 +82,31 @@ namespace Tests.Functions
   --     discard <| closure.pointer.call .void args #[]
   --   finally
   --     closure.delete
+
+  -- TODO: Fix whatever causes this error.
+  -- /-- This causes a segmentation fault. -/
+  -- testcase testCallClosureSegfault₂ := do
+  --   let type := CType.struct #[.int, .int]
+  --   let fib : Callback := fun args => do
+  --     discard <| args[0]!.pointer!.read type
+  --     return .void
+
+  --   -- The closure object for the C function.
+  --   let closure ← Closure.mk .int #[.pointer] fib
+
+  --   -- Initialize the state struct to (0, 1).
+  --   let libc ← Library.mk "libc.so.6" .RTLD_NOW #[]
+  --   let state₁ ← (← libc["calloc"]).call .pointer #[.size_t 1, .size_t type.size] #[]
+  --   let state₂ ← (← libc["calloc"]).call .pointer #[.size_t 1, .size_t type.size] #[]
+
+  --   -- Calling once is fine, twice causes the segmentation fault.
+  --   -- The problem seems to be the type definition used in the callback.
+  --   try
+  --     discard <| closure.pointer.call .void #[state₁] #[]
+  --     discard <| closure.pointer.call .void #[state₂] #[]
+  --   finally
+  --     closure.delete
+  --     discard <| (← libc["free"]).call .void #[state₁] #[]
+  --     discard <| (← libc["free"]).call .void #[state₂] #[]
 
 end Tests.Functions
