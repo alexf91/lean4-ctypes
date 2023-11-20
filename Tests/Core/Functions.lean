@@ -64,4 +64,23 @@ namespace Tests.Functions
     finally
       closure.delete
 
+  -- TODO: Fix whatever causes this error.
+  -- /--
+  --   This has caused a segmentation fault before.
+  --   The segmentation fault is not caused in this testcase, but in one that comes after
+  --   this one.
+  -- -/
+  -- testcase testCallClosureSegfault := do
+  --   let callArgs : IO.Ref (Array CValue) ← IO.mkRef #[]
+  --   let callback : Callback := fun args => do
+  --     callArgs.set args
+  --     return .void
+
+  --   let closure ← Closure.mk .void #[.int, .int] callback
+  --   try
+  --     let args : Array CValue := #[.int 42, .int 11]
+  --     discard <| closure.pointer.call .void args #[]
+  --   finally
+  --     closure.delete
+
 end Tests.Functions

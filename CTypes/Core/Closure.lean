@@ -34,7 +34,7 @@ namespace Closure
     Create a Closure from a signature and a callback function.
 
     For lifetime management, this is an `IO` function. C functions might store a
-    reference to the closure, so we only free it if it is marked for deletion by
+    reference to the callback, so we only free it if it is marked for deletion by
     the user.
 
     Note that this leaks memory if the object is garbage collected before it is
