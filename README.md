@@ -81,3 +81,33 @@ If arrays should be passed to functions, then the buffer has to be allocated wit
 If an array is a member of a struct, then the array can created with a struct with one element for each array element.
 
 Arrays created this way can not be passed to functions.
+
+### Callbacks
+
+Lean functions can be called from C by creating a `Closure` object.
+Pointers to the closure can be passed to C functions or called like regular function pointers.
+
+```Lean
+import CTypes
+open CTypes.Core
+
+def main (_ : List String) : IO UInt32 := do
+  -- Callback functions have the signature (Array CValue) → IO CValue
+  let add : Callback := fun args => do
+    return .int (args[0]!.int! + args[1]!.int!)
+
+  -- Create the closure.
+  let closure ← Closure.mk .int #[.int, .int] add
+
+  -- Call the function through the `Pointer.call` interface.
+  let result ← closure.pointer.call .int #[.int 42, .int 11] #[]
+  IO.println s!"42 + 11 = {result.int!}"
+
+  -- Closures are not deleted by default, in case a C function stores a reference.
+  -- They have to be marked for deletion by the user.
+  -- Deleted closures are freed when the object is garbage collected. Otherwise they
+  -- leak memory.
+  closure.delete
+
+  return 0
+```
