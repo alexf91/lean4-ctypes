@@ -38,3 +38,5 @@ lean_exe Math
 lean_exe Pointers
 @[default_target]
 lean_exe Callbacks
+@[default_target]
+lean_exe Structs

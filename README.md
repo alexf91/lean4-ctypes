@@ -73,15 +73,6 @@ def main (_ : List String) : IO UInt32 := do
   return 0
 ```
 
-### Structs and arrays
-
-Structs are described as an array of types and instantiated as an array of values.
-There is no direct support for arrays in the `CTypes.Core` library.
-If arrays should be passed to functions, then the buffer has to be allocated with `malloc()`.
-If an array is a member of a struct, then the array can created with a struct with one element for each array element.
-
-Arrays created this way can not be passed to functions.
-
 ### Callbacks
 
 Lean functions can be called from C by creating a `Closure` object.
@@ -108,6 +99,53 @@ def main (_ : List String) : IO UInt32 := do
   -- Deleted closures are freed when the object is garbage collected. Otherwise they
   -- leak memory.
   closure.delete
+
+  return 0
+```
+
+### Structs and arrays
+
+Structs are described as an array of types and instantiated as an array of values.
+There is no direct support for arrays in the `CTypes.Core` library.
+If arrays should be passed to functions, then the buffer has to be allocated with `malloc()`.
+If an array is a member of a struct, then the array can created with a struct with one value for each array element.
+
+Arrays created this way can not be passed to functions.
+
+Here is an example that uses callbacks and a pointer to a struct to calculate the Fibonacci sequence:
+
+```Lean
+import CTypes
+open CTypes.Core
+
+def main (_ : List String) : IO UInt32 := do
+  -- Fibonacci iteration with a struct as state variable.
+  let fib : Callback := fun args => do
+    let state ← args[0]!.pointer!.read $ .struct #[.int, .int]
+
+    -- Get the two values from the (int, int) struct.
+    let a := state.struct![0]!.int!
+    let b := state.struct![1]!.int!
+
+    -- Update the values and return the result.
+    args[0]!.pointer!.write (.struct #[.int b, .int (a + b)])
+    return .int a
+
+  -- The closure object for the C function.
+  let closure ← Closure.mk .int #[.pointer] fib
+
+  -- Initialize the state struct to (0, 1).
+  let libc ← Library.mk "libc.so.6" .RTLD_NOW #[]
+  let state ← (← libc["malloc"]).call .pointer #[.size_t (CType.struct #[.int, .int]).size] #[]
+  state.pointer!.write $ .struct #[.int 0, .int 1]
+
+  for _ in [0:8] do
+    let result ← closure.pointer.call .int #[state] #[]
+    IO.println $ repr result
+
+  -- Cleanup
+  closure.delete
+  discard <| (← libc["free"]).call .void #[state] #[]
 
   return 0
 ```

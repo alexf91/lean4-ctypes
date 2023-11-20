@@ -197,7 +197,7 @@ namespace CValue
   | _         => none
 
   def int! a := (int? a).get!
-  def nat a := (nat? a).get!
+  def nat! a := (nat? a).get!
   def float! a := (float? a).get!
   def complex! a := (complex? a).get!
   def pointer! a := (pointer? a).get!
