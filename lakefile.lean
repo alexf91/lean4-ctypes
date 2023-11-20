@@ -70,6 +70,8 @@ def createTarget (pkg : Package) (cfile : FilePath) := do
   let cFile := pkg.dir / cfile
   buildO cFile.toString oFile srcJob weakArgs traceArgs CXX (extraDepTrace cFile)
 
+target callback.o pkg : FilePath := createTarget pkg $ "src" / "callback.cpp"
+target closure.o pkg : FilePath := createTarget pkg $ "src" / "closure.cpp"
 target library.o pkg : FilePath := createTarget pkg $ "src" / "library.cpp"
 target pointer.o pkg : FilePath := createTarget pkg $ "src" / "pointer.cpp"
 target types.o pkg : FilePath := createTarget pkg $ "src" / "types.cpp"
@@ -81,6 +83,8 @@ target types_common.o pkg : FilePath := createTarget pkg $ "src" / "types" / "co
 extern_lib libctypes pkg := do
   let name := nameToStaticLib "ctypes"
   let targets := #[
+    (← fetch <| pkg.target ``callback.o),
+    (← fetch <| pkg.target ``closure.o),
     (← fetch <| pkg.target ``library.o),
     (← fetch <| pkg.target ``pointer.o),
     (← fetch <| pkg.target ``types.o),

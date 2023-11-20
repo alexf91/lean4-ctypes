@@ -39,4 +39,29 @@ namespace Tests.Functions
     let value ← sum.call .int #[.int 8] #[.int 16, .int 32, .int 0]
     assertEqual value (.int 56)
 
+  /-- Use a wrong variadic argument. -/
+  testcase testCallVariadicError requires (libgen : SharedLibrary) := do
+    let lib ← libgen $ "int foo(int a, ...) {return 0;}"
+    let foo ← lib["foo"]
+    try
+      discard <| foo.call .int #[.int 8] #[.int 16, .short 32, .int 0]
+    catch e =>
+      assertEqual e.toString "ffi_prep_cif_var() failed"
+      return
+    assertTrue false "foo.call did not fail"
+
+  /-- Create a closure and call it as a pointer. -/
+  testcase testCallClosure := do
+    let callback : Callback := fun args => do
+      let value := args.foldl (fun a e => a + e.int!) 0
+      return .int value
+
+    let closure ← Closure.mk .int #[.int, .int] callback
+    try
+      let args := #[.int 42, .int 11]
+      let result ← closure.pointer.call .int args #[]
+      assertEqual result (.int 53) s!"wrong return value: {repr result}"
+    finally
+      closure.delete
+
 end Tests.Functions

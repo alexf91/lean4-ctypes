@@ -70,7 +70,9 @@ class CValueVoid : public CValue {
   public:
     lean_obj_res box() const override { return lean_box(0); }
     std::unique_ptr<uint8_t[]> to_buffer() const override {
-        lean_internal_panic("can't convert void to buffer");
+        // Just create a buffer and set it to zero.
+        std::unique_ptr<uint8_t[]> buffer(new uint8_t[type()->size()]());
+        return buffer;
     }
 };
 

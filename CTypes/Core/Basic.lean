@@ -74,7 +74,6 @@ namespace Library
 end Library
 
 instance : Repr     Library := ⟨fun lib _ => s!"CTypes.Library<{lib.path}>"⟩
-instance : ToString Library := ⟨fun lib   => s!"{repr lib}"⟩
 
 /-- Get a symbol from the library. -/
 instance : GetElem Library String (IO Pointer) (fun _ _ => True) := ⟨fun l s _ => l.symbol s⟩

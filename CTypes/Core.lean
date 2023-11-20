@@ -15,4 +15,5 @@
 --
 
 import CTypes.Core.Basic
+import CTypes.Core.Closure
 import CTypes.Core.Types

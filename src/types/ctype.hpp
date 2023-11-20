@@ -27,16 +27,16 @@ class CType {
     /** Basic constructor for the base type. */
     CType(ObjectTag tag);
 
-    virtual ~CType() {}
+    virtual ~CType();
 
     /** Convert from Lean to this class. */
     static std::unique_ptr<CType> unbox(b_lean_obj_arg obj);
 
     /** Get the size of the basic type. */
-    size_t size() const { return m_ffi_type.size; }
+    size_t size() const { return m_ffi_type->size; }
 
     /** Get alignment. */
-    size_t alignment() const { return m_ffi_type.alignment; }
+    size_t alignment() const { return m_ffi_type->alignment; }
 
     /** Get the number of elements. */
     size_t nelements() const;
@@ -45,13 +45,17 @@ class CType {
     const std::vector<size_t> offsets() const;
 
     /** Get a pointer to the internal ffi_type. */
-    ffi_type *ffitype() { return &m_ffi_type; }
+    ffi_type *ffitype() { return m_ffi_type; }
 
     /** Get the tag of the CType. */
     ObjectTag tag() const { return m_tag; }
 
+  private:
+    static ffi_type *copy_ffi_type(const ffi_type *tp);
+    static void free_ffi_type(ffi_type *tp);
+
   protected:
-    ffi_type m_ffi_type;
+    ffi_type *m_ffi_type;
 
   private:
     ObjectTag m_tag;

@@ -109,7 +109,6 @@ namespace CType
 
 end CType
 
-
 /--
   The `CType` type, but with an associated value to make it a `CValue`.
 -/
