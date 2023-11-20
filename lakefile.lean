@@ -26,6 +26,12 @@ meta if get_config? debug |>.isSome then
 else
   def debugFlags := #["-DNDEBUG"]
 
+/- Flags for running with `gprof`. -/
+meta if get_config? gprof |>.isSome then
+  def profileFlags := #["-ggdb", "-pg"]
+else
+  def profileFlags : Array String := #[]
+
 /-- Compiler for C++ files. -/
 def CXX := "clang++"
 
@@ -34,7 +40,7 @@ package ctypes {
   moreLinkArgs := #[
     "-lffi",
     "-ldl"
-  ] ++ debugFlags
+  ] ++ debugFlags ++ profileFlags
 }
 
 require LTest from git "git@github.com:alexf91/LTest.git" @ "main"
@@ -66,7 +72,7 @@ def createTarget (pkg : Package) (cfile : FilePath) := do
     "-fPIC",
     "-Wall",
     "-std=c++20"
-  ] ++ debugFlags
+  ] ++ debugFlags ++ profileFlags
   let cFile := pkg.dir / cfile
   buildO cFile.toString oFile srcJob weakArgs traceArgs CXX (extraDepTrace cFile)
 
