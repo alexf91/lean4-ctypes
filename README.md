@@ -5,14 +5,14 @@ It provides C compatible data types, and allows calling functions in shared libr
 
 ## Usage
 
-Access to library functions is structured done with the `Library` type.
-It is a wrapper around `dlopen()` for loading and `dlsym()` for looking up a symbol.
+Library functions are accessed through the `Library` type.
+It is a wrapper around `dlopen()` for loading a shared library and `dlsym()` for looking up a symbol.
 
-The `CType` inductive represents types available in C.
-It contains definitions for signed and unsigned integers, floating point types, complex types, arrays, structs and pointers.
+The `CType` type represents types available in C.
+It contains definitions for signed and unsigned integers, floating point types, complex types, structs and pointers.
 
 Values are represented with the `CValue` type.
-It directly matches the `CType` type.
+It directly matches the `CType` type, but also contains a value.
 
 The low-level implementation is in the `CTypes.Core` namespace and implements basic types and function calls.
 It is a wrapper around `libffi`.
@@ -20,6 +20,7 @@ It is a wrapper around `libffi`.
 ### Basic concepts
 
 This example calls the function `pow()` in the library `libm.so.6`:
+
 ```Lean
 import CTypes
 open CTypes.Core
