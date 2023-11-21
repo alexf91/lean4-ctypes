@@ -18,7 +18,6 @@
 #include "lean/lean.h"
 #include "pointer.hpp"
 #include <ffi.h>
-#include <iostream>
 #include <stdexcept>
 
 /** Create the callback option. */
@@ -44,6 +43,11 @@ Callback::Callback(b_lean_obj_arg rtype_obj, b_lean_obj_arg args_obj,
     status = ffi_prep_closure_loc(m_closure, &m_cif, binding, this, m_function);
     if (status != FFI_OK)
         throw std::runtime_error("ffi_prep_closure_loc() failed");
+
+    // TODO: Not sure why this is necessary. We should already own the object, but
+    //       without it the reference count appears to be off and we can't decrease
+    //       it in the destructor.
+    lean_inc(m_cb_obj);
 }
 
 /**

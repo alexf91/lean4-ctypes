@@ -64,49 +64,37 @@ namespace Tests.Functions
     finally
       closure.delete
 
-  -- TODO: Fix whatever causes this error.
-  -- /--
-  --   This has caused a segmentation fault before.
-  --   The segmentation fault is not caused in this testcase, but in one that comes after
-  --   this one.
-  -- -/
-  -- testcase testCallClosureSegfault₁ := do
-  --   let callArgs : IO.Ref (Array CValue) ← IO.mkRef #[]
-  --   let callback : Callback := fun args => do
-  --     callArgs.set args
-  --     return .void
+  /--
+    This has caused a segmentation fault before.
+    The segmentation fault was not caused in this testcase, but in one that comes after
+    this one.
+    The difference to the testcase above is that the callback function has a reference
+    count. In the testcase above it is a small object.
+  -/
+  testcase testCallClosureSegfault := do
+    let argsRef : IO.Ref (Array CValue) ← IO.mkRef #[]
+    let callback : Callback := fun args => do
+      argsRef.set args
+      return .void
 
-  --   let closure ← Closure.mk .void #[.int, .int] callback
-  --   try
-  --     let args : Array CValue := #[.int 42, .int 11]
-  --     discard <| closure.pointer.call .void args #[]
-  --   finally
-  --     closure.delete
+    let closure ← Closure.mk .void #[] callback
+    try
+      discard <| closure.pointer.call .void #[] #[]
+    finally
+      closure.delete
 
-  -- TODO: Fix whatever causes this error.
-  -- /-- This causes a segmentation fault. -/
-  -- testcase testCallClosureSegfault₂ := do
-  --   let type := CType.struct #[.int, .int]
-  --   let fib : Callback := fun args => do
-  --     discard <| args[0]!.pointer!.read type
-  --     return .void
+  /-- Create multiple closures from the same callback. -/
+  testcase testCallClosureMultiple := do
+    let callCount : IO.Ref Nat ← IO.mkRef 0
+    let callback : Callback := fun _ => do
+      callCount.modify (· + 1)
+      return .void
 
-  --   -- The closure object for the C function.
-  --   let closure ← Closure.mk .int #[.pointer] fib
-
-  --   -- Initialize the state struct to (0, 1).
-  --   let libc ← Library.mk "libc.so.6" .RTLD_NOW #[]
-  --   let state₁ ← (← libc["calloc"]).call .pointer #[.size_t 1, .size_t type.size] #[]
-  --   let state₂ ← (← libc["calloc"]).call .pointer #[.size_t 1, .size_t type.size] #[]
-
-  --   -- Calling once is fine, twice causes the segmentation fault.
-  --   -- The problem seems to be the type definition used in the callback.
-  --   try
-  --     discard <| closure.pointer.call .void #[state₁] #[]
-  --     discard <| closure.pointer.call .void #[state₂] #[]
-  --   finally
-  --     closure.delete
-  --     discard <| (← libc["free"]).call .void #[state₁] #[]
-  --     discard <| (← libc["free"]).call .void #[state₂] #[]
+    let closures ← List.range 32 |>.mapM (fun _ => Closure.mk .void #[] callback)
+    try
+      discard <| closures.mapM (fun c => c.pointer.call .void #[] #[])
+      assertEqual (← callCount.get) 32 s!"wrong call count: {← callCount.get}"
+    finally
+      discard <| closures.mapM (fun c => c.delete)
 
 end Tests.Functions
