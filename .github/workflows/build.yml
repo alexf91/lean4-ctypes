@@ -1,0 +1,46 @@
+name: Build and run tests
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+
+jobs:
+  test:
+    name: Build and run tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        clang: [11, 12, 13, 14, 15]
+
+    steps:
+      - name: Checkout lean4-ctypes
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            libgmp-dev \
+            clang-${{ matrix.clang }} \
+            libc++-${{ matrix.clang }}-dev \
+            libc++abi-${{ matrix.clang }}-dev
+
+      - name: Install elan
+        run: |
+          set -o pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- --default-toolchain none -y
+          ~/.elan/bin/lean --version
+          echo "$HOME/.elan/bin" >> $GITHUB_PATH
+
+      - name: Build library
+        run: |
+          LEAN_CC=clang++-${{ matrix.clang }} lake build -R
+
+      - name: Build tests
+        run: |
+          LEAN_CC=clang++-${{ matrix.clang }} lake build -R tests
+
+      - name: Run tests
+        run: |
+          LEAN_CC=clang++-${{ matrix.clang }} lake exe -R tests
