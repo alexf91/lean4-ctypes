@@ -7,11 +7,12 @@ on:
 
 jobs:
   test:
-    name: Build and run tests
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        clang: [11, 12, 13, 14, 15]
+        clang-version: [11, 12, 13, 14, 15]
+
+    name: Build and run tests (clang ${{ matrix.clang-version }})
 
     steps:
       - name: Checkout lean4-ctypes
@@ -22,9 +23,9 @@ jobs:
           sudo apt update
           sudo apt install -y \
             libgmp-dev \
-            clang-${{ matrix.clang }} \
-            libc++-${{ matrix.clang }}-dev \
-            libc++abi-${{ matrix.clang }}-dev
+            clang-${{ matrix.clang-version }} \
+            libc++-${{ matrix.clang-version }}-dev \
+            libc++abi-${{ matrix.clang-version }}-dev
 
       - name: Install elan
         run: |
@@ -35,12 +36,12 @@ jobs:
 
       - name: Build library
         run: |
-          LEAN_CC=clang++-${{ matrix.clang }} lake build -R
+          LEAN_CC=clang++-${{ matrix.clang-version }} lake build -R
 
       - name: Build tests
         run: |
-          LEAN_CC=clang++-${{ matrix.clang }} lake build -R tests
+          LEAN_CC=clang++-${{ matrix.clang-version }} lake build -R tests
 
       - name: Run tests
         run: |
-          LEAN_CC=clang++-${{ matrix.clang }} lake exe -R tests
+          LEAN_CC=clang++-${{ matrix.clang-version }} lake exe -R tests
