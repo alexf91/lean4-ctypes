@@ -1,5 +1,3 @@
-build
-lake-packages
 lake-manifest.json
 vgcore.*
-lakefile.olean
+.lake

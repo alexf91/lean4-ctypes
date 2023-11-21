@@ -6,7 +6,7 @@
             "preLaunchTask": "Lake: build tests",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/bin/tests",
+            "program": "${workspaceFolder}/.lake/build/bin/tests",
             "args": [
                 "--show-captures",
                 "-v"
