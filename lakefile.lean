@@ -32,9 +32,6 @@ meta if get_config? gprof |>.isSome then
 else
   def profileFlags : Array String := #[]
 
-/-- Compiler for C++ files. -/
-def CXX := "clang++"
-
 package ctypes {
   precompileModules := true
   moreLinkArgs := #[
@@ -43,14 +40,19 @@ package ctypes {
   ] ++ debugFlags ++ profileFlags
 }
 
-require LTest from git "git@github.com:alexf91/LTest.git" @ "main"
+require LTest from git "https://github.com/alexf91/LTest.git" @ "main"
 
 /-- Compute a trace for files included by a target file. -/
 def extraDepTrace (cfile : FilePath) : BuildM BuildTrace := do
   -- Get the list of local file dependencies.
-  let deps := (← IO.Process.run {cmd := "g++", args := #["-MM", cfile.toString]})
-    |>.replace " \\\n" "" |>.dropWhile (· != ' ') |>.trim |>.splitOn
-    |>.map System.FilePath.mk
+  -- Compilation is still possible, even if g++ does not exist.
+  let out ← IO.Process.output {cmd := "g++", args := #["-MM", cfile.toString]}
+  if out.exitCode != 0 then
+    IO.eprint out.stderr
+    return .nil
+
+  let deps := out.stdout.replace " \\\n" "" |>.dropWhile (· != ' ')
+    |>.trim.splitOn.map System.FilePath.mk
 
   -- Create hashes and MTimes.
   let hashes ← deps.mapM fun p => computeFileHash p
@@ -74,7 +76,8 @@ def createTarget (pkg : Package) (cfile : FilePath) := do
     "-std=c++20"
   ] ++ debugFlags ++ profileFlags
   let cFile := pkg.dir / cfile
-  buildO cFile.toString oFile srcJob weakArgs traceArgs CXX (extraDepTrace cFile)
+  let cxx := (← IO.getEnv "LEAN_CC").getD "clang++"
+  buildO cFile.toString oFile srcJob weakArgs traceArgs cxx (extraDepTrace cFile)
 
 target callback.o pkg : FilePath := createTarget pkg $ "src" / "callback.cpp"
 target closure.o pkg : FilePath := createTarget pkg $ "src" / "closure.cpp"

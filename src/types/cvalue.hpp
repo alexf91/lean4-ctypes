@@ -78,7 +78,7 @@ class CValueVoid : public CValue {
 
 /** CValue for integers, floats and complex floats. */
 template <ObjectTag Tag> class CValueScalar : public CValue {
-    using T = TagToType<Tag>::type;
+    using T = typename TagToType<Tag>::type;
 
   public:
     CValueScalar(T value) : m_value(value) {}
@@ -95,7 +95,7 @@ template <ObjectTag Tag> class CValueScalar : public CValue {
 
 /** CValue with a single Nat constructor (i.e. uint types). */
 template <ObjectTag Tag> class CValueNat : public CValueScalar<Tag> {
-    using T = TagToType<Tag>::type;
+    using T = typename TagToType<Tag>::type;
 
   public:
     /** Create the value from a CValue object. */
@@ -119,7 +119,7 @@ template <ObjectTag Tag> class CValueNat : public CValueScalar<Tag> {
 
 /** CValue with a single Int constructor (i.e. int types). */
 template <ObjectTag Tag> class CValueInt : public CValueScalar<Tag> {
-    using T = TagToType<Tag>::type;
+    using T = typename TagToType<Tag>::type;
 
   public:
     /** Create the value from a CValue object. */
@@ -143,7 +143,7 @@ template <ObjectTag Tag> class CValueInt : public CValueScalar<Tag> {
 
 /** CValue with a single Float constructor. */
 template <ObjectTag Tag> class CValueFloat : public CValueScalar<Tag> {
-    using T = TagToType<Tag>::type;
+    using T = typename TagToType<Tag>::type;
 
   public:
     /** Create the value from a CValue object. */
@@ -166,7 +166,7 @@ template <ObjectTag Tag> class CValueFloat : public CValueScalar<Tag> {
 
 /** CValue with a double Float constructor. */
 template <ObjectTag Tag> class CValueComplex : public CValueScalar<Tag> {
-    using T = TagToType<Tag>::type;
+    using T = typename TagToType<Tag>::type;
 
   public:
     /** Create the value from a CValue object. */
