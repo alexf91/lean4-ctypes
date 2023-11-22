@@ -14,7 +14,24 @@
 -- limitations under the License.
 --
 
-import CTypes.Core.Closure
-import CTypes.Core.Library
-import CTypes.Core.Types
-import CTypes.Core.Utils
+import LTest
+import CTypes
+import Tests.Core.Fixtures
+open LTest
+open CTypes.Core
+
+namespace Tests.Utils
+
+  /-- Allocate a buffer and write and read it. -/
+  testcase testMalloc := do
+    let type : CType := .struct #[.int, .int]
+    let pointer ← malloc type.size
+    try
+      let u : CValue := .struct #[.int 100, .int 200]
+      pointer.write u
+      let v ← pointer.read type
+      assertEqual u v s!"read wrong value: {repr v}"
+    finally
+      free pointer
+
+end Tests.Utils

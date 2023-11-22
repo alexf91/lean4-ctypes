@@ -14,7 +14,26 @@
 -- limitations under the License.
 --
 
-import CTypes.Core.Closure
-import CTypes.Core.Library
 import CTypes.Core.Types
-import CTypes.Core.Utils
+
+set_option relaxedAutoImplicit false
+
+namespace CTypes.Core
+
+/--
+  Allocate a buffer of the given size and return a pointer.
+
+  The buffer is initialized to zero.
+
+  Buffers created this way should only be freed with the builtin `free`, not one
+  loaded from a library. This avoids inconsistencies between different `malloc`
+  implementations in libraries.
+-/
+@[extern "Utils_malloc"]
+opaque malloc (size : @&Nat) : IO Pointer
+
+/-- Free a buffer allocated with `malloc`. -/
+@[extern "Utils_free"]
+opaque free (pointer : @&Pointer) : IO Unit
+
+end CTypes.Core

@@ -84,6 +84,7 @@ target closure.o pkg : FilePath := createTarget pkg $ "src" / "closure.cpp"
 target library.o pkg : FilePath := createTarget pkg $ "src" / "library.cpp"
 target pointer.o pkg : FilePath := createTarget pkg $ "src" / "pointer.cpp"
 target types.o pkg : FilePath := createTarget pkg $ "src" / "types.cpp"
+target utils.o pkg : FilePath := createTarget pkg $ "src" / "utils.cpp"
 
 target types_ctype.o pkg : FilePath := createTarget pkg $ "src" / "types" / "ctype.cpp"
 target types_cvalue.o pkg : FilePath := createTarget pkg $ "src" / "types" / "cvalue.cpp"
@@ -97,6 +98,7 @@ extern_lib libctypes pkg := do
     (← fetch <| pkg.target ``library.o),
     (← fetch <| pkg.target ``pointer.o),
     (← fetch <| pkg.target ``types.o),
+    (← fetch <| pkg.target ``utils.o),
     (← fetch <| pkg.target ``types_ctype.o),
     (← fetch <| pkg.target ``types_cvalue.o),
     (← fetch <| pkg.target ``types_common.o)
@@ -137,7 +139,7 @@ script valgrind (args : List String) do
     args := #[
       "--leak-check=yes",
       "--track-origins=yes",
-      "build/bin/tests",
+      ".lake/build/bin/tests",
       "-v"
     ]
     env := #[(sharedLibPathEnvVar, libs.toString)]

@@ -25,7 +25,7 @@
 #include <memory>
 #include <vector>
 
-extern "C" LEAN_EXPORT_WEAK lean_object *CValue_type__(lean_object *);
+extern "C" LEAN_EXPORT lean_object *CValue_type__(lean_object *);
 /** Get the CType of a CValue. */
 static inline lean_object *CValue_type(lean_object *o) {
     lean_inc(o);

@@ -15,13 +15,3 @@
  */
 
 #pragma once
-
-#include <cstdarg>
-#include <cstdio>
-#include <lean/lean.h>
-
-extern "C" {
-
-/** We need this for functions exported from Lean. */
-#define LEAN_EXPORT_WEAK __attribute__((weak)) LEAN_EXPORT
-}
