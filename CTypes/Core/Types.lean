@@ -25,7 +25,7 @@ instance : Nonempty Pointer := Pointer.Nonempty.property
 
 
 namespace Pointer
-  /-- Create a pointer from an integer value. -/
+  /-- Create a pointer from an address. -/
   @[extern "Pointer_mk"]
   opaque mk (p : @&USize) : Pointer
 
@@ -43,9 +43,9 @@ instance : Repr Pointer := ⟨fun p _ => s!"CTypes.Pointer<{p.address}>"⟩
 instance : BEq Pointer := ⟨fun a b => a.address == b.address⟩
 
 @[default_instance high]
-instance : HAdd Pointer USize Pointer := ⟨fun p n => .mk (p.address + n)⟩
+instance : HAdd Pointer Nat Pointer := ⟨fun p n => .mk (p.address + USize.ofNat n)⟩
 @[default_instance high]
-instance : HSub Pointer USize Pointer := ⟨fun p n => .mk (p.address - n)⟩
+instance : HSub Pointer Nat Pointer := ⟨fun p n => .mk (p.address - USize.ofNat n)⟩
 
 /--
   Types in C and `libffi`.

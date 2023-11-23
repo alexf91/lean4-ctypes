@@ -46,11 +46,11 @@ namespace Tests.Types
     assertEqual s!"{p.address}" "18446744073709551615" s!"wrong address: {p.address}"
 
   testcase testPointerAdd := do
-    let p := (Pointer.mk 128) + (32 : USize)
+    let p := (Pointer.mk 128) + 32
     assertEqual p.address 160 s!"wrong address: {p.address}"
 
   testcase testPointerSub := do
-    let p := (Pointer.mk 128) - (32 : USize)
+    let p := (Pointer.mk 128) - 32
     assertEqual p.address 96 s!"wrong address: {p.address}"
 
   testcase testPointerReadInt requires (libgen : SharedLibrary) := do
