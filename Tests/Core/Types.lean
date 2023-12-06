@@ -53,6 +53,14 @@ namespace Tests.Types
     let p := (Pointer.mk 128) - 32
     assertEqual p.address 96 s!"wrong address: {p.address}"
 
+  testcase testPointerAddNeg := do
+    let p := (Pointer.mk 128) + (-32 : Int)
+    assertEqual p.address 96 s!"wrong address: {p.address}"
+
+  testcase testPointerSubNeg := do
+    let p := (Pointer.mk 128) - (-32 : Int)
+    assertEqual p.address 160 s!"wrong address: {p.address}"
+
   testcase testPointerReadInt requires (libgen : SharedLibrary) := do
     let lib ← libgen "int64_t pos = 42; int64_t neg = -42;"
     let testcases : List (CType × CValue × CValue) := [

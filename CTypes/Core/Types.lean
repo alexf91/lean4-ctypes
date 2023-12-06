@@ -46,6 +46,14 @@ instance : BEq Pointer := ⟨fun a b => a.address == b.address⟩
 instance : HAdd Pointer Nat Pointer := ⟨fun p n => .mk (p.address + USize.ofNat n)⟩
 @[default_instance high]
 instance : HSub Pointer Nat Pointer := ⟨fun p n => .mk (p.address - USize.ofNat n)⟩
+@[default_instance high]
+instance : HAdd Pointer Int Pointer := ⟨fun p n =>
+  if n >= 0 then .mk (p.address + USize.ofNat n.toNat)
+  else           .mk (p.address - USize.ofNat n.natAbs)⟩
+@[default_instance high]
+instance : HSub Pointer Int Pointer := ⟨fun p n =>
+  if n >= 0 then .mk (p.address - USize.ofNat n.toNat)
+  else           .mk (p.address + USize.ofNat n.natAbs)⟩
 
 /--
   Types in C and `libffi`.
