@@ -101,19 +101,19 @@ namespace CType
 
     TODO: This is machine dependent.
   -/
-  def char      := int8
-  def short     := int16
-  def int       := int32
-  def long      := int64
-  def longlong  := int64
-  def ssize_t   := int64
-  def uchar     := uint8
-  def ushort    := uint16
-  def uint      := uint32
-  def ulong     := uint64
-  def ulonglong := uint64
-  def size_t    := uint64
-  def time_t    := int64
+  abbrev char      := int8
+  abbrev short     := int16
+  abbrev int       := int32
+  abbrev long      := int64
+  abbrev longlong  := int64
+  abbrev ssize_t   := int64
+  abbrev uchar     := uint8
+  abbrev ushort    := uint16
+  abbrev uint      := uint32
+  abbrev ulong     := uint64
+  abbrev ulonglong := uint64
+  abbrev size_t    := uint64
+  abbrev time_t    := int64
 
 end CType
 
@@ -216,19 +216,19 @@ namespace CValue
 
     TODO: This is machine dependent.
   -/
-  def char      := int8
-  def short     := int16
-  def int       := int32
-  def long      := int64
-  def longlong  := int64
-  def ssize_t   := int64
-  def uchar     := uint8
-  def ushort    := uint16
-  def uint      := uint32
-  def ulong     := uint64
-  def ulonglong := uint64
-  def size_t    := uint64
-  def time_t    := int64
+  abbrev char      := int8
+  abbrev short     := int16
+  abbrev int       := int32
+  abbrev long      := int64
+  abbrev longlong  := int64
+  abbrev ssize_t   := int64
+  abbrev uchar     := uint8
+  abbrev ushort    := uint16
+  abbrev uint      := uint32
+  abbrev ulong     := uint64
+  abbrev ulonglong := uint64
+  abbrev size_t    := uint64
+  abbrev time_t    := int64
 
 end CValue
 
